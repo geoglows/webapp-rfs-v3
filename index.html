@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>River Forecast System v3</title>
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+  <div id="map"></div>
+
+  <!-- single left column: pinned title, then all controls -->
+  <div id="left-panel" class="panel">
+    <header>
+      <h1 data-i18n="app.title">River Forecast System v3</h1>
+      <div class="header-actions">
+        <button id="btn-settings" class="icon-btn" data-i18n-title="settings.label" data-i18n-aria-label="settings.label" title="Settings" aria-label="Settings"></button>
+        <button id="btn-theme" class="icon-btn" data-i18n-title="theme.toggle" data-i18n-aria-label="theme.toggle" title="Toggle light / dark theme" aria-label="Toggle light or dark theme"></button>
+        <button id="btn-info" class="icon-btn" data-i18n-title="about.label" data-i18n-aria-label="about.label" title="About" aria-label="About"></button>
+        <div id="lang-control">
+          <button id="btn-language" class="icon-btn" data-i18n-title="lang.title" data-i18n-aria-label="lang.aria" title="Language" aria-label="Change language" aria-haspopup="true" aria-expanded="false"></button>
+          <!-- Language options are the source of truth here; initLanguagePicker() (src/main.ts) wires
+               them by their data-lang code. Add/remove/reorder languages by editing these buttons. -->
+          <div id="lang-menu" class="map-menu hidden" role="menu">
+            <button class="layer-opt" role="menuitemradio" data-lang="en">English</button>
+            <button class="layer-opt" role="menuitemradio" data-lang="es">Español</button>
+            <button class="layer-opt" role="menuitemradio" data-lang="fr">Français</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div id="scroll">
+      <section id="hydrology-section">
+        <h2 data-i18n="hydro.heading">Hydrology predictions</h2>
+        <label class="field-label" for="forecast-date" data-i18n="hydro.forecastDate">Forecast Initialization Date</label>
+        <input id="forecast-date" type="date" class="select" />
+        <div class="hydro-actions">
+          <button id="btn-charts" class="icon-btn" data-i18n-title="hydro.charts" data-i18n-aria-label="hydro.charts"
+            title="View discharge charts" aria-label="View discharge charts"></button>
+          <button id="btn-bookmarks" class="icon-btn" data-i18n-title="hydro.bookmarks.title" data-i18n-aria-label="hydro.bookmarks.aria"
+            title="Bookmarked rivers" aria-label="Browse bookmarked rivers"></button>
+          <button id="btn-reports" class="icon-btn" data-i18n-title="hydro.reports" data-i18n-aria-label="hydro.reports"
+            title="Generate reports" aria-label="Generate reports"></button>
+          <button id="btn-search-river" class="icon-btn" data-i18n-title="hydro.searchRiver" data-i18n-aria-label="hydro.searchRiver"
+            title="Search River ID" aria-label="Search River ID"></button>
+        </div>
+      </section>
+
+      <!-- ── Flood mapping ── -->
+      <section>
+        <h2 data-i18n="flood.heading">Flood Mapping</h2>
+        <button id="btn-flood-mode" class="btn toggle" data-i18n="flood.enable">🌊 Enable flood mapping mode</button>
+        <p class="hint" id="flood-mode-hint" data-i18n="flood.hintOff">Off — click a river to inspect its attributes.
+          Turn this on to mark inlets &amp; outlets for a flood map.</p>
+        <p class="hint" data-i18n-html="flood.testSite">Zoom to test flood site in <a href="/index.html#map=11.83/40.26207/-103.78294">Fort Morgan Colorado</a></p>
+        <div id="flood-controls" class="mode-off">
+          <div class="mode-row" role="tablist">
+            <button id="mode-inlet" class="mode active" data-i18n="flood.inlet">＋ Inlet</button>
+            <button id="mode-outlet" class="mode" data-i18n="flood.outlet">✦ Outlet</button>
+          </div>
+          <p class="hint" data-i18n-html="flood.corridorHint">Click reaches on the map to mark them. The corridor = every segment
+            downstream of an inlet <em>and</em> upstream of an outlet.</p>
+          <div id="selection-info" class="readout" data-i18n="flood.noReaches">No reaches selected.</div>
+          <div id="warning" class="warning hidden"></div>
+          <button id="btn-create-flood" class="btn primary" disabled data-i18n="flood.create">Create flood map</button>
+          <button id="btn-clear" class="btn ghost" data-i18n="flood.clear">Clear selection</button>
+        </div>
+
+        <div class="mode-row" role="tablist">
+          <button id="qmode-ladder" class="mode active" data-i18n="flood.qLadder">Flow ladder</button>
+          <button id="qmode-uniform" class="mode" data-i18n="flood.qUniform">Uniform Q</button>
+        </div>
+        <div id="qctl-ladder" class="ctl">
+          <label for="ladder"><span data-i18n="flood.dischargeLevel">Discharge level</span> <em id="ladder-val"></em></label>
+          <input id="ladder" type="range" min="0" max="8" step="0.05" value="4" />
+          <p class="hint" data-i18n="flood.ladderHint">Per-reach ladder from the rating curves (demo stand-in for return
+            periods).</p>
+        </div>
+        <div id="qctl-uniform" class="ctl hidden">
+          <label for="uniform" data-i18n="flood.uniformLabel">Discharge for every corridor reach (m³/s)</label>
+          <input id="uniform" type="number" min="0" step="10" value="400" />
+        </div>
+        <div id="flood-status" class="hint" data-i18n="flood.status">Flood updates live as you move the slider.</div>
+      </section>
+
+      <section>
+        <div class="legend-label"><span>0 m</span><span data-i18n="legend.floodDepth">flood depth</span><span>≥8 m</span></div>
+        <div id="legend-depth"></div>
+        <div id="readout" class="hint" data-i18n="legend.readout">click a flooded pixel for depth</div>
+        <button id="btn-save-geotiff" class="btn ghost" disabled data-i18n="flood.saveGeotiff">⬇ Save GeoTIFF</button>
+      </section>
+
+      <section id="log-container"><div id="log"></div></section>
+    </div>
+  </div>
+
+  <!-- BOTTOM: animation player -->
+  <div id="player">
+    <div id="progress-bar"></div>
+    <button id="btn-play" data-i18n-title="player.play" title="Play / pause (space)">▶</button>
+    <div class="timewrap">
+      <div class="timerow">
+        <span id="time-label">—</span>
+        <span id="step-label">–/–</span>
+      </div>
+      <input id="slider" type="range" min="0" max="0" step="1" value="0" disabled />
+    </div>
+    <div class="speedwrap">
+      <label data-i18n="player.speed">Speed</label>
+      <select id="speed">
+        <option value="1">1×</option>
+        <option value="2">2×</option>
+        <option value="4" selected>4×</option>
+        <option value="8">8×</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- MAP OVERLAY: layer picker (top-right) -->
+  <div id="layer-control">
+    <!-- icon injected from @esri/calcite-ui-icons at runtime (see src/icons.ts) -->
+    <button id="layer-btn" class="map-btn icon-only" aria-haspopup="true" aria-expanded="false"
+      data-i18n-title="layers.label" data-i18n-aria-label="layers.label"
+      title="Basemap layers" aria-label="Basemap layers"></button>
+    <div id="layer-menu" class="map-menu hidden" role="menu"></div>
+  </div>
+
+  <!-- MAP OVERLAY: forecast return-period legend (bottom-left) -->
+  <div id="legend-overlay">
+    <h2 data-i18n="legend.returnPeriod">Forecast return period</h2>
+    <div id="legend-items"></div>
+  </div>
+
+  <!-- info / about modal (header ℹ button) -->
+  <div id="info-modal" class="modal-backdrop hidden">
+    <div class="modal medium" role="dialog" aria-modal="true" aria-labelledby="info-modal-title">
+      <div class="modal-head">
+        <h3 id="info-modal-title" data-i18n="about.label">About</h3>
+        <button class="modal-close" data-close="info-modal" data-i18n-aria-label="common.close" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body">
+        <p data-i18n="about.intro">Global GEOGLOWS forecast animation · pick inlets &amp; outlets · FLDPLN flood extent
+          for the segments between them.</p>
+        <h4 data-i18n="about.coverageHeading">Coverage &amp; model notes</h4>
+        <p data-i18n-html="about.coverage"><strong>Flood library coverage is the small N40W104 demo tile only</strong> (3 reaches
+          in Colorado, highlighted). Corridors elsewhere animate and subset, but produce no flood
+          extent until a library tile exists there.</p>
+        <p data-i18n-html="about.model">FLDPLN is a steady-state, DEM-only screening model driven by synthetic rating curves;
+          extents saturate at the library's maximum stage. <strong>Not for emergency use.</strong>
+          Terrain: FABDEM (© DLR / Airbus, CC BY-NC-SA 4.0). Hydrography &amp; forecast: GEOGLOWS.</p>
+        <h4 data-i18n="about.ossHeading">Open source software &amp; data</h4>
+        <p data-i18n="about.ossIntro">This app is built on open source packages and data:</p>
+        <ul class="credits">
+          <li data-i18n-html="about.credit.maplibre"><a href="https://maplibre.org/" target="_blank" rel="noopener">MapLibre GL JS</a></li>
+          <li data-i18n-html="about.credit.calcite"><a href="https://github.com/Esri/calcite-ui-icons" target="_blank" rel="noopener">Calcite UI Icons</a></li>
+          <li data-i18n-html="about.credit.heroicons"><a href="https://github.com/tailwindlabs/heroicons" target="_blank" rel="noopener">Heroicons</a></li>
+          <li data-i18n-html="about.credit.chartjs"><a href="https://www.chartjs.org/" target="_blank" rel="noopener">Chart.js</a> and plugins (date-fns adapter, matrix, zoom)</li>
+          <li data-i18n-html="about.credit.zarrita"><a href="https://github.com/manzt/zarrita.js" target="_blank" rel="noopener">zarrita.js</a> and <a href="https://github.com/manzt/numcodecs.js" target="_blank" rel="noopener">numcodecs</a> (Zarr access)</li>
+          <li data-i18n-html="about.credit.hyparquet"><a href="https://github.com/hyparam/hyparquet" target="_blank" rel="noopener">hyparquet</a> (Parquet tile reading)</li>
+          <li data-i18n-html="about.credit.pmtiles"><a href="https://github.com/protomaps/PMTiles" target="_blank" rel="noopener">PMTiles</a></li>
+          <li data-i18n-html="about.credit.basemaps">Basemaps from <a href="https://livingatlas.arcgis.com/" target="_blank" rel="noopener">ArcGIS Living Atlas</a></li>
+          <li data-i18n-html="about.credit.geoglows">Streams hydrographs and FIM from the
+            <a href="https://geoglows.org/" target="_blank" rel="noopener">GEOGLOWS River Forecast System</a> v2 and v3</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- settings modal (header ⚙ button) -->
+  <div id="settings-modal" class="modal-backdrop hidden">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="settings-modal-title">
+      <div class="modal-head">
+        <h3 id="settings-modal-title" data-i18n="settings.label">Settings</h3>
+        <button class="modal-close" data-close="settings-modal" data-i18n-aria-label="common.close" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body">
+        <h4 data-i18n="settings.display">Display</h4>
+        <label class="setting-row">
+          <input type="checkbox" id="set-legend" checked />
+          <span data-i18n="settings.showLegend">Show forecast return-period legend</span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- discharge charts modal — the single modal for an inspected reach. Opened by a map river click
+       and by the header charts button; Forecast + Retrospective charts and a Details (attributes) tab. -->
+  <div id="charts-modal" class="modal-backdrop hidden">
+    <div class="modal wide" role="dialog" aria-modal="true" aria-labelledby="charts-modal-title">
+      <div class="modal-head">
+        <h3 id="charts-modal-title" data-i18n="charts.heading">Discharge charts</h3>
+        <button class="modal-close" data-close="charts-modal" data-i18n-aria-label="common.close" aria-label="Close">✕</button>
+      </div>
+      <!-- forecast / retrospective / details tabs (wired in main.ts) -->
+      <div class="charts-tabs mode-row" role="tablist">
+        <button id="charts-tab-forecast" class="mode active" role="tab" aria-selected="true"
+          aria-controls="charts-panel-forecast" data-charts-tab="forecast"
+          data-i18n="charts.tab.forecast">Forecast</button>
+        <button id="charts-tab-retro" class="mode" role="tab" aria-selected="false"
+          aria-controls="charts-panel-retro" data-charts-tab="retro"
+          data-i18n="charts.tab.retro">Retrospective</button>
+        <button id="charts-tab-details" class="mode" role="tab" aria-selected="false"
+          aria-controls="charts-panel-details" data-charts-tab="details"
+          data-i18n="charts.tab.details">Details</button>
+      </div>
+      <div class="modal-body">
+        <div id="charts-panel-forecast" role="tabpanel" aria-labelledby="charts-tab-forecast"></div>
+        <div id="charts-panel-retro" role="tabpanel" aria-labelledby="charts-tab-retro" hidden></div>
+        <div id="charts-panel-details" role="tabpanel" aria-labelledby="charts-tab-details" hidden></div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

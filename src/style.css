@@ -1,0 +1,966 @@
+:root, :root[data-theme="dark"] {
+    --bg: #0a0e17;
+    --surface: #111827;
+    --surface2: #1e293b;
+    --border: #334155;
+    --text: #e2e8f0;
+    --text-dim: #94a3b8;
+    --accent: #38bdf8;
+    --success: #10b981;
+    --danger: #ef4444;
+    --warn: #f59e0b;
+    --inlet: #34d399;
+    --outlet: #f472b6;
+    --corridor: #fbbf24;
+    --library: #38bdf8;
+    --on-accent: #04121b;
+    --shadow-color: 0, 0, 0;
+    --radius: 8px;
+    font-family: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+}
+
+/* light theme — toggled via the header sun/moon button (see main.ts) */
+:root[data-theme="light"] {
+    --bg: #eef2f7;
+    --surface: #ffffff;
+    --surface2: #f1f5f9;
+    --border: #cbd5e1;
+    --text: #0f172a;
+    --text-dim: #52627a;
+    --accent: #0284c7;
+    --success: #059669;
+    --danger: #dc2626;
+    --warn: #f59e0b;
+    --inlet: #059669;
+    --outlet: #db2777;
+    --corridor: #d97706;
+    --library: #0284c7;
+    --on-accent: #ffffff;
+    --shadow-color: 100, 116, 139;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html, body {
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+    background: var(--bg);
+    color: var(--text);
+}
+
+/* fixed left sidebar + map filling the rest */
+body {
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+}
+
+.panel {
+    order: 0;
+    flex: 0 0 380px;
+    height: 100vh;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+}
+
+#map {
+    order: 1;
+    flex: 1 1 auto;
+    min-width: 0;
+    height: 100vh;
+    position: relative;
+    z-index: 0;
+}
+
+/* title stays pinned; everything else scrolls beneath it */
+#scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+.panel header {
+    flex: 0 0 auto;
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.panel header h1 {
+    font-size: 21px;
+    font-weight: 700;
+    letter-spacing: .5px;
+    line-height: 1.25;
+    color: var(--accent);
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+}
+
+.header-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.icon-btn {
+    width: 36px;
+    height: 36px;
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text-dim);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: .12s;
+}
+
+.icon-btn:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+}
+
+.icon-btn svg {
+    width: 22px;
+    height: 22px;
+}
+
+/* language dropdown anchored under its header button */
+#lang-control {
+    position: relative;
+}
+
+#lang-menu {
+    z-index: 20;
+    left: 0;
+    right: auto;
+}
+
+.panel section {
+    padding: 13px 18px;
+    border-bottom: 1px solid var(--border);
+}
+
+.panel section:last-child {
+    border-bottom: none;
+}
+
+.panel h2 {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: .8px;
+    margin-bottom: 9px;
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+}
+
+/* animation legend */
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 5px;
+    font-size: 14px;
+    color: var(--text-dim);
+}
+
+.legend-item .swatch {
+    width: 22px;
+    height: 4px;
+    border-radius: 2px;
+    flex: 0 0 auto;
+}
+
+/* log */
+#log-container {
+    max-height: 130px;
+    overflow-y: auto;
+}
+
+#log {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 12.5px;
+    line-height: 1.7;
+    color: var(--text-dim);
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+#log .info {
+    color: var(--accent);
+}
+
+#log .success {
+    color: var(--success);
+}
+
+#log .error {
+    color: var(--danger);
+}
+
+#log .step {
+    color: var(--warn);
+}
+
+/* mode tabs */
+.mode-row {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 10px;
+}
+
+button.mode {
+    flex: 1;
+    padding: 7px 4px;
+    font-size: 14px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    border-radius: 6px;
+    cursor: pointer;
+    color: var(--text-dim);
+    transition: .12s;
+}
+
+button.mode:hover {
+    color: var(--text);
+}
+
+button.mode.active {
+    border-color: var(--accent);
+    color: var(--accent);
+    font-weight: 600;
+}
+
+#mode-inlet.active {
+    border-color: var(--inlet);
+    color: var(--inlet);
+}
+
+#mode-outlet.active {
+    border-color: var(--outlet);
+    color: var(--outlet);
+}
+
+/* controls */
+.ctl label {
+    display: block;
+    font-size: 14.5px;
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+
+.ctl label em {
+    font-style: normal;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+}
+
+.ctl input[type="range"] {
+    width: 100%;
+    accent-color: var(--accent);
+}
+
+.ctl input[type="number"] {
+    width: 100%;
+    padding: 7px 9px;
+    background: var(--bg);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 16px;
+}
+
+.hint {
+    font-size: 13.5px;
+    color: var(--text-dim);
+    line-height: 1.5;
+    margin-top: 7px;
+}
+
+.readout {
+    font-size: 14.5px;
+    line-height: 1.7;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 9px 11px;
+    margin: 4px 0 10px;
+}
+
+.readout .inlet {
+    color: var(--inlet);
+    font-weight: 600;
+}
+
+.readout .outlet {
+    color: var(--outlet);
+    font-weight: 600;
+}
+
+.readout .corridor {
+    color: var(--corridor);
+    font-weight: 600;
+}
+
+.readout .count {
+    color: var(--text);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.warning {
+    font-size: 14px;
+    line-height: 1.5;
+    color: #1a1206;
+    background: var(--warn);
+    border-radius: 6px;
+    padding: 9px 11px;
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
+.btn {
+    width: 100%;
+    padding: 9px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: 600;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    transition: .12s;
+}
+
+.btn:hover:not(:disabled) {
+    border-color: var(--accent);
+}
+
+.btn.ghost {
+    margin-top: 4px;
+}
+
+.btn.primary {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: var(--on-accent);
+    margin-top: 4px;
+}
+
+.btn.primary:hover:not(:disabled) {
+    filter: brightness(1.08);
+}
+
+.btn:disabled {
+    opacity: .45;
+    cursor: not-allowed;
+}
+
+.select {
+    width: 100%;
+    padding: 7px 9px;
+    background: var(--bg);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 15px;
+    cursor: pointer;
+}
+
+.select:hover {
+    border-color: var(--accent);
+}
+
+/* field caption above an input (e.g. the forecast-date picker) */
+.field-label {
+    display: block;
+    font-size: 14.5px;
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+
+/* hydrology-prediction action buttons, below the forecast date picker */
+.hydro-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* ---- floating controls over the map ---- */
+/* layer/basemap picker, top-right */
+#layer-control {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 5;
+}
+
+.map-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    font-size: 14.5px;
+    font-weight: 600;
+    color: var(--text);
+    cursor: pointer;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    box-shadow: 0 2px 10px rgba(var(--shadow-color), .4);
+    transition: .12s;
+}
+
+.map-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.map-btn.icon-only {
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    justify-content: center;
+}
+
+.map-btn svg {
+    width: 26px;
+    height: 26px;
+    fill: currentColor;
+    display: block;
+}
+
+.map-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    min-width: 190px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 8px 28px rgba(var(--shadow-color), .5);
+    padding: 5px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.layer-opt {
+    text-align: left;
+    padding: 8px 10px;
+    font-size: 14.5px;
+    color: var(--text-dim);
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: .12s;
+}
+
+.layer-opt:hover {
+    color: var(--text);
+    background: var(--bg);
+}
+
+.layer-opt.active {
+    color: var(--accent);
+    border-color: var(--accent);
+    font-weight: 600;
+}
+
+/* forecast return-period legend, pinned bottom-left of the map (map starts after the 380px panel) */
+#legend-overlay {
+    position: absolute;
+    bottom: 14px;
+    left: calc(380px + 14px);
+    z-index: 5;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(var(--shadow-color), .45);
+    padding: 10px 13px;
+    max-width: 220px;
+}
+
+#legend-overlay h2 {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: .8px;
+    margin-bottom: 8px;
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+}
+
+/* flood-mapping-mode toggle + gated controls */
+.btn.toggle {
+    margin-bottom: 8px;
+}
+
+.btn.toggle.active {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: var(--on-accent);
+}
+
+#flood-controls.mode-off {
+    opacity: .4;
+    pointer-events: none;
+    filter: saturate(.4);
+}
+
+/* river attributes modal */
+.modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    background: rgba(2, 6, 16, .6);
+    backdrop-filter: blur(2px);
+    display: grid;
+    place-items: center;
+}
+
+.modal {
+    width: min(440px, calc(100vw - 32px));
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: 0 16px 48px rgba(var(--shadow-color), .6);
+}
+
+/* wide variant for the charts modal (holds the chart suites) */
+.modal.wide {
+    width: min(1200px, calc(100vw - 48px));
+    max-height: 90vh;
+}
+
+/* The charts modal is a FIXED height regardless of content, so switching tabs (retro's tall suite
+   vs. a single forecast chart vs. the details table) never resizes the dialog — the body scrolls
+   internally instead. (#id + .class outranks .modal.wide, so this height wins.) */
+#charts-modal .modal {
+    height: min(90vh, 900px);
+}
+
+/* medium variant for text-heavy modals (e.g. the About panel) — roomier than the 440px default
+   without the chart modal's full width */
+.modal.medium {
+    width: min(680px, calc(100vw - 40px));
+    max-height: 88vh;
+}
+
+.modal-head {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+    border-radius: var(--radius) var(--radius) 0 0;
+}
+
+.modal-head h3 {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--accent);
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+}
+
+.modal-close {
+    flex: 0 0 auto;
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text-dim);
+    font-size: 15px;
+}
+
+.modal-close:hover {
+    color: var(--text);
+    border-color: var(--accent);
+}
+
+.modal-body {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: 6px 16px 14px;
+}
+
+.modal-body h4 {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: .8px;
+    margin: 14px 0 8px;
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+}
+
+.modal-body h4:first-child {
+    margin-top: 6px;
+}
+
+.modal-body p {
+    font-size: 14.5px;
+    color: var(--text-dim);
+    line-height: 1.6;
+    margin-bottom: 10px;
+}
+
+.modal-body p strong {
+    color: var(--text);
+}
+
+.modal-body a {
+    color: var(--accent);
+    text-decoration: none;
+}
+
+.modal-body a:hover {
+    text-decoration: underline;
+}
+
+.modal-body ul.credits {
+    margin: -2px 0 10px;
+    padding-left: 18px;
+}
+
+.modal-body ul.credits li {
+    font-size: 14.5px;
+    color: var(--text-dim);
+    line-height: 1.8;
+}
+
+.setting-row {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-size: 14.5px;
+    color: var(--text);
+    cursor: pointer;
+    padding: 6px 0;
+}
+
+.setting-row input[type="checkbox"] {
+    accent-color: var(--accent);
+    width: 15px;
+    height: 15px;
+    cursor: pointer;
+}
+
+.attr-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14.5px;
+}
+
+.attr-table td {
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+    word-break: break-word;
+}
+
+.attr-table td.k {
+    color: var(--text-dim);
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 13.5px;
+    white-space: nowrap;
+    width: 1%;
+}
+
+.attr-table td.v {
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+}
+
+.attr-table tr:last-child td {
+    border-bottom: none;
+}
+
+.attr-table thead td {
+    color: var(--text-dim);
+    font-weight: 700;
+}
+
+.attr-empty {
+    font-size: 14px;
+    color: var(--text-dim);
+    padding: 8px;
+}
+
+/* async time-series section (retrospective discharge) */
+.ts-loading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14.5px;
+    color: var(--text-dim);
+    padding: 10px 2px;
+}
+
+.ts-error {
+    font-size: 14.5px;
+    color: var(--danger);
+    padding: 8px 2px;
+}
+
+/* charts modal: forecast vs. retrospective tabs sit between the head and the scrolling body */
+.charts-tabs {
+    flex: 0 0 auto;
+    padding: 10px 16px 2px;
+    margin: 0;
+}
+
+#charts-panel-forecast[hidden],
+#charts-panel-retro[hidden],
+#charts-panel-details[hidden] {
+    display: none;
+}
+
+/* charts modal placeholder shown before any river has been inspected */
+.charts-empty {
+    padding: 28px 8px;
+    text-align: center;
+}
+
+.charts-empty p {
+    font-size: 15px;
+    color: var(--text);
+    margin-bottom: 8px;
+}
+
+.charts-empty p.hint {
+    font-size: 13.5px;
+    color: var(--text-dim);
+    max-width: 42ch;
+    margin: 0 auto;
+}
+
+.spinner {
+    display: inline-block;
+    width: 15px;
+    height: 15px;
+    flex: 0 0 auto;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* retrospective chart (Chart.js) inside the wide river modal */
+.chart-canvas {
+    position: relative;
+    height: 420px;
+    width: 100%;
+    padding: 6px 22px;
+}
+
+.chart-tools {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 2px 0 8px;
+}
+
+.chart-btn {
+    padding: 5px 10px;
+    font-size: 12.5px;
+    color: var(--text-dim);
+    cursor: pointer;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    transition: .12s;
+}
+
+.chart-btn:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+}
+
+.chart-hint {
+    margin-left: auto;
+    align-self: center;
+    font-size: 11.5px;
+    color: var(--text-dim);
+}
+
+.plot-block {
+    margin-bottom: 20px;
+}
+
+.plot-block:last-child {
+    margin-bottom: 0;
+}
+
+.legend-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    color: var(--text-dim);
+}
+
+#legend-depth {
+    height: 10px;
+    border-radius: 5px;
+    margin-top: 5px;
+    border: 1px solid var(--border);
+}
+
+#readout {
+    min-height: 1.2em;
+}
+
+
+/* bottom player */
+/* centered over the map (the area right of the 380px sidebar) */
+#player {
+    position: absolute;
+    left: calc(380px + (100vw - 380px) / 2);
+    transform: translateX(-50%);
+    bottom: 22px;
+    z-index: 10;
+    width: min(720px, calc(100vw - 420px));
+    min-width: 360px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: 0 8px 32px rgba(var(--shadow-color), .55);
+    padding: 13px 18px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    opacity: .35;
+    pointer-events: none;
+    transition: opacity .3s;
+}
+
+#player.ready {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+#btn-play {
+    flex: 0 0 auto;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: var(--on-accent);
+    font-size: 17px;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    transition: transform .1s;
+}
+
+#btn-play:hover {
+    transform: scale(1.06);
+}
+
+.timewrap {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+
+.timerow {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+#time-label {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 15px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#step-label {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 13px;
+    color: var(--text-dim);
+    flex: 0 0 auto;
+}
+
+#slider {
+    width: 100%;
+    accent-color: var(--accent);
+    cursor: pointer;
+    height: 4px;
+}
+
+.speedwrap {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+}
+
+.speedwrap label {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: .6px;
+}
+
+#speed {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 14px;
+    padding: 5px 6px;
+    cursor: pointer;
+}
+
+#progress-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent), #22d3ee);
+    width: 0;
+    border-radius: 10px 0 0 0;
+    transition: width .2s;
+}
