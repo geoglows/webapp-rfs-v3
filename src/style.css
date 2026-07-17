@@ -436,12 +436,21 @@ button.mode.active {
 }
 
 /* ---- floating controls over the map ---- */
-/* layer/basemap picker, top-right */
-#layer-control {
+/* basemap + layer pickers, stacked top-right */
+#map-controls {
     position: absolute;
     top: 12px;
     right: 12px;
     z-index: 5;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* each picker anchors its own dropdown menu */
+#basemap-control,
+#layer-control {
+    position: relative;
 }
 
 .map-btn {
@@ -481,8 +490,9 @@ button.mode.active {
 
 .map-menu {
     position: absolute;
-    top: calc(100% + 6px);
-    right: 0;
+    /* open to the left of the button (controls sit at the right edge of the viewport) */
+    top: 0;
+    right: calc(100% + 8px);
     min-width: 190px;
     background: var(--surface);
     border: 1px solid var(--border);
@@ -515,6 +525,46 @@ button.mode.active {
     color: var(--accent);
     border-color: var(--accent);
     font-weight: 600;
+}
+
+/* overlay toggles: a checkbox indicator + label, many can be on at once */
+.layer-toggle {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+}
+
+.layer-toggle .check {
+    flex: 0 0 auto;
+    width: 16px;
+    height: 16px;
+    border: 1.5px solid var(--border);
+    border-radius: 4px;
+    background: var(--bg);
+    position: relative;
+    transition: .12s;
+}
+
+.layer-toggle:hover .check {
+    border-color: var(--accent);
+}
+
+.layer-toggle[aria-checked="true"] .check {
+    background: var(--accent);
+    border-color: var(--accent);
+}
+
+/* checkmark, drawn only when checked */
+.layer-toggle[aria-checked="true"] .check::after {
+    content: "";
+    position: absolute;
+    left: 4.5px;
+    top: 1px;
+    width: 4px;
+    height: 8px;
+    border: solid #fff;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
 }
 
 /* forecast return-period legend, pinned bottom-left of the map (map starts after the 380px panel) */

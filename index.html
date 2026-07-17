@@ -146,13 +146,24 @@
     </div>
   </div>
 
-  <!-- MAP OVERLAY: layer picker (top-right) -->
-  <div id="layer-control">
-    <!-- icon injected from @esri/calcite-ui-icons at runtime (see src/icons.ts) -->
-    <button id="layer-btn" class="map-btn icon-only" aria-haspopup="true" aria-expanded="false"
-      data-i18n-title="layers.label" data-i18n-aria-label="layers.label"
-      title="Basemap layers" aria-label="Basemap layers"></button>
-    <div id="layer-menu" class="map-menu hidden" role="menu"></div>
+  <!-- MAP OVERLAY: map controls (top-right) — separate layer + basemap pickers -->
+  <div id="map-controls">
+    <!-- layer picker: independent on/off toggles -->
+    <div id="layer-control">
+      <!-- icon injected from @esri/calcite-ui-icons at runtime (see src/icons/icons.js) -->
+      <button id="layer-btn" class="map-btn icon-only" aria-haspopup="true" aria-expanded="false"
+        data-i18n-title="layers.label" data-i18n-aria-label="layers.label"
+        title="Map layers" aria-label="Map layers"></button>
+      <div id="layer-menu" class="map-menu hidden" role="menu"></div>
+    </div>
+    <!-- basemap picker: single-choice radio group, sits beneath the layer picker -->
+    <div id="basemap-control">
+      <!-- icon injected from @esri/calcite-ui-icons at runtime (see src/icons/icons.js) -->
+      <button id="basemap-btn" class="map-btn icon-only" aria-haspopup="true" aria-expanded="false"
+        data-i18n-title="basemap.label" data-i18n-aria-label="basemap.label"
+        title="Basemap" aria-label="Basemap"></button>
+      <div id="basemap-menu" class="map-menu hidden" role="menu"></div>
+    </div>
   </div>
 
   <!-- MAP OVERLAY: forecast return-period legend (bottom-left) -->
@@ -175,8 +186,19 @@
         <p data-i18n-html="about.model">FLDPLN is a steady-state, DEM-only screening model driven by synthetic rating curves;
           extents saturate at the library's maximum stage. <strong>Not for emergency use.</strong>
           Terrain: FABDEM (© DLR / Airbus, CC BY-NC-SA 4.0). Hydrography &amp; forecast: GEOGLOWS.</p>
-        <h4 data-i18n="about.ossHeading">Open source software &amp; data</h4>
-        <p data-i18n="about.ossIntro">This app is built on open source packages and data:</p>
+        <h4 data-i18n="about.dataHeading">Data</h4>
+        <ul class="credits">
+          <li data-i18n-html="about.credit.geoglows">Streams hydrographs and FIM from the
+            <a href="https://geoglows.org/" target="_blank" rel="noopener">GEOGLOWS River Forecast System</a> v2 and v3</li>
+        </ul>
+        <h4 data-i18n="about.layersHeading">Map layers</h4>
+        <ul class="credits">
+          <li data-i18n-html="about.credit.basemaps">Basemaps from <a href="https://livingatlas.arcgis.com/" target="_blank" rel="noopener">ArcGIS Living Atlas</a> and <a href="https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer" target="_blank" rel="noopener">USGS The National Map</a></li>
+          <li data-i18n-html="about.credit.riverfld"><a href="https://floods.ssec.wisc.edu/products/RIVER-FLDglobal-composite" target="_blank" rel="noopener">RIVER-FLD global flood composite</a> — near-real-time river flooding (CIMSS/SSEC, UW–Madison)</li>
+          <li data-i18n-html="about.credit.goes"><a href="https://www.arcgis.com/home/item.html?id=37a875ff3611496883b7ccca97f0f5f4" target="_blank" rel="noopener">GOES / Himawari colorized IR</a> — near-real-time satellite imagery (NOAA, via Esri)</li>
+          <li data-i18n-html="about.credit.viirs"><a href="https://www.arcgis.com/home/item.html?id=c873f4c13aa54b25b01270df9358dc64" target="_blank" rel="noopener">VIIRS true color</a> — daily corrected reflectance (NASA Earthdata, via Esri)</li>
+        </ul>
+        <h4 data-i18n="about.codeHeading">Open source software</h4>
         <ul class="credits">
           <li data-i18n-html="about.credit.maplibre"><a href="https://maplibre.org/" target="_blank" rel="noopener">MapLibre GL JS</a></li>
           <li data-i18n-html="about.credit.calcite"><a href="https://github.com/Esri/calcite-ui-icons" target="_blank" rel="noopener">Calcite UI Icons</a></li>
@@ -185,9 +207,6 @@
           <li data-i18n-html="about.credit.zarrita"><a href="https://github.com/manzt/zarrita.js" target="_blank" rel="noopener">zarrita.js</a> and <a href="https://github.com/manzt/numcodecs.js" target="_blank" rel="noopener">numcodecs</a> (Zarr access)</li>
           <li data-i18n-html="about.credit.hyparquet"><a href="https://github.com/hyparam/hyparquet" target="_blank" rel="noopener">hyparquet</a> (Parquet tile reading)</li>
           <li data-i18n-html="about.credit.pmtiles"><a href="https://github.com/protomaps/PMTiles" target="_blank" rel="noopener">PMTiles</a></li>
-          <li data-i18n-html="about.credit.basemaps">Basemaps from <a href="https://livingatlas.arcgis.com/" target="_blank" rel="noopener">ArcGIS Living Atlas</a></li>
-          <li data-i18n-html="about.credit.geoglows">Streams hydrographs and FIM from the
-            <a href="https://geoglows.org/" target="_blank" rel="noopener">GEOGLOWS River Forecast System</a> v2 and v3</li>
         </ul>
       </div>
     </div>

@@ -51,6 +51,20 @@ const BASEMAPS = [
     maxzoom: 19,
     tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],
     attribution: "Imagery © Esri, Maxar, Earthstar Geographics"
+  },
+  {
+    id: "topographic",
+    label: "Topographic (Esri)",
+    maxzoom: 19,
+    tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"],
+    attribution: "Tiles © Esri — Esri, HERE, Garmin, USGS, NGA, FAO, NOAA, © OpenStreetMap contributors, and the GIS User Community"
+  },
+  {
+    id: "usgstopo",
+    label: "Topographic (USGS)",
+    maxzoom: 16,
+    tiles: ["https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer/tile/{z}/{y}/{x}"],
+    attribution: "USGS — The National Map: 3DEP, NHD, GNIS, NLCD, NTD, and others"
   }
 ];
 const basemapStyle = (bm) => ({
@@ -98,7 +112,8 @@ const map = new maplibregl.Map({
   hash: "map",
   maxZoom: 13
 });
-map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-left");
+// Zoom +/- plus the compass button, which resets bearing (and pitch) back to north-up on click.
+map.addControl(new maplibregl.NavigationControl({ showCompass: true, visualizePitch: true }), "top-left");
 function setBasemap(id) {
   const bm = BASEMAPS.find((b) => b.id === id) ?? BASEMAPS[0];
   if (map.getLayer("basemap")) map.removeLayer("basemap");
@@ -107,26 +122,72 @@ function setBasemap(id) {
   const beforeId = (map.getStyle().layers ?? []).find((l) => l.id !== "basemap")?.id;
   map.addLayer({ id: "basemap", type: "raster", source: "basemap" }, beforeId);
 }
-function initBasemapPicker() {
-  const btn = document.getElementById("layer-btn");
-  const menu = document.getElementById("layer-menu");
-  if (!btn || !menu) return;
-  btn.replaceChildren(calciteIcon("layers"));
-  menu.innerHTML = "";
-  for (const bm of BASEMAPS) {
-    const opt = document.createElement("button");
-    opt.className = "layer-opt";
-    opt.setAttribute("role", "menuitemradio");
-    opt.textContent = bm.label;
-    opt.classList.toggle("active", bm.id === BASEMAPS[0].id);
-    opt.addEventListener("click", () => {
-      setBasemap(bm.id);
-      menu.querySelectorAll(".layer-opt").forEach((o) => o.classList.remove("active"));
-      opt.classList.add("active");
-      closeMenu();
-    });
-    menu.appendChild(opt);
+// Toggleable map overlays (many can be on at once). `on` is the default visibility; `raster`,
+// when present, is a source spec this module adds to the map (streams + flood are added elsewhere).
+// streams/flood default on even though the flood layer starts empty — it's created lazily in
+// rebuildFloodOverlay(), which reapplies this state so a toggle made before the layer exists sticks.
+const OVERLAYS = [
+  { layerId: "streams", labelKey: "layers.streams", on: true },
+  { layerId: "flood", labelKey: "layers.floodExtents", on: true },
+  {
+    layerId: "riverfld",
+    labelKey: "layers.riverfld",
+    on: false,
+    raster: {
+      type: "raster",
+      tiles: ["https://floods.ssec.wisc.edu/tiles/RIVER-FLDglobal-composite_current/{z}/{x}/{y}.png"],
+      tileSize: 256,
+      attribution: 'RIVER-FLD global flood composite © <a href="https://floods.ssec.wisc.edu/products/RIVER-FLDglobal-composite" target="_blank" rel="noopener">CIMSS/SSEC, UW–Madison</a> (VIIRS, George Mason University)'
+    }
+  },
+  {
+    layerId: "goes",
+    labelKey: "layers.goes",
+    on: false,
+    raster: {
+      type: "raster",
+      tiles: ["https://earthlive.maptiles.arcgis.com/arcgis/rest/services/GOES/GOES31D/MapServer/tile/{z}/{y}/{x}"],
+      tileSize: 256,
+      attribution: "GOES / Himawari colorized IR © NOAA, via Esri Living Atlas"
+    }
+  },
+  {
+    layerId: "viirs",
+    labelKey: "layers.viirs",
+    on: false,
+    raster: {
+      type: "raster",
+      tiles: ["https://modis.arcgis.com/arcgis/rest/services/VIIRS/ImageServer/exportImage?bbox={bbox-epsg-3857}&bboxSR=3857&imageSR=3857&size=256,256&format=png32&transparent=true&f=image"],
+      tileSize: 256,
+      attribution: "VIIRS true color © NASA Earthdata (GIBS), via Esri"
+    }
   }
+];
+const layerVisible = Object.fromEntries(OVERLAYS.map((o) => [o.layerId, o.on]));
+function applyLayerVisibility(layerId) {
+  if (!map.getLayer(layerId)) return;
+  map.setLayoutProperty(layerId, "visibility", layerVisible[layerId] ? "visible" : "none");
+}
+// Add the raster imagery/flood overlays. Inserted beneath the streams line layer (in reverse
+// list order, so overlays listed higher in the picker also render visually on top) and start
+// at their default visibility.
+function addRasterOverlays() {
+  const beforeId = map.getLayer("streams") ? "streams" : undefined;
+  for (const ov of [...OVERLAYS].reverse()) {
+    if (!ov.raster) continue;
+    if (!map.getSource(ov.layerId)) map.addSource(ov.layerId, ov.raster);
+    if (!map.getLayer(ov.layerId)) {
+      map.addLayer({
+        id: ov.layerId,
+        type: "raster",
+        source: ov.layerId,
+        layout: { visibility: layerVisible[ov.layerId] ? "visible" : "none" }
+      }, beforeId);
+    }
+  }
+}
+// Wire a map-control button to its dropdown menu: toggle on button click, close on outside click.
+function wireMenu(btn, menu) {
   const closeMenu = () => {
     menu.classList.add("hidden");
     btn.setAttribute("aria-expanded", "false");
@@ -136,15 +197,77 @@ function initBasemapPicker() {
     btn.setAttribute("aria-expanded", String(!open));
   });
   document.addEventListener("click", (e) => {
-    const t2 = e.target;
-    if (!menu.contains(t2) && !btn.contains(t2)) closeMenu();
+    const target = e.target;
+    if (!menu.contains(target) && !btn.contains(target)) closeMenu();
   });
+  return closeMenu;
+}
+// Basemap picker: single-choice radio group (only one basemap at a time).
+function initBasemapPicker() {
+  const btn = document.getElementById("basemap-btn");
+  const menu = document.getElementById("basemap-menu");
+  if (!btn || !menu) return;
+  btn.replaceChildren(calciteIcon("basemap"));
+  menu.innerHTML = "";
+  const closeMenu = wireMenu(btn, menu);
+  for (const bm of BASEMAPS) {
+    const opt = document.createElement("button");
+    opt.className = "layer-opt";
+    opt.setAttribute("role", "menuitemradio");
+    opt.textContent = bm.label;
+    const active = bm.id === BASEMAPS[0].id;
+    opt.setAttribute("aria-checked", String(active));
+    opt.classList.toggle("active", active);
+    opt.addEventListener("click", () => {
+      setBasemap(bm.id);
+      menu.querySelectorAll('[role="menuitemradio"]').forEach((o) => {
+        o.classList.remove("active");
+        o.setAttribute("aria-checked", "false");
+      });
+      opt.classList.add("active");
+      opt.setAttribute("aria-checked", "true");
+      closeMenu();
+    });
+    menu.appendChild(opt);
+  }
+}
+// Layer picker: independent on/off toggles (many overlays can be visible at once).
+function initLayerPicker() {
+  const btn = document.getElementById("layer-btn");
+  const menu = document.getElementById("layer-menu");
+  if (!btn || !menu) return;
+  btn.replaceChildren(calciteIcon("layers"));
+  menu.innerHTML = "";
+  wireMenu(btn, menu);
+  for (const ov of OVERLAYS) {
+    const opt = document.createElement("button");
+    opt.className = "layer-opt layer-toggle";
+    opt.setAttribute("role", "menuitemcheckbox");
+    opt.setAttribute("aria-checked", String(layerVisible[ov.layerId]));
+    const check = document.createElement("span");
+    check.className = "check";
+    check.setAttribute("aria-hidden", "true");
+    const label = document.createElement("span");
+    label.setAttribute("data-i18n", ov.labelKey);
+    label.textContent = t(ov.labelKey);
+    opt.append(check, label);
+    opt.addEventListener("click", () => {
+      const next = !layerVisible[ov.layerId];
+      layerVisible[ov.layerId] = next;
+      applyLayerVisibility(ov.layerId);
+      opt.setAttribute("aria-checked", String(next));
+    });
+    menu.appendChild(opt);
+  }
 }
 initBasemapPicker();
+initLayerPicker();
 const anim = new StreamAnimation(map, log);
 let mapLoaded = false;
 map.on("load", async () => {
   anim.addStreamsLayer();
+  applyLayerVisibility("streams");
+  addRasterOverlays();
   addInspectHighlightLayer();
   addFimTilesLayer();
   log("Basemap + streams loaded.", "success");
@@ -259,6 +382,8 @@ function rebuildFloodOverlay(view) {
     source: "flood",
     paint: { "raster-fade-duration": 0, "raster-resampling": "nearest" }
   }, "streams");
+  // The layer is recreated on every viewport/selection change, so reapply the picker's toggle state.
+  applyLayerVisibility("flood");
 }
 function refreshFloodCanvas() {
   const src = map.getSource("flood");
