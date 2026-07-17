@@ -113,6 +113,18 @@ body {
     gap: 6px;
 }
 
+/* GEOGLOWS wordmark in the controls header (served from /public). A light chip keeps the
+   dark-navy logo legible on the dark header surface. */
+.app-logo {
+    height: 30px;
+    width: auto;
+    display: block;
+    flex: 0 0 auto;
+    background: #fff;
+    border-radius: 6px;
+    padding: 6px 9px;
+}
+
 .icon-btn {
     width: 36px;
     height: 36px;
@@ -146,6 +158,10 @@ body {
 .icon-btn svg {
     width: 22px;
     height: 22px;
+}
+
+section h2 {
+    text-align: center;
 }
 
 /* language dropdown anchored under its header button */
@@ -403,8 +419,8 @@ button.mode.active {
     margin-bottom: 6px;
 }
 
-/* stream-style picker, below the forecast-date input */
-label[for="stream-style"] {
+/* space the stacked hydrology fields (forecast date, then stream style) in the narrow panel */
+.hydro-field + .hydro-field {
     margin-top: 12px;
 }
 
@@ -564,21 +580,7 @@ label[for="stream-style"] {
     box-shadow: 0 16px 48px rgba(var(--shadow-color), .6);
 }
 
-/* wide variant for the charts modal (holds the chart suites) */
-.modal.wide {
-    width: min(1200px, calc(100vw - 48px));
-    max-height: 90vh;
-}
-
-/* The charts modal is a FIXED height regardless of content, so switching tabs (retro's tall suite
-   vs. a single forecast chart vs. the details table) never resizes the dialog — the body scrolls
-   internally instead. (#id + .class outranks .modal.wide, so this height wins.) */
-#charts-modal .modal {
-    height: min(90vh, 900px);
-}
-
-/* medium variant for text-heavy modals (e.g. the About panel) — roomier than the 440px default
-   without the chart modal's full width */
+/* medium variant for text-heavy modals (e.g. the About panel) — roomier than the 440px default */
 .modal.medium {
     width: min(680px, calc(100vw - 40px));
     max-height: 88vh;
@@ -979,4 +981,96 @@ label[for="stream-style"] {
     width: 0;
     border-radius: 10px 0 0 0;
     transition: width .2s;
+}
+
+/* ---- charts dock ---------------------------------------------------------
+   The charts live inside the left panel. When a reach is inspected the panel
+   grows to half the viewport and the chart suite grows in *beneath* the
+   hydrology controls (date picker · stream style · action buttons), which stay
+   pinned so you can retune the forecast while reading the charts. The other
+   control sections (flood, legend, log) give way to the charts. Driven by the
+   `charts-open` class on <body> (openChartsDock/closeChartsDock in main.js);
+   main.js calls map.resize() during the transition to track the width change. */
+.panel {
+    transition: flex-basis .3s ease;
+}
+
+body.charts-open .panel {
+    flex-basis: 50%;
+}
+
+/* wide layout: the controls header spreads out into a row (logo · title · actions) */
+body.charts-open .panel header {
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px 16px;
+}
+
+body.charts-open .panel header .header-actions {
+    margin-left: auto;
+    /* wide layout: show the actions in reversed order (translate · info · theme · settings) */
+    flex-direction: row-reverse;
+}
+
+/* pin the hydrology controls to their natural height; the dock takes the rest */
+body.charts-open #scroll {
+    flex: 0 0 auto;
+    overflow: visible;
+}
+
+/* the flood / legend / log sections step aside for the charts */
+body.charts-open #scroll > section:not(#hydrology-section) {
+    display: none;
+}
+
+#charts-dock {
+    display: none;
+}
+
+body.charts-open #charts-dock {
+    display: flex;
+    flex: 1 1 auto;
+    min-height: 0;
+    flex-direction: column;
+}
+
+/* docked header sits flush against the panel edge, not floating like a modal */
+#charts-dock .modal-head {
+    border-radius: 0;
+}
+
+/* wide layout: lay the hydrology controls out in a row so they use the extra
+   width and free up vertical space for the charts below */
+body.charts-open #hydrology-section {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 12px;
+}
+
+body.charts-open #hydrology-section h2 {
+    flex-basis: 100%;
+    margin-bottom: 0;
+}
+
+body.charts-open #hydrology-section .hydro-field {
+    flex: 1 1 220px;
+    margin-top: 0;
+}
+
+body.charts-open #hydrology-section .hydro-actions {
+    margin-top: 0;
+    align-self: flex-end;
+}
+
+/* keep the map overlays clear of the widened panel */
+body.charts-open #legend-overlay {
+    left: calc(50% + 14px);
+}
+
+body.charts-open #player {
+    left: 75%;
+    width: min(640px, calc(50vw - 48px));
+    min-width: 0;
 }

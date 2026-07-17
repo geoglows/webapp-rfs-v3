@@ -10,6 +10,7 @@
   <div id="map"></div>
   <div id="left-panel" class="panel">
     <header>
+      <img id="app-logo" class="app-logo" src="/geoglows-logo-nav.png" alt="GEOGLOWS" />
       <h1 data-i18n="app.title">River Forecast System v3</h1>
       <div class="header-actions">
         <button id="btn-settings" class="icon-btn" data-i18n-title="settings.label" data-i18n-aria-label="settings.label" title="Settings" aria-label="Settings"></button>
@@ -30,23 +31,25 @@
     <div id="scroll">
       <section id="hydrology-section">
         <h2 data-i18n="hydro.heading">Hydrology predictions</h2>
-        <label class="field-label" for="forecast-date" data-i18n="hydro.forecastDate">Forecast Initialization Date</label>
-        <input id="forecast-date" type="date" class="select" />
-        <label class="field-label" for="stream-style" data-i18n="stream.style">Stream style</label>
-        <select id="stream-style" class="select">
-          <option value="standard" data-i18n="stream.style.standard">Standard</option>
-          <option value="forecast15" selected data-i18n="stream.style.forecast15">15 Day Forecast Timeseries</option>
-          <option value="maxflow" data-i18n="stream.style.maxflow">Forecasted Max Flows</option>
-          <option value="timetopeak" data-i18n="stream.style.timetopeak">Time to Peak</option>
-          <option value="q95" data-i18n="stream.style.q95">Time to Peak</option>
-        </select>
+        <div class="hydro-field">
+          <label class="field-label" for="forecast-date" data-i18n="hydro.forecastDate">Forecast Initialization Date</label>
+          <input id="forecast-date" type="date" class="select" />
+        </div>
+        <div class="hydro-field">
+          <label class="field-label" for="stream-style" data-i18n="stream.style">Stream style</label>
+          <select id="stream-style" class="select">
+            <option value="standard" data-i18n="stream.style.standard">Standard</option>
+            <option value="forecast15" selected data-i18n="stream.style.forecast15">15 Day Forecast Timeseries</option>
+            <option value="maxflow" data-i18n="stream.style.maxflow">Forecasted Max Flows</option>
+            <option value="timetopeak" data-i18n="stream.style.timetopeak">Time to Peak</option>
+            <option value="q95" data-i18n="stream.style.q95">Time to Peak</option>
+          </select>
+        </div>
         <div class="hydro-actions">
           <button id="btn-charts" class="icon-btn" data-i18n-title="hydro.charts" data-i18n-aria-label="hydro.charts"
             title="View discharge charts" aria-label="View discharge charts"></button>
           <button id="btn-bookmarks" class="icon-btn" data-i18n-title="hydro.bookmarks.title" data-i18n-aria-label="hydro.bookmarks.aria"
             title="Bookmarked rivers" aria-label="Browse bookmarked rivers"></button>
-          <button id="btn-reports" class="icon-btn" data-i18n-title="hydro.reports" data-i18n-aria-label="hydro.reports"
-            title="Generate reports" aria-label="Generate reports"></button>
           <button id="btn-search-river" class="icon-btn" data-i18n-title="hydro.searchRiver" data-i18n-aria-label="hydro.searchRiver"
             title="Search River ID" aria-label="Search River ID"></button>
           <button id="btn-toggle-slider" class="icon-btn" data-i18n-title="stream.hideSlider" data-i18n-aria-label="stream.hideSlider"
@@ -93,6 +96,32 @@
       </section>
 
       <section id="log-container"><div id="log"></div></section>
+    </div>
+
+    <!-- charts dock — shown in place of the controls when a reach is inspected (map river click)
+         or via the header charts button. Widens the left column to half the viewport so the map
+         stays visible and interactive on the right. Forecast / Retrospective / Details tabs. -->
+    <div id="charts-dock">
+      <div class="modal-head">
+        <h3 id="charts-modal-title" data-i18n="charts.heading">Discharge charts</h3>
+        <button class="modal-close" id="charts-close" data-i18n-aria-label="common.close" aria-label="Close">✕</button>
+      </div>
+      <div class="charts-tabs mode-row" role="tablist">
+        <button id="charts-tab-forecast" class="mode active" role="tab" aria-selected="true"
+          aria-controls="charts-panel-forecast" data-charts-tab="forecast"
+          data-i18n="charts.tab.forecast">Forecast</button>
+        <button id="charts-tab-retro" class="mode" role="tab" aria-selected="false"
+          aria-controls="charts-panel-retro" data-charts-tab="retro"
+          data-i18n="charts.tab.retro">Retrospective</button>
+        <button id="charts-tab-details" class="mode" role="tab" aria-selected="false"
+          aria-controls="charts-panel-details" data-charts-tab="details"
+          data-i18n="charts.tab.details">Details</button>
+      </div>
+      <div class="modal-body">
+        <div id="charts-panel-forecast" role="tabpanel" aria-labelledby="charts-tab-forecast"></div>
+        <div id="charts-panel-retro" role="tabpanel" aria-labelledby="charts-tab-retro" hidden></div>
+        <div id="charts-panel-details" role="tabpanel" aria-labelledby="charts-tab-details" hidden></div>
+      </div>
     </div>
   </div>
 
@@ -181,34 +210,6 @@
           <input type="checkbox" id="set-legend" checked />
           <span data-i18n="settings.showLegend">Show forecast return-period legend</span>
         </label>
-      </div>
-    </div>
-  </div>
-
-  <!-- discharge charts modal — the single modal for an inspected reach. Opened by a map river click
-       and by the header charts button; Forecast + Retrospective charts and a Details (attributes) tab. -->
-  <div id="charts-modal" class="modal-backdrop hidden">
-    <div class="modal wide" role="dialog" aria-modal="true" aria-labelledby="charts-modal-title">
-      <div class="modal-head">
-        <h3 id="charts-modal-title" data-i18n="charts.heading">Discharge charts</h3>
-        <button class="modal-close" data-close="charts-modal" data-i18n-aria-label="common.close" aria-label="Close">✕</button>
-      </div>
-      <!-- forecast / retrospective / details tabs (wired in main.ts) -->
-      <div class="charts-tabs mode-row" role="tablist">
-        <button id="charts-tab-forecast" class="mode active" role="tab" aria-selected="true"
-          aria-controls="charts-panel-forecast" data-charts-tab="forecast"
-          data-i18n="charts.tab.forecast">Forecast</button>
-        <button id="charts-tab-retro" class="mode" role="tab" aria-selected="false"
-          aria-controls="charts-panel-retro" data-charts-tab="retro"
-          data-i18n="charts.tab.retro">Retrospective</button>
-        <button id="charts-tab-details" class="mode" role="tab" aria-selected="false"
-          aria-controls="charts-panel-details" data-charts-tab="details"
-          data-i18n="charts.tab.details">Details</button>
-      </div>
-      <div class="modal-body">
-        <div id="charts-panel-forecast" role="tabpanel" aria-labelledby="charts-tab-forecast"></div>
-        <div id="charts-panel-retro" role="tabpanel" aria-labelledby="charts-tab-retro" hidden></div>
-        <div id="charts-panel-details" role="tabpanel" aria-labelledby="charts-tab-details" hidden></div>
       </div>
     </div>
   </div>

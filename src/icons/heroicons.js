@@ -5,7 +5,6 @@ import sun from "heroicons/24/outline/sun.svg?raw";
 import moon from "heroicons/24/outline/moon.svg?raw";
 import chartBarSolid from "heroicons/24/solid/chart-bar.svg?raw";
 import bookmarkSolid from "heroicons/24/solid/bookmark.svg?raw";
-import clipboardDocumentListSolid from "heroicons/24/solid/clipboard-document-list.svg?raw";
 import magnifyingGlassSolid from "heroicons/24/solid/magnifying-glass.svg?raw";
 import clockSolid from "heroicons/24/solid/clock.svg?raw";
 const ICONS = {
@@ -16,7 +15,6 @@ const ICONS = {
   moon,
   "chart-bar-solid": chartBarSolid,
   "bookmark-solid": bookmarkSolid,
-  "clipboard-document-list-solid": clipboardDocumentListSolid,
   "magnifying-glass-solid": magnifyingGlassSolid,
   "clock-solid": clockSolid
 };

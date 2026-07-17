@@ -13,7 +13,6 @@ const en = {
   "hydro.charts": "View discharge charts",
   "hydro.bookmarks.title": "Bookmarked rivers",
   "hydro.bookmarks.aria": "Browse bookmarked rivers",
-  "hydro.reports": "Generate reports",
   "hydro.searchRiver": "Search River ID",
   // stream style picker
   "stream.style": "Stream style",
@@ -93,7 +92,6 @@ const es = {
   "hydro.charts": "Ver gráficos de caudal",
   "hydro.bookmarks.title": "Ríos guardados",
   "hydro.bookmarks.aria": "Explorar ríos guardados",
-  "hydro.reports": "Generar informes",
   "hydro.searchRiver": "Buscar ID de río",
   "stream.style": "Estilo de ríos",
   "stream.style.standard": "Estándar",
@@ -166,7 +164,6 @@ const fr = {
   "hydro.charts": "Voir les graphiques de débit",
   "hydro.bookmarks.title": "Rivières enregistrées",
   "hydro.bookmarks.aria": "Parcourir les rivières enregistrées",
-  "hydro.reports": "Générer des rapports",
   "hydro.searchRiver": "Rechercher un ID de rivière",
   "stream.style": "Style des rivières",
   "stream.style.standard": "Standard",

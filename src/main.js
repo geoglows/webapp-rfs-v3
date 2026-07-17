@@ -423,7 +423,6 @@ $("btn-language").replaceChildren(heroIcon("language"));
 $("btn-search-river").replaceChildren(heroIcon("magnifying-glass-solid"));
 $("btn-charts").replaceChildren(heroIcon("chart-bar-solid"));
 $("btn-bookmarks").replaceChildren(heroIcon("bookmark-solid"));
-$("btn-reports").replaceChildren(heroIcon("clipboard-document-list-solid"));
 $("btn-toggle-slider").replaceChildren(heroIcon("clock-solid"));
 function applyTheme(theme) {
   document.documentElement.setAttribute("data-theme", theme);
@@ -441,7 +440,7 @@ const closeModal = (id) => $(id).classList.add("hidden");
 $("btn-info").addEventListener("click", () => openModal("info-modal"));
 $("btn-settings").addEventListener("click", () => openModal("settings-modal"));
 document.querySelectorAll("[data-close]").forEach((el) => el.addEventListener("click", () => closeModal(el.dataset.close)));
-for (const id of ["info-modal", "settings-modal", "charts-modal"]) {
+for (const id of ["info-modal", "settings-modal"]) {
   $(id).addEventListener("click", (e) => {
     if (e.target === $(id)) closeModal(id);
   });
@@ -449,6 +448,12 @@ for (const id of ["info-modal", "settings-modal", "charts-modal"]) {
 const CHARTS_TABS = ["forecast", "retro", "details"];
 const chartsRendered = { forecast: false, retro: false, details: false };
 function renderForecastCharts() {
+  // Don't fetch the forecast until a river is actually selected — opening the panel from the
+  // header button (no reach) shows the same empty placeholder as the retro/details tabs.
+  if (selectedRiverId == null) {
+    $("charts-panel-forecast").innerHTML = `<div class="charts-empty"><p>${t("charts.empty.title")}</p><p class="hint">${t("charts.empty.hint")}</p></div>`;
+    return;
+  }
   $("charts-panel-forecast").innerHTML = `<div id="charts-fc-block" class="ts-loading"><span class="spinner"></span>Loading forecast…</div>`;
   loadForecastTimeseries("charts-fc-block");
 }
@@ -523,6 +528,27 @@ function setInspectHighlight(riverId) {
   if (!map.getLayer("inspect-highlight")) return;
   map.setFilter("inspect-highlight", riverId == null ? INSPECT_NO_MATCH : ["in", ["get", "riverId"], ["literal", [riverId]]]);
 }
+// The charts live in a dock that widens the left panel to half the viewport (see style.css),
+// keeping the map visible and interactive on the right. Toggled by `charts-open` on <body>.
+// The MapLibre canvas doesn't track sibling layout changes, so resize it across the transition.
+function reflowMap(durationMs = 340) {
+  const start = performance.now();
+  const step = () => {
+    map.resize();
+    if (performance.now() - start < durationMs) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+function openChartsDock() {
+  document.body.classList.add("charts-open");
+  reflowMap();
+}
+function closeChartsDock() {
+  if (!document.body.classList.contains("charts-open")) return;
+  document.body.classList.remove("charts-open");
+  reflowMap();
+  void import("./plots/orchestrator").then((m) => m.clearPlots());
+}
 function openChartsModal(props) {
   if (props) {
     selectedRiverProps = props;
@@ -532,15 +558,14 @@ function openChartsModal(props) {
   $("charts-modal-title").textContent = selectedRiverId != null ? `${t("river.heading")} ${selectedRiverId}` : t("charts.heading");
   for (const name of CHARTS_TABS) chartsRendered[name] = false;
   activateChartsTab("forecast");
-  openModal("charts-modal");
+  openChartsDock();
 }
 $("btn-charts").addEventListener("click", () => openChartsModal());
-$("charts-modal").addEventListener("click", (e) => {
-  if (e.target === $("charts-modal")) void import("./plots/orchestrator").then((m) => m.clearPlots());
-});
-$("charts-modal").querySelector("[data-close]").addEventListener("click", () => void import("./plots/orchestrator").then((m) => m.clearPlots()));
+$("charts-close").addEventListener("click", closeChartsDock);
 document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape") document.querySelectorAll(".modal-backdrop").forEach((m) => m.classList.add("hidden"));
+  if (e.key !== "Escape") return;
+  document.querySelectorAll(".modal-backdrop").forEach((m) => m.classList.add("hidden"));
+  closeChartsDock();
 });
 const legendToggle = document.getElementById("set-legend");
 legendToggle?.addEventListener("change", () => document.getElementById("legend-overlay")?.classList.toggle("hidden", !legendToggle.checked));
