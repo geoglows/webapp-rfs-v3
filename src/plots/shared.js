@@ -17,6 +17,30 @@ Chart.register(LineController, LineElement, PointElement, LinearScale, CategoryS
 Chart.defaults.plugins.title.font = { ...Chart.defaults.plugins.title.font, size: 18 };
 Chart.defaults.plugins.legend.position = "right";
 Chart.defaults.scale.title.font = { size: 14, weight: "bold" };
+// Legend markers read by dataset shape instead of the default outlined box: a line series shows a
+// short line in its own colour/width/dash, a filled band (fill + no border) shows a filled square,
+// and a scatter series keeps its point marker. Centralized here so every chart's legend matches.
+Chart.defaults.plugins.legend.labels.usePointStyle = true;
+const baseGenerateLabels = Chart.defaults.plugins.legend.labels.generateLabels;
+if (typeof baseGenerateLabels === "function") {
+  Chart.defaults.plugins.legend.labels.generateLabels = (chart) => {
+    const items = baseGenerateLabels(chart);
+    for (const item of items) {
+      const ds = chart.data.datasets[item.datasetIndex];
+      if (!ds) continue;
+      if (ds.type === "scatter" || ds.showLine === false) continue; // keep the point marker
+      if (Boolean(ds.fill) && ds.fill !== false && !ds.borderWidth) {
+        item.pointStyle = "rect"; // filled band → filled square
+      } else {
+        item.pointStyle = "line"; // line series → line in its own colour/width/dash
+        item.strokeStyle = ds.borderColor;
+        item.lineWidth = ds.borderWidth || 2;
+        item.lineDash = ds.borderDash || [];
+      }
+    }
+    return items;
+  };
+}
 let AXIS = "#94a3b8";
 let GRID = "rgba(148,163,184,.12)";
 let TEXT = "#e2e8f0";

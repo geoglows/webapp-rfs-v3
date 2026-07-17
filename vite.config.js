@@ -82,7 +82,7 @@ var vite_config_default = defineConfig({
   plugins: [serveDataDir("data")],
   worker: { format: "es" },
   server: {
-    allowedHosts: [".ngrok-free.app", ".ngrok.app", ".ngrok.io"],
+    allowedHosts: [".ngrok-free.app", ".ngrok.app", ".ngrok.io", "tunnel.hales.app"],
     watch: { ignored: ["**/data/**"] },
     proxy: {
       "/forecast-zarr": {

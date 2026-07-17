@@ -63,7 +63,6 @@
         <button id="btn-flood-mode" class="btn toggle" data-i18n="flood.enable">Enable flood mapping mode</button>
         <p class="hint" id="flood-mode-hint" data-i18n="flood.hintOff">Off — click a river to inspect its attributes.
           Turn this on to select reaches for a flood map.</p>
-        <p class="hint" data-i18n-html="flood.testSite">Zoom to test flood site in <a href="/index.html#map=11.83/40.26207/-103.78294">Fort Morgan Colorado</a></p>
         <div id="flood-controls" class="mode-off">
           <div id="selection-info" class="readout" data-i18n="flood.noReaches">No reaches selected.</div>
           <div id="warning" class="warning hidden"></div>
@@ -172,10 +171,7 @@
       <div class="modal-body">
         <p data-i18n="about.intro">Global GEOGLOWS forecast animation · select reaches · FLDPLN flood extent
           for the segments between them.</p>
-        <h4 data-i18n="about.coverageHeading">Coverage &amp; model notes</h4>
-        <p data-i18n-html="about.coverage"><strong>Flood library coverage is the small N40W104 demo tile only</strong> (3 reaches
-          in Colorado, highlighted). Corridors elsewhere animate and subset, but produce no flood
-          extent until a library tile exists there.</p>
+        <h4 data-i18n="about.coverageHeading">Model notes</h4>
         <p data-i18n-html="about.model">FLDPLN is a steady-state, DEM-only screening model driven by synthetic rating curves;
           extents saturate at the library's maximum stage. <strong>Not for emergency use.</strong>
           Terrain: FABDEM (© DLR / Airbus, CC BY-NC-SA 4.0). Hydrography &amp; forecast: GEOGLOWS.</p>
