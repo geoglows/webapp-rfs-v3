@@ -5,10 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "data": "http-server ./data -p 8090 --cors -c3600"
+    "data": "http-server ./data -p 8090 --cors -c3600",
+    "build:fim-tiles": "node scripts/build_fim_tile_boundaries.mjs"
   },
   "dependencies": {
     "@esri/calcite-ui-icons": "^4.5.0",
@@ -28,7 +29,6 @@
     "@types/node": "^26.1.1",
     "http-server": "^14.1.1",
     "typescript": "^5.5.0",
-    "vite": "^8.1.4",
-    "vitest": "^4.1.10"
+    "vite": "^8.1.5"
   }
 }

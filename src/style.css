@@ -127,9 +127,20 @@ body {
     transition: .12s;
 }
 
-.icon-btn:hover {
+.icon-btn:hover:not(:disabled) {
     color: var(--accent);
     border-color: var(--accent);
+}
+
+/* toggle-style icon buttons (e.g. the timeseries-slider toggle) show an active/disabled state */
+.icon-btn.active {
+    color: var(--accent);
+    border-color: var(--accent);
+}
+
+.icon-btn:disabled {
+    opacity: .4;
+    cursor: not-allowed;
 }
 
 .icon-btn svg {
@@ -390,6 +401,11 @@ button.mode.active {
     font-size: 14.5px;
     font-weight: 600;
     margin-bottom: 6px;
+}
+
+/* stream-style picker, below the forecast-date input */
+label[for="stream-style"] {
+    margin-top: 12px;
 }
 
 /* hydrology-prediction action buttons, below the forecast date picker */

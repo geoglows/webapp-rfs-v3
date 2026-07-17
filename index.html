@@ -8,8 +8,6 @@
 </head>
 <body>
   <div id="map"></div>
-
-  <!-- single left column: pinned title, then all controls -->
   <div id="left-panel" class="panel">
     <header>
       <h1 data-i18n="app.title">River Forecast System v3</h1>
@@ -19,8 +17,7 @@
         <button id="btn-info" class="icon-btn" data-i18n-title="about.label" data-i18n-aria-label="about.label" title="About" aria-label="About"></button>
         <div id="lang-control">
           <button id="btn-language" class="icon-btn" data-i18n-title="lang.title" data-i18n-aria-label="lang.aria" title="Language" aria-label="Change language" aria-haspopup="true" aria-expanded="false"></button>
-          <!-- Language options are the source of truth here; initLanguagePicker() (src/main.ts) wires
-               them by their data-lang code. Add/remove/reorder languages by editing these buttons. -->
+          <!-- initLanguagePicker() (src/main.ts) references these entries. -->
           <div id="lang-menu" class="map-menu hidden" role="menu">
             <button class="layer-opt" role="menuitemradio" data-lang="en">English</button>
             <button class="layer-opt" role="menuitemradio" data-lang="es">Español</button>
@@ -35,6 +32,14 @@
         <h2 data-i18n="hydro.heading">Hydrology predictions</h2>
         <label class="field-label" for="forecast-date" data-i18n="hydro.forecastDate">Forecast Initialization Date</label>
         <input id="forecast-date" type="date" class="select" />
+        <label class="field-label" for="stream-style" data-i18n="stream.style">Stream style</label>
+        <select id="stream-style" class="select">
+          <option value="standard" data-i18n="stream.style.standard">Standard</option>
+          <option value="forecast15" selected data-i18n="stream.style.forecast15">15 Day Forecast Timeseries</option>
+          <option value="maxflow" data-i18n="stream.style.maxflow">Forecasted Max Flows</option>
+          <option value="timetopeak" data-i18n="stream.style.timetopeak">Time to Peak</option>
+          <option value="q95" data-i18n="stream.style.q95">Time to Peak</option>
+        </select>
         <div class="hydro-actions">
           <button id="btn-charts" class="icon-btn" data-i18n-title="hydro.charts" data-i18n-aria-label="hydro.charts"
             title="View discharge charts" aria-label="View discharge charts"></button>
@@ -44,23 +49,19 @@
             title="Generate reports" aria-label="Generate reports"></button>
           <button id="btn-search-river" class="icon-btn" data-i18n-title="hydro.searchRiver" data-i18n-aria-label="hydro.searchRiver"
             title="Search River ID" aria-label="Search River ID"></button>
+          <button id="btn-toggle-slider" class="icon-btn" data-i18n-title="stream.hideSlider" data-i18n-aria-label="stream.hideSlider"
+            title="Hide timeseries slider" aria-label="Hide timeseries slider"></button>
         </div>
       </section>
 
       <!-- ── Flood mapping ── -->
       <section>
         <h2 data-i18n="flood.heading">Flood Mapping</h2>
-        <button id="btn-flood-mode" class="btn toggle" data-i18n="flood.enable">🌊 Enable flood mapping mode</button>
+        <button id="btn-flood-mode" class="btn toggle" data-i18n="flood.enable">Enable flood mapping mode</button>
         <p class="hint" id="flood-mode-hint" data-i18n="flood.hintOff">Off — click a river to inspect its attributes.
-          Turn this on to mark inlets &amp; outlets for a flood map.</p>
+          Turn this on to select reaches for a flood map.</p>
         <p class="hint" data-i18n-html="flood.testSite">Zoom to test flood site in <a href="/index.html#map=11.83/40.26207/-103.78294">Fort Morgan Colorado</a></p>
         <div id="flood-controls" class="mode-off">
-          <div class="mode-row" role="tablist">
-            <button id="mode-inlet" class="mode active" data-i18n="flood.inlet">＋ Inlet</button>
-            <button id="mode-outlet" class="mode" data-i18n="flood.outlet">✦ Outlet</button>
-          </div>
-          <p class="hint" data-i18n-html="flood.corridorHint">Click reaches on the map to mark them. The corridor = every segment
-            downstream of an inlet <em>and</em> upstream of an outlet.</p>
           <div id="selection-info" class="readout" data-i18n="flood.noReaches">No reaches selected.</div>
           <div id="warning" class="warning hidden"></div>
           <button id="btn-create-flood" class="btn primary" disabled data-i18n="flood.create">Create flood map</button>
@@ -78,7 +79,7 @@
             periods).</p>
         </div>
         <div id="qctl-uniform" class="ctl hidden">
-          <label for="uniform" data-i18n="flood.uniformLabel">Discharge for every corridor reach (m³/s)</label>
+          <label for="uniform" data-i18n="flood.uniformLabel">Discharge for every selected reach (m³/s)</label>
           <input id="uniform" type="number" min="0" step="10" value="400" />
         </div>
         <div id="flood-status" class="hint" data-i18n="flood.status">Flood updates live as you move the slider.</div>
@@ -140,7 +141,7 @@
         <button class="modal-close" data-close="info-modal" data-i18n-aria-label="common.close" aria-label="Close">✕</button>
       </div>
       <div class="modal-body">
-        <p data-i18n="about.intro">Global GEOGLOWS forecast animation · pick inlets &amp; outlets · FLDPLN flood extent
+        <p data-i18n="about.intro">Global GEOGLOWS forecast animation · select reaches · FLDPLN flood extent
           for the segments between them.</p>
         <h4 data-i18n="about.coverageHeading">Coverage &amp; model notes</h4>
         <p data-i18n-html="about.coverage"><strong>Flood library coverage is the small N40W104 demo tile only</strong> (3 reaches
@@ -212,6 +213,6 @@
     </div>
   </div>
 
-  <script type="module" src="/src/main.ts"></script>
+  <script type="module" src="/src/main.js"></script>
 </body>
 </html>
