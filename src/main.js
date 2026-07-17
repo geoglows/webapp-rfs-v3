@@ -158,6 +158,8 @@ map.on("load", async () => {
     const feats = map.queryRenderedFeatures(box, { layers: ["streams"] });
     const hit = feats.find((f) => f.properties?.riverId != null);
     if (hit) {
+      // Clicking a reach while zoomed out fluidly zooms in to it so the stream fills the view.
+      if (map.getZoom() < 10) map.easeTo({ center: e.lngLat, zoom: 10 });
       if (floodMappingMode) selection?.select(Number(hit.properties.riverId));
       else openChartsModal(hit.properties);
       return;
