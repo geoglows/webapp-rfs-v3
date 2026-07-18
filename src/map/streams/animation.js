@@ -11,6 +11,8 @@ const STYLESET_SUB = { forecast15: "app-styles", maxflow: "max-flow", timetopeak
 const RET_COLORS = ["#3182bd", "#fee08b", "#fdae61", "#f46d43", "#d73027", "#a50026", "#7a0177"];
 // Uniform stream color for the "Standard" styleset (matches the normal-flow return-period blue).
 const STANDARD_COLOR = "#3182bd";
+// Width of the smallest reaches, and the single width every reach takes in flood mapping mode.
+const WIDTH_BASE = 4;
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 class StreamAnimation {
   map;
@@ -27,6 +29,8 @@ class StreamAnimation {
   // which styleset drives the streams: "forecast15" (animated timeseries) is the only one that
   // colors by return period and uses the player; the others show a uniform blue network.
   styleset = "forecast15";
+  // Flood mapping mode flattens the network to one uniform width (see streamWidthExpr).
+  floodMode = false;
   currentDate = null;
   idFi = /* @__PURE__ */ new Map();
   // riverId -> riverIndex (cube row; -1 = no forecast)
@@ -80,14 +84,19 @@ class StreamAnimation {
   }
   /** Zoom-scaled line-width expression. When `animated`, thickness comes from the per-reach `thk`
    * feature-state (falling back to strahlerOrder); otherwise it comes straight from strahlerOrder
-   * so a non-animated styleset ignores any stale animation state. Per-zoom scale runs z3 global,
+   * so a non-animated styleset ignores any stale animation state. In flood mapping mode the
+   * per-river tiers are dropped entirely and every reach draws at the base width, so the selection
+   * highlights and flood raster read on top of an even network. Per-zoom scale runs z3 global,
    * z7 regional, z12 local, and keeps growing past z12 for an easy-to-click hit box. */
   streamWidthExpr(animated) {
-    const thkSource = animated
-      ? ["coalesce", ["feature-state", "thk"], ["get", "strahlerOrder"]]
-      : ["get", "strahlerOrder"];
-    const THK = ["max", 1, ["min", 6, thkSource]];
-    const RAMP = ["step", THK, 4, 3, 10, 5, 12];
+    let RAMP = WIDTH_BASE;
+    if (!this.floodMode) {
+      const thkSource = animated
+        ? ["coalesce", ["feature-state", "thk"], ["get", "strahlerOrder"]]
+        : ["get", "strahlerOrder"];
+      const THK = ["max", 1, ["min", 6, thkSource]];
+      RAMP = ["step", THK, WIDTH_BASE, 3, 9, 5, 10];
+    }
     return [
       "interpolate",
       ["linear"],
@@ -142,6 +151,13 @@ class StreamAnimation {
     this.applyPaint();
     if (styleset === "standard") { this.cube = null; return; }
     this.loadData();
+  }
+  /** Flood mapping mode: flatten the network to one uniform width. Colors are left alone — only
+   * the width tiers go away, so the reach highlights stand out against an even network. */
+  setFloodMode(on) {
+    if (this.floodMode === on) return;
+    this.floodMode = on;
+    this.applyPaint();
   }
   /** Set the forecast-initialization date and (re)load the active styleset for it. */
   setDate(date) {

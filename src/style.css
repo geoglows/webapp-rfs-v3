@@ -211,10 +211,14 @@ section h2 {
     flex: 0 0 auto;
 }
 
-/* log */
+/* log — lives in the settings modal, under the display checkboxes */
 #log-container {
-    max-height: 130px;
+    max-height: 220px;
     overflow-y: auto;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 10px;
 }
 
 #log {
@@ -409,6 +413,16 @@ button.mode.active {
 
 .select:hover {
     border-color: var(--accent);
+}
+
+/* locked while flood mapping mode owns the stream rendering */
+.select:disabled {
+    opacity: .45;
+    cursor: not-allowed;
+}
+
+.select:disabled:hover {
+    border-color: var(--border);
 }
 
 /* field caption above an input (e.g. the forecast-date picker) */
@@ -1033,12 +1047,79 @@ button.mode.active {
     transition: width .2s;
 }
 
+/* forecast-driven flood animation player (left panel, inside #qctl-forecast).
+   Reuses the bottom player's .timewrap / .timerow / .speedwrap layout at a size
+   that fits the sidebar column. */
+.fc-player {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+#btn-fc-play {
+    flex: 0 0 auto;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: var(--on-accent);
+    font-size: 13px;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    transition: transform .1s;
+}
+
+#btn-fc-play:hover:not(:disabled) {
+    transform: scale(1.06);
+}
+
+#btn-fc-play:disabled {
+    opacity: .4;
+    cursor: default;
+}
+
+#fc-time-label {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 12.5px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#fc-step-label {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 12px;
+    color: var(--text-dim);
+    flex: 0 0 auto;
+}
+
+#fc-slider {
+    width: 100%;
+    accent-color: var(--accent);
+    cursor: pointer;
+    height: 4px;
+}
+
+#fc-speed {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 12.5px;
+    padding: 3px 4px;
+    cursor: pointer;
+}
+
 /* ---- charts dock ---------------------------------------------------------
    The charts live inside the left panel. When a reach is inspected the panel
    grows to half the viewport and the chart suite grows in *beneath* the
    hydrology controls (date picker · stream style · action buttons), which stay
    pinned so you can retune the forecast while reading the charts. The other
-   control sections (flood, legend, log) give way to the charts. Driven by the
+   control sections (flood, legend) give way to the charts. Driven by the
    `charts-open` class on <body> (openChartsDock/closeChartsDock in main.js);
    main.js calls map.resize() during the transition to track the width change. */
 .panel {

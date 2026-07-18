@@ -61,8 +61,15 @@
       <section>
         <h2 data-i18n="flood.heading">Flood Mapping</h2>
         <button id="btn-flood-mode" class="btn toggle" data-i18n="flood.enable">Enable flood mapping mode</button>
-        <p class="hint" id="flood-mode-hint" data-i18n="flood.hintOff">Off — click a river to inspect its attributes.
-          Turn this on to select reaches for a flood map.</p>
+        <div class="hydro-field">
+          <label class="field-label" for="flood-style" data-i18n="flood.style">Flood style</label>
+          <select id="flood-style" class="select">
+            <option value="manual" data-i18n="flood.style.manual">Manually Specified Flow</option>
+            <option value="returnperiod" selected data-i18n="flood.style.returnperiod">Return Period Indexed</option>
+            <option value="forecast" data-i18n="flood.style.forecast">Forecast Timeseries</option>
+            <option value="forecastmax" data-i18n="flood.style.forecastmax">Forecast Maximum</option>
+          </select>
+        </div>
         <div id="flood-controls" class="mode-off">
           <div id="selection-info" class="readout" data-i18n="flood.noReaches">No reaches selected.</div>
           <div id="warning" class="warning hidden"></div>
@@ -70,19 +77,36 @@
           <button id="btn-clear" class="btn ghost" data-i18n="flood.clear">Clear selection</button>
         </div>
 
-        <div class="mode-row" role="tablist">
-          <button id="qmode-ladder" class="mode active" data-i18n="flood.qLadder">Flow ladder</button>
-          <button id="qmode-uniform" class="mode" data-i18n="flood.qUniform">Uniform Q</button>
-        </div>
         <div id="qctl-ladder" class="ctl">
           <label for="ladder"><span data-i18n="flood.dischargeLevel">Discharge level</span> <em id="ladder-val"></em></label>
           <input id="ladder" type="range" min="0" max="8" step="0.05" value="4" />
-          <p class="hint" data-i18n="flood.ladderHint">Per-reach ladder from the rating curves (demo stand-in for return
-            periods).</p>
         </div>
         <div id="qctl-uniform" class="ctl hidden">
           <label for="uniform" data-i18n="flood.uniformLabel">Discharge for every selected reach (m³/s)</label>
           <input id="uniform" type="number" min="0" step="10" value="400" />
+        </div>
+        <!-- forecast player: drives the extent animation from the selected reaches' downloaded
+             forecast hydrographs. Shown only for the "Forecast Timeseries" flood style. -->
+        <div id="qctl-forecast" class="ctl hidden">
+          <div class="fc-player">
+            <button id="btn-fc-play" data-i18n-title="flood.fcPlay" title="Play / pause the forecast animation" disabled>▶</button>
+            <div class="timewrap">
+              <div class="timerow">
+                <span id="fc-time-label">—</span>
+                <span id="fc-step-label">–/–</span>
+              </div>
+              <input id="fc-slider" type="range" min="0" max="0" step="1" value="0" disabled />
+            </div>
+            <div class="speedwrap">
+              <label for="fc-speed" data-i18n="player.speed">Speed</label>
+              <select id="fc-speed">
+                <option value="1">1×</option>
+                <option value="2">2×</option>
+                <option value="4" selected>4×</option>
+                <option value="8">8×</option>
+              </select>
+            </div>
+          </div>
         </div>
         <div id="flood-status" class="hint" data-i18n="flood.status">Flood updates live as you move the slider.</div>
       </section>
@@ -93,8 +117,6 @@
         <div id="readout" class="hint" data-i18n="legend.readout">click a flooded pixel for depth</div>
         <button id="btn-save-geotiff" class="btn ghost" disabled data-i18n="flood.saveGeotiff">⬇ Save GeoTIFF</button>
       </section>
-
-      <section id="log-container"><div id="log"></div></section>
     </div>
 
     <!-- charts dock — shown in place of the controls when a reach is inspected (map river click)
@@ -225,6 +247,9 @@
           <input type="checkbox" id="set-legend" checked />
           <span data-i18n="settings.showLegend">Show forecast return-period legend</span>
         </label>
+        <!-- diagnostics log — main.js log() appends here and scrolls #log-container -->
+        <h4 data-i18n="settings.diagnostics">Diagnostics</h4>
+        <div id="log-container"><div id="log"></div></div>
       </div>
     </div>
   </div>

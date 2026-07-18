@@ -1,101 +1,43 @@
-import maplibregl from "maplibre-gl";
-import "maplibre-gl/dist/maplibre-gl.css";
-import { VectorTileLayer } from "@esri/maplibre-arcgis";
-import { Protocol } from "pmtiles";
-import { StreamAnimation } from "./map/streams/animation";
-import { Selection } from "./map/fim/selection";
-import { flowsAtLadderPosition, uniformFlows } from "./map/fim/hydro";
-import { legendGradient } from "./map/fim/colormap";
-import { encodeExtentGeoTiff } from "./map/fim/geotiff";
-import { calciteIcon } from "./icons/icons";
-import { heroIcon } from "./icons/heroicons";
-import { setLanguage, t } from "./i18n/i18n";
+// Importing map.js stands the map up: it constructs the MapLibre instance on #map, registers the
+// pmtiles protocol, and wires the basemap + layer pickers. This module owns everything layered on
+// top of it — streams, flood mapping, charts, and the panel controls.
+import {map} from "./map/map";
+import {applyBasemap, BASEMAPS} from "./map/basemaps";
+import {addRasterOverlays, applyLayerVisibility} from "./map/layers";
+import {StreamAnimation} from "./map/streams/animation";
+import {Selection} from "./map/fim/selection";
+import {flowsAtLadderPosition, uniformFlows} from "./map/fim/hydro";
+import {legendGradient} from "./map/fim/colormap";
+import {encodeExtentGeoTiff} from "./map/fim/geotiff";
+import {heroIcon} from "./icons/heroicons";
+import {setLanguage, t} from "./i18n/i18n";
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Config · data hosts and the forecast date
+// ═══════════════════════════════════════════════════════════════════════════
 const DATA_BASE = import.meta.env.VITE_DATA_URL ?? `${location.origin}/data`;
 const FIM_DATA_URL = import.meta.env.VITE_FIM_DATA_URL ?? `${DATA_BASE}/fim`;
 const FIM_TILES_URL = import.meta.env.VITE_FIM_TILES_PMTILES ?? `${FIM_DATA_URL}/tile_boundaries.pmtiles`;
 // Below this zoom the viewport can cover hundreds of data tiles; loading every one's header
 // would be a request storm, so coverage only loads once you're zoomed in to work.
 const FIM_MIN_COVERAGE_ZOOM = 7;
+
 function todayUtc() {
   const d = /* @__PURE__ */ new Date();
   const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
   const dd = String(d.getUTCDate()).padStart(2, "0");
   return `${d.getUTCFullYear()}-${mm}-${dd}`;
 }
+
 const DEFAULT_FORECAST_DATE = import.meta.env.VITE_FORECAST_DEFAULT_DATE ?? todayUtc();
 let currentForecastDate = DEFAULT_FORECAST_DATE;
-const BASEMAPS = [
-  {
-    // Esri "Environment" vector basemap (arcgis.com portal items). Unlike the raster entries below,
-    // these are vector-tile styles, loaded via @esri/maplibre-arcgis's VectorTileLayer in
-    // applyBasemap(). The Environment basemap is composed of several stacked layers that share one
-    // tile server (World_Basemap_v2), glyphs, and sprite; listed bottom-to-top so labels land on top.
-    id: "environment",
-    label: "Environment (Esri)",
-    vector: true,
-    itemIds: [
-      "005b8960ddd04ae781df8d471b6726b3", // Environment Base (land/vegetation/water fills)
-      "3bfd1065c1a748c5ae2f9408c3fb1078", // Environment Watersheds (HydroSHEDS boundary lines)
-      "8b8862d9cc894f5db44231a67ee0e41b" // Environment Detail and Label (admin, roads, labels, POIs)
-    ],
-    attribution: "Esri, TomTom, Garmin, FAO, NOAA, USGS, © OpenStreetMap contributors, and the GIS User Community",
-    // Esri World Hillshade, the terrain relief that pairs with the Environment basemap. Added and
-    // removed with it (see applyBasemap) and drawn beneath the vector layers so relief shows through.
-    companion: {
-      id: "hillshade",
-      tiles: ["https://services.arcgisonline.com/arcgis/rest/services/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}"],
-      maxzoom: 23,
-      attribution: "Hillshade: Esri, Airbus DS, USGS, NGA, NASA, CGIAR, N Robinson, NCEAS, NLS, OS, NMA, Geodatastyrelsen, Rijkswaterstaat, GSA, Geoland, FEMA, Intermap, and the GIS user community"
-    }
-  },
-  {
-    id: "light",
-    label: "Light grey (Carto)",
-    maxzoom: 20,
-    tiles: ["a", "b", "c", "d"].map((s) => `https://${s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png`),
-    attribution: "© OpenStreetMap contributors © CARTO"
-  },
-  {
-    id: "dark",
-    label: "Dark (Carto)",
-    maxzoom: 20,
-    tiles: ["a", "b", "c", "d"].map((s) => `https://${s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png`),
-    attribution: "© OpenStreetMap contributors © CARTO"
-  },
-  {
-    id: "streets",
-    label: "Streets (OSM)",
-    maxzoom: 19,
-    tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
-    attribution: "© OpenStreetMap contributors"
-  },
-  {
-    id: "satellite",
-    label: "Satellite (Esri)",
-    maxzoom: 19,
-    tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],
-    attribution: "Imagery © Esri, Maxar, Earthstar Geographics"
-  },
-  {
-    id: "topographic",
-    label: "Topographic (Esri)",
-    maxzoom: 19,
-    tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"],
-    attribution: "Tiles © Esri — Esri, HERE, Garmin, USGS, NGA, FAO, NOAA, © OpenStreetMap contributors, and the GIS User Community"
-  },
-  {
-    id: "usgstopo",
-    label: "Topographic (USGS)",
-    maxzoom: 16,
-    tiles: ["https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer/tile/{z}/{y}/{x}"],
-    attribution: "USGS — The National Map: 3DEP, NHD, GNIS, NLCD, NTD, and others"
-  }
-];
-// The map starts on an empty style; the real basemap (raster or vector) is injected by
-// applyBasemap() so the two kinds share one code path. See applyBasemap() below.
-const EMPTY_STYLE = { version: 8, sources: {}, layers: [] };
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Shared helpers · DOM lookup and the diagnostics log
+// ═══════════════════════════════════════════════════════════════════════════
 const $ = (id) => document.getElementById(id);
 const logEl = $("log");
+
 function log(msg, cls = "") {
   const s = document.createElement("span");
   s.className = cls;
@@ -103,7 +45,11 @@ function log(msg, cls = "") {
   logEl.appendChild(s);
   logEl.parentElement.scrollTop = logEl.parentElement.scrollHeight;
 }
-const worker = new Worker(new URL("./map/fim/worker.js", import.meta.url), { type: "module" });
+
+// ═══════════════════════════════════════════════════════════════════════════
+// App state · flood worker, selection, and the forecast animation
+// ═══════════════════════════════════════════════════════════════════════════
+const worker = new Worker(new URL("./map/fim/worker.js", import.meta.url), {type: "module"});
 let floodView = null;
 let coverageSet = null;
 let selectSeq = 0;
@@ -119,248 +65,36 @@ let floodMappingMode = false;
 let selectedRiverId = null;
 let selectedRiverProps = null;
 let selection = null;
-let current = { selected: [], floodable: [] };
-let qmode = "ladder";
+let current = {selected: [], floodable: []};
+// Which discharge drives the flood extent. "manual" = one number for every reach, "returnperiod" =
+// the per-reach rating-curve ladder, "forecast"/"forecastmax" = the reaches' downloaded forecast
+// hydrographs (animated over the horizon, or held at each reach's peak).
+let floodStyle = "returnperiod";
+// Downloaded forecast for the current (date, selection): see loadForecastFlows().
+let forecastFlows = null;
+let forecastFlowsKey = "";
+let forecastLoading = false;
+let fcStep = 0;
+let fcPlaying = false;
+let fcTimer = null;
+let fcFps = 4;
 let currentStyleset = "forecast15";
 let sliderVisible = true;
-const protocol = new Protocol({ metadata: true });
-maplibregl.addProtocol("pmtiles", protocol.tile);
-const map = new maplibregl.Map({
-  container: "map",
-  style: EMPTY_STYLE,
-  // Global overview (lng 0, lat 20); the URL hash overrides this when present.
-  center: [0, 20],
-  zoom: 1.5,
-  hash: "map",
-  maxZoom: 13,
-  // Non-Latin scripts render locally, so labels don't rely on the fallback glyph collapsed below.
-  localIdeographFontFamily: "sans-serif",
-  // Esri's Environment styles ask for comma-joined font stacks (e.g. "Noto Sans Regular,Arial
-  // Unicode MS Regular"), but its font server only serves single fonts — a stack 404s as JSON,
-  // which MapLibre then fails to parse as a glyph PBF ("Unimplemented type: 3"). Collapse any Esri
-  // glyph request to its primary font. Everything else falls through to default handling.
-  transformRequest: (url) => {
-    if (/\/fonts\/[^/]*(?:,|%2C)/i.test(url)) {
-      return { url: url.replace(/\/fonts\/([^/]+)\//, (_, stack) => `/fonts/${stack.split(/,|%2C/i)[0]}/`) };
-    }
-    return undefined;
-  }
-});
-// Zoom +/- plus the compass button, which resets bearing (and pitch) back to north-up on click.
-map.addControl(new maplibregl.NavigationControl({ showCompass: true, visualizePitch: true }), "top-left");
-// Layers/sources added by the current basemap, so a switch can tear the old one down cleanly.
-// A raster basemap contributes one of each; a vector basemap contributes many.
-let basemapLayerIds = [];
-let basemapSourceIds = [];
-// Swap in a basemap (raster tiles or an ArcGIS vector-tile style) beneath every app layer. App
-// layers (streams, overlays, highlights, FIM tiles) are never touched — only the basemap group is
-// replaced — so map state survives a basemap change.
-async function applyBasemap(bm) {
-  for (const id of basemapLayerIds) if (map.getLayer(id)) map.removeLayer(id);
-  for (const id of basemapSourceIds) if (map.getSource(id)) map.removeSource(id);
-  basemapLayerIds = [];
-  basemapSourceIds = [];
-  // Insert beneath the lowest existing layer so the basemap always renders on the bottom.
-  const beforeId = map.getStyle().layers?.[0]?.id;
-  if (bm.vector) {
-    // @esri/maplibre-arcgis resolves each portal item into a MapLibre style (sources with absolute
-    // tile URLs, glyphs, sprite). We inject the pieces ourselves rather than using the library's
-    // addSourcesAndLayersTo(map) so the basemap lands beneath the app layers and can be torn down
-    // on a basemap switch. The Environment basemap is several stacked items that share one tile
-    // server, glyphs, and sprite, so we load them all and lay their layers down in order.
-    const items = await Promise.all(bm.itemIds.map((id) => VectorTileLayer.fromPortalItem(id)));
-    const styles = items.map((it) => it.style);
-    // glyphs/sprite are style-level (not per-layer) and identical across these items; set from the
-    // first, before adding the layers that reference them.
-    if (styles[0].glyphs) map.setGlyphs(styles[0].glyphs);
-    if (styles[0].sprite) map.setSprite(styles[0].sprite);
-    // Companion raster (terrain hillshade) goes in first, so it sits below the vector basemap
-    // layers added next — all land above `beforeId`, i.e. beneath every app layer.
-    if (bm.companion) {
-      const c = bm.companion;
-      map.addSource(c.id, { type: "raster", tiles: c.tiles, tileSize: 256, attribution: c.attribution, maxzoom: c.maxzoom ?? 19 });
-      map.addLayer({ id: c.id, type: "raster", source: c.id }, beforeId);
-      basemapSourceIds.push(c.id);
-      basemapLayerIds.push(c.id);
-    }
-    // The items share sources (e.g. "esri"), so dedupe by id; hang the attribution off the first.
-    let firstVectorSource = true;
-    for (const style of styles) {
-      for (const [sid, src] of Object.entries(style.sources ?? {})) {
-        if (map.getSource(sid)) continue;
-        map.addSource(sid, firstVectorSource ? { ...src, attribution: bm.attribution } : src);
-        basemapSourceIds.push(sid);
-        firstVectorSource = false;
-      }
-    }
-    // Lay layers down item-by-item, in listed order, so later items stack above earlier ones.
-    for (const style of styles) {
-      for (const layer of style.layers ?? []) {
-        map.addLayer(layer, beforeId);
-        basemapLayerIds.push(layer.id);
-      }
-    }
-  } else {
-    map.addSource("basemap", { type: "raster", tiles: bm.tiles, tileSize: 256, attribution: bm.attribution, maxzoom: bm.maxzoom ?? 19 });
-    map.addLayer({ id: "basemap", type: "raster", source: "basemap" }, beforeId);
-    basemapSourceIds.push("basemap");
-    basemapLayerIds.push("basemap");
-  }
-}
-function setBasemap(id) {
-  return applyBasemap(BASEMAPS.find((b) => b.id === id) ?? BASEMAPS[0]);
-}
-// Toggleable map overlays (many can be on at once). `on` is the default visibility; `raster`,
-// when present, is a source spec this module adds to the map (streams + flood are added elsewhere).
-// streams/flood default on even though the flood layer starts empty — it's created lazily in
-// rebuildFloodOverlay(), which reapplies this state so a toggle made before the layer exists sticks.
-const OVERLAYS = [
-  { layerId: "streams", labelKey: "layers.streams", on: true },
-  { layerId: "flood", labelKey: "layers.floodExtents", on: true },
-  {
-    layerId: "riverfld",
-    labelKey: "layers.riverfld",
-    on: false,
-    raster: {
-      type: "raster",
-      tiles: ["https://floods.ssec.wisc.edu/tiles/RIVER-FLDglobal-composite_current/{z}/{x}/{y}.png"],
-      tileSize: 256,
-      attribution: 'RIVER-FLD global flood composite © <a href="https://floods.ssec.wisc.edu/products/RIVER-FLDglobal-composite" target="_blank" rel="noopener">CIMSS/SSEC, UW–Madison</a> (VIIRS, George Mason University)'
-    }
-  },
-  {
-    layerId: "goes",
-    labelKey: "layers.goes",
-    on: false,
-    raster: {
-      type: "raster",
-      tiles: ["https://earthlive.maptiles.arcgis.com/arcgis/rest/services/GOES/GOES31D/MapServer/tile/{z}/{y}/{x}"],
-      tileSize: 256,
-      attribution: "GOES / Himawari colorized IR © NOAA, via Esri Living Atlas"
-    }
-  },
-  {
-    layerId: "viirs",
-    labelKey: "layers.viirs",
-    on: false,
-    raster: {
-      type: "raster",
-      tiles: ["https://modis.arcgis.com/arcgis/rest/services/VIIRS/ImageServer/exportImage?bbox={bbox-epsg-3857}&bboxSR=3857&imageSR=3857&size=256,256&format=png32&transparent=true&f=image"],
-      tileSize: 256,
-      attribution: "VIIRS true color © NASA Earthdata (GIBS), via Esri"
-    }
-  }
-];
-const layerVisible = Object.fromEntries(OVERLAYS.map((o) => [o.layerId, o.on]));
-function applyLayerVisibility(layerId) {
-  if (!map.getLayer(layerId)) return;
-  map.setLayoutProperty(layerId, "visibility", layerVisible[layerId] ? "visible" : "none");
-}
-// Add the raster imagery/flood overlays. Inserted beneath the streams line layer (in reverse
-// list order, so overlays listed higher in the picker also render visually on top) and start
-// at their default visibility.
-function addRasterOverlays() {
-  const beforeId = map.getLayer("streams") ? "streams" : undefined;
-  for (const ov of [...OVERLAYS].reverse()) {
-    if (!ov.raster) continue;
-    if (!map.getSource(ov.layerId)) map.addSource(ov.layerId, ov.raster);
-    if (!map.getLayer(ov.layerId)) {
-      map.addLayer({
-        id: ov.layerId,
-        type: "raster",
-        source: ov.layerId,
-        layout: { visibility: layerVisible[ov.layerId] ? "visible" : "none" }
-      }, beforeId);
-    }
-  }
-}
-// Wire a map-control button to its dropdown menu: toggle on button click, close on outside click.
-function wireMenu(btn, menu) {
-  const closeMenu = () => {
-    menu.classList.add("hidden");
-    btn.setAttribute("aria-expanded", "false");
-  };
-  btn.addEventListener("click", () => {
-    const open = menu.classList.toggle("hidden");
-    btn.setAttribute("aria-expanded", String(!open));
-  });
-  document.addEventListener("click", (e) => {
-    const target = e.target;
-    if (!menu.contains(target) && !btn.contains(target)) closeMenu();
-  });
-  return closeMenu;
-}
-// Basemap picker: single-choice radio group (only one basemap at a time).
-function initBasemapPicker() {
-  const btn = document.getElementById("basemap-btn");
-  const menu = document.getElementById("basemap-menu");
-  if (!btn || !menu) return;
-  btn.replaceChildren(calciteIcon("basemap"));
-  menu.innerHTML = "";
-  const closeMenu = wireMenu(btn, menu);
-  for (const bm of BASEMAPS) {
-    const opt = document.createElement("button");
-    opt.className = "layer-opt";
-    opt.setAttribute("role", "menuitemradio");
-    opt.textContent = bm.label;
-    const active = bm.id === BASEMAPS[0].id;
-    opt.setAttribute("aria-checked", String(active));
-    opt.classList.toggle("active", active);
-    opt.addEventListener("click", () => {
-      setBasemap(bm.id);
-      menu.querySelectorAll('[role="menuitemradio"]').forEach((o) => {
-        o.classList.remove("active");
-        o.setAttribute("aria-checked", "false");
-      });
-      opt.classList.add("active");
-      opt.setAttribute("aria-checked", "true");
-      closeMenu();
-    });
-    menu.appendChild(opt);
-  }
-}
-// Layer picker: independent on/off toggles (many overlays can be visible at once).
-function initLayerPicker() {
-  const btn = document.getElementById("layer-btn");
-  const menu = document.getElementById("layer-menu");
-  if (!btn || !menu) return;
-  btn.replaceChildren(calciteIcon("layers"));
-  menu.innerHTML = "";
-  wireMenu(btn, menu);
-  for (const ov of OVERLAYS) {
-    const opt = document.createElement("button");
-    opt.className = "layer-opt layer-toggle";
-    opt.setAttribute("role", "menuitemcheckbox");
-    opt.setAttribute("aria-checked", String(layerVisible[ov.layerId]));
-    const check = document.createElement("span");
-    check.className = "check";
-    check.setAttribute("aria-hidden", "true");
-    const label = document.createElement("span");
-    label.setAttribute("data-i18n", ov.labelKey);
-    label.textContent = t(ov.labelKey);
-    opt.append(check, label);
-    opt.addEventListener("click", () => {
-      const next = !layerVisible[ov.layerId];
-      layerVisible[ov.layerId] = next;
-      applyLayerVisibility(ov.layerId);
-      opt.setAttribute("aria-checked", String(next));
-    });
-    menu.appendChild(opt);
-  }
-}
-initBasemapPicker();
-initLayerPicker();
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Map lifecycle · app layers, click handling, and load wiring
+// ═══════════════════════════════════════════════════════════════════════════
 const anim = new StreamAnimation(map, log);
 let mapLoaded = false;
 map.on("load", async () => {
   anim.addStreamsLayer();
-  applyLayerVisibility("streams");
-  addRasterOverlays();
+  applyLayerVisibility(map, "streams");
+  addRasterOverlays(map);
   addInspectHighlightLayer();
   addFimTilesLayer();
   // Slot the default basemap in beneath the app layers just added. Not awaited so the (async,
   // fetched) vector style doesn't hold up the rest of load; it inserts under everything when ready.
-  applyBasemap(BASEMAPS[0]);
+  applyBasemap(map, BASEMAPS[0]);
   log("Basemap + streams loaded.", "success");
   mapLoaded = true;
   map.on("click", (e) => {
@@ -369,11 +103,11 @@ map.on("load", async () => {
       [e.point.x - pad, e.point.y - pad],
       [e.point.x + pad, e.point.y + pad]
     ];
-    const feats = map.queryRenderedFeatures(box, { layers: ["streams"] });
+    const feats = map.queryRenderedFeatures(box, {layers: ["streams"]});
     const hit = feats.find((f) => f.properties?.riverId != null);
     if (hit) {
       // Clicking a reach while zoomed out fluidly zooms in to it so the stream fills the view.
-      if (map.getZoom() < 10) map.easeTo({ center: e.lngLat, zoom: 10 });
+      if (map.getZoom() < 10) map.easeTo({center: e.lngLat, zoom: 10});
       if (floodMappingMode) selection?.select(Number(hit.properties.riverId));
       else openChartsModal(hit.properties);
       return;
@@ -394,7 +128,11 @@ map.on("load", async () => {
 map.on("error", (e) => {
   if (e?.error) log(`map: ${e.error.message}`, "error");
 });
-worker.postMessage({ type: "init", dataBase: FIM_DATA_URL });
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Flood worker · messaging, the extent canvas, and depth queries
+// ═══════════════════════════════════════════════════════════════════════════
+worker.postMessage({type: "init", dataBase: FIM_DATA_URL});
 worker.onmessage = (ev) => {
   const msg = ev.data;
   if (msg.type === "ready") {
@@ -417,7 +155,7 @@ worker.onmessage = (ev) => {
       $("flood-status").textContent = "Selected reaches have no flood pixels.";
       return;
     }
-    floodView = { bounds: msg.bounds, width: msg.width, height: msg.height };
+    floodView = {bounds: msg.bounds, width: msg.width, height: msg.height};
     flowsSpec = msg.flows;
     rebuildFloodOverlay(floodView);
     const st = msg.stats;
@@ -447,11 +185,13 @@ worker.onmessage = (ev) => {
     frameInFlight = false;
   }
 };
+
 function requestSelect() {
   if (!workerReady || current.floodable.length === 0) return;
   $("flood-status").textContent = "Fetching river slices…";
-  worker.postMessage({ type: "select", id: ++selectSeq, comids: current.floodable });
+  worker.postMessage({type: "select", id: ++selectSeq, comids: current.floodable});
 }
+
 function rebuildFloodOverlay(view) {
   if (!mapLoaded) return;
   if (map.getLayer("flood")) map.removeLayer("flood");
@@ -471,21 +211,23 @@ function rebuildFloodOverlay(view) {
     id: "flood",
     type: "raster",
     source: "flood",
-    paint: { "raster-fade-duration": 0, "raster-resampling": "nearest" }
+    paint: {"raster-fade-duration": 0, "raster-resampling": "nearest"}
   }, "streams");
   // The layer is recreated on every viewport/selection change, so reapply the picker's toggle state.
-  applyLayerVisibility("flood");
+  applyLayerVisibility(map, "flood");
 }
+
 function refreshFloodCanvas() {
   const src = map.getSource("flood");
   if (!src) return;
   src.play();
   requestAnimationFrame(() => src.pause());
 }
+
 function queryFloodDepth(lngLat) {
   if (!floodView) return;
   const b = floodView.bounds;
-  const { lng, lat } = lngLat;
+  const {lng, lat} = lngLat;
   if (lng < b.west || lng > b.east || lat < b.south || lat > b.north) return;
   worker.postMessage({
     type: "query",
@@ -494,12 +236,17 @@ function queryFloodDepth(lngLat) {
     col: Math.round((lng + 180) * 3600)
   });
 }
+
 function onSelectionChange(s) {
   current = s;
   refreshControls();
-  if (floodEnabled && workerReady && current.floodable.length > 0) requestSelect();
-  else clearFloodOverlay();
+  if (floodEnabled && workerReady && current.floodable.length > 0) {
+    requestSelect();
+    // The forecast is per-reach, so a changed selection needs a (cached-where-possible) refetch.
+    if (floodStyle === "forecast" || floodStyle === "forecastmax") loadForecastFlows();
+  } else clearFloodOverlay();
 }
+
 function clearFloodOverlay() {
   lastFloodedCells = 0;
   updateSaveButton();
@@ -507,6 +254,7 @@ function clearFloodOverlay() {
   floodCtx.clearRect(0, 0, floodCanvas.width, floodCanvas.height);
   refreshFloodCanvas();
 }
+
 function refreshControls() {
   const btn = $("btn-create-flood");
   const hasFloodable = workerReady && current.floodable.length > 0;
@@ -521,37 +269,197 @@ function refreshControls() {
     $("flood-status").textContent = `${current.floodable.length} reach(es) flooding live — move the slider.`;
   }
 }
+
+// Per-reach discharge for the active flood style, or null when the style's data isn't ready yet
+// (the forecast styles need their download to land first).
+function flowsForFloodStyle() {
+  if (floodStyle === "manual") return uniformFlows(flowsSpec, Number($("uniform").value));
+  if (floodStyle === "returnperiod") return flowsAtLadderPosition(flowsSpec, Number($("ladder").value));
+  if (!forecastFlows) return null;
+  if (floodStyle === "forecastmax") return forecastFlows.peak;
+  const out = /* @__PURE__ */ new Map();
+  for (const [comid, q] of forecastFlows.series) {
+    const v = q[Math.min(fcStep, q.length - 1)];
+    if (Number.isFinite(v)) out.set(comid, v);
+  }
+  return out;
+}
+
 function computeFlood() {
   if (!floodEnabled || !flowsSpec || !floodView || !workerReady || current.floodable.length === 0) return;
   if (frameInFlight) {
     pendingFlood = true;
     return;
   }
-  const full = qmode === "ladder" ? flowsAtLadderPosition(flowsSpec, Number($("ladder").value)) : uniformFlows(flowsSpec, Number($("uniform").value));
+  const full = flowsForFloodStyle();
+  if (!full) return;
   const flows = [];
   for (const comid of current.floodable) if (full.has(comid)) flows.push([comid, full.get(comid)]);
   if (flows.length === 0) return;
   frameInFlight = true;
   $("flood-status").textContent = "Computing…";
-  worker.postMessage({ type: "frame", id: Date.now(), flows });
+  worker.postMessage({type: "frame", id: Date.now(), flows});
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Flood styles · discharge source per style + the forecast player
+// ═══════════════════════════════════════════════════════════════════════════
 const ladderLabels = ["q3", "q8", "q12", "q15", "q18", "q22", "q25", "q28", "q30"];
+
 function syncLadderLabel() {
   const t2 = Number($("ladder").value);
   const i = Math.min(Math.round(t2), ladderLabels.length - 1);
   $("ladder-val").textContent = flowsSpec?.ladderLabels?.[i] ?? ladderLabels[i];
 }
-function setQMode(m) {
-  qmode = m;
-  $("qmode-ladder").classList.toggle("active", m === "ladder");
-  $("qmode-uniform").classList.toggle("active", m === "uniform");
-  $("qctl-ladder").classList.toggle("hidden", m !== "ladder");
-  $("qctl-uniform").classList.toggle("hidden", m !== "uniform");
+
+// Per-style control panel. "forecastmax" has none — it needs no input beyond the selection.
+const FLOOD_STYLE_CTL = {
+  manual: "qctl-uniform",
+  returnperiod: "qctl-ladder",
+  forecast: "qctl-forecast"
+};
+
+function setFloodStyle(style) {
+  floodStyle = style;
+  for (const [name, id] of Object.entries(FLOOD_STYLE_CTL)) $(id).classList.toggle("hidden", name !== style);
+  const usesForecast = style === "forecast" || style === "forecastmax";
+  if (!usesForecast) {
+    fcPause();
+    computeFlood();
+    return;
+  }
+  // Forecast styles need the selection's hydrographs; loadForecastFlows() computes once the
+  // download lands (and is a no-op when the cached download already matches date + selection).
+  if (style !== "forecast") fcPause();
+  loadForecastFlows();
+}
+
+// ---- forecast-driven flood styles ----
+// Download the ensemble-median hydrograph for every floodable reach at the selected forecast
+// initialization date, then hand it to computeFlood(). Keyed on (date, reaches) so switching
+// between the two forecast styles, or re-entering one, reuses the download.
+async function loadForecastFlows() {
+  if (current.floodable.length === 0) {
+    forecastFlows = null;
+    forecastFlowsKey = "";
+    syncForecastPlayer();
+    return;
+  }
+  const ids = [...current.floodable].sort((a, b) => a - b);
+  const key = `${currentForecastDate}|${ids.join(",")}`;
+  if (key === forecastFlowsKey && forecastFlows) {
+    syncForecastPlayer();
+    computeFlood();
+    return;
+  }
+  // One download at a time. A selection change mid-flight is picked up by the staleness check
+  // below, which re-runs this once the flag has been released.
+  if (forecastLoading) return;
+  forecastLoading = true;
+  forecastFlows = null;
+  syncForecastPlayer();
+  $("flood-status").textContent = `Downloading forecast for ${ids.length} reach(es)…`;
+  let stale = false;
+  try {
+    const {fetchForecastFlows} = await import("./forecastTimeseries");
+    const fc = await fetchForecastFlows(currentForecastDate, ids, (done, total) => {
+      $("flood-status").textContent = `Downloading forecast… ${done}/${total} reach(es)`;
+    });
+    // The selection (or date) may have moved on while the download was in flight.
+    stale = `${currentForecastDate}|${[...current.floodable].sort((a, b) => a - b).join(",")}` !== key;
+    if (stale) {
+      // fall through to the retry below
+    } else if (fc.series.size === 0) {
+      log(`No selected reach is present in the ${currentForecastDate} forecast store.`, "error");
+      $("flood-status").textContent = "None of the selected reaches are in this forecast.";
+    } else {
+      forecastFlows = fc;
+      forecastFlowsKey = key;
+      fcStep = Math.min(fcStep, fc.datetime.length - 1);
+      if (fc.missing.length) {
+        log(`${fc.missing.length} selected reach(es) are absent from the ${currentForecastDate} forecast — skipped.`, "info");
+      }
+      log(`Forecast flows: ${fc.series.size} reach(es) × ${fc.datetime.length} steps for ${currentForecastDate}.`, "success");
+      syncForecastPlayer();
+      computeFlood();
+    }
+  } catch (e) {
+    log(`forecast flows: ${e.message}`, "error");
+    $("flood-status").textContent = `Forecast download failed: ${e.message}`;
+  } finally {
+    forecastLoading = false;
+  }
+  // Released the flag first, so the retry actually runs instead of tripping the guard above.
+  if (stale) loadForecastFlows();
+}
+
+function syncForecastPlayer() {
+  const slider = $("fc-slider");
+  const playBtn = $("btn-fc-play");
+  const nSteps = forecastFlows?.datetime.length ?? 0;
+  const ready = nSteps > 1;
+  slider.disabled = !ready;
+  playBtn.disabled = !ready;
+  slider.max = String(Math.max(0, nSteps - 1));
+  slider.value = String(fcStep);
+  $("fc-step-label").textContent = nSteps ? `${fcStep + 1}/${nSteps}` : "–/–";
+  const when = forecastFlows?.datetime[fcStep];
+  $("fc-time-label").textContent = when ? when.toISOString().slice(0, 16).replace("T", " ") + " UTC" : "—";
+  if (!ready) fcPause();
+}
+
+function fcSetStep(t) {
+  const n = forecastFlows?.datetime.length ?? 0;
+  if (!n) return;
+  fcStep = (t % n + n) % n;
+  syncForecastPlayer();
   computeFlood();
 }
+
+function fcPlay() {
+  if (fcPlaying || floodStyle !== "forecast" || !forecastFlows) return;
+  fcPlaying = true;
+  $("btn-fc-play").textContent = "❚❚";
+  // computeFlood() coalesces while a frame is in flight, so a step the worker can't keep up with
+  // is simply dropped rather than queued — the animation stays in sync with wall-clock time.
+  fcTimer = setInterval(() => fcSetStep(fcStep + 1), 1e3 / fcFps);
+}
+
+function fcPause() {
+  fcPlaying = false;
+  const btn = $("btn-fc-play");
+  if (btn) btn.textContent = "▶";
+  if (fcTimer) {
+    clearInterval(fcTimer);
+    fcTimer = null;
+  }
+}
+
+function initFloodStyleControls() {
+  const sel = $("flood-style");
+  sel.value = floodStyle;
+  sel.addEventListener("change", () => setFloodStyle(sel.value));
+  $("btn-fc-play").addEventListener("click", () => fcPlaying ? fcPause() : fcPlay());
+  $("fc-slider").addEventListener("input", () => {
+    fcPause();
+    fcSetStep(Number($("fc-slider").value));
+  });
+  $("fc-speed").addEventListener("change", () => {
+    fcFps = Number($("fc-speed").value);
+    if (fcPlaying) {
+      fcPause();
+      fcPlay();
+    }
+  });
+  setFloodStyle(floodStyle);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Flood coverage · FIM data-tile footprints and flood mapping mode
+// ═══════════════════════════════════════════════════════════════════════════
 function addFimTilesLayer() {
   if (map.getSource("fim-tiles")) return;
-  map.addSource("fim-tiles", { type: "vector", url: `pmtiles://${FIM_TILES_URL}` });
+  map.addSource("fim-tiles", {type: "vector", url: `pmtiles://${FIM_TILES_URL}`});
   // Invisible fill = the viewport hit-test target. A line layer would miss a viewport sitting
   // entirely inside one tile with no edge on screen; a fill at opacity 0 still renders, so
   // queryRenderedFeatures returns it wherever the viewport lands.
@@ -560,7 +468,7 @@ function addFimTilesLayer() {
     type: "fill",
     source: "fim-tiles",
     "source-layer": "fim_tiles",
-    paint: { "fill-opacity": 0 }
+    paint: {"fill-opacity": 0}
   });
   // Faint outline, shown only in flood mode, so the data-tile footprint is visible.
   map.addLayer({
@@ -568,52 +476,65 @@ function addFimTilesLayer() {
     type: "line",
     source: "fim-tiles",
     "source-layer": "fim_tiles",
-    layout: { visibility: floodMappingMode ? "visible" : "none" },
-    paint: { "line-color": "#38bdf8", "line-width": 1, "line-opacity": 0.5, "line-dasharray": [2, 2] }
+    layout: {visibility: floodMappingMode ? "visible" : "none"},
+    paint: {"line-color": "#38bdf8", "line-width": 1, "line-opacity": 0.5, "line-dasharray": [2, 2]}
   });
   map.on("sourcedata", (e) => {
     if (e.sourceId === "fim-tiles" && e.isSourceLoaded) syncViewportTiles();
   });
 }
+
 // Which flood-data tiles overlap the current viewport → tell the worker to load their coverage.
 // Gated on flood mode (and a min zoom) so normal browsing never fetches tile headers.
 let lastViewportKey = "";
+
 function syncViewportTiles() {
   if (!floodMappingMode || !workerReady || !map.getLayer("fim-tiles-hit")) return;
   if (map.getZoom() < FIM_MIN_COVERAGE_ZOOM) return;
   const names = [...new Set(
-    map.queryRenderedFeatures({ layers: ["fim-tiles-hit"] }).map((f) => f.properties.name)
+    map.queryRenderedFeatures({layers: ["fim-tiles-hit"]}).map((f) => f.properties.name)
   )].sort();
   const key = names.join(",");
   if (key === lastViewportKey) return;
   lastViewportKey = key;
-  if (names.length) worker.postMessage({ type: "viewport", tiles: names });
+  if (names.length) worker.postMessage({type: "viewport", tiles: names});
 }
+
 map.on("moveend", syncViewportTiles);
+
 function setFloodMappingMode(on) {
   floodMappingMode = on;
   if (on) setInspectHighlight(null);
   const btn = $("btn-flood-mode");
   btn.classList.toggle("active", on);
   btn.textContent = t(on ? "flood.disable" : "flood.enable");
-  $("flood-mode-hint").textContent = t(on ? "flood.hintOn" : "flood.hintOff");
   $("flood-controls").classList.toggle("mode-off", !on);
+  // Flood mode owns the stream rendering: the hydrology styler is locked and every reach drops to
+  // one uniform width, so the selection highlights aren't competing with a variable-width network.
+  anim.setFloodMode(on);
+  $("stream-style").disabled = on;
   for (const id of ["fim-tiles-outline", "fim-coverage", "sel-selected", "sel-floodable"]) {
     if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", on ? "visible" : "none");
   }
   if (on) syncViewportTiles();
 }
+
 $("btn-flood-mode").addEventListener("click", () => setFloodMappingMode(!floodMappingMode));
+
+// ═══════════════════════════════════════════════════════════════════════════
+// River inspection · attribute table and retrospective charts
+// ═══════════════════════════════════════════════════════════════════════════
 function renderAttrTable(props) {
   const keys = Object.keys(props).sort((a, b) => a === "riverId" ? -1 : b === "riverId" ? 1 : a.localeCompare(b));
   if (!keys.length) return '<div class="attr-empty">This feature carries no attributes.</div>';
   return `<table class="attr-table">${keys.map((k) => `<tr><td class="k">${escapeHtml(k)}</td><td class="v">${escapeHtml(String(props[k]))}</td></tr>`).join("")}</table>`;
 }
+
 async function loadRiverTimeseries(blockId) {
   const block = document.getElementById(blockId);
   if (!block) return;
   try {
-    const [{ fetchRiverTimeseries, DEV_RIVER_ID }, plots] = await Promise.all([
+    const [{fetchRiverTimeseries, DEV_RIVER_ID}, plots] = await Promise.all([
       import("./timeseries"),
       import("./plots/orchestrator")
     ]);
@@ -630,9 +551,14 @@ async function loadRiverTimeseries(blockId) {
     block.textContent = `Failed to load time series: ${e.message}`;
   }
 }
+
 function escapeHtml(s) {
-  return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  return s.replace(/[&<>"']/g, (c) => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"})[c]);
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Chrome · icons, theme, and modals
+// ═══════════════════════════════════════════════════════════════════════════
 $("btn-info").replaceChildren(heroIcon("information-circle"));
 $("btn-settings").replaceChildren(heroIcon("cog-6-tooth"));
 $("btn-language").replaceChildren(heroIcon("language"));
@@ -640,10 +566,12 @@ $("btn-search-river").replaceChildren(heroIcon("magnifying-glass-solid"));
 $("btn-charts").replaceChildren(heroIcon("chart-bar-solid"));
 $("btn-bookmarks").replaceChildren(heroIcon("bookmark-solid"));
 $("btn-toggle-slider").replaceChildren(heroIcon("clock-solid"));
+
 function applyTheme(theme) {
   document.documentElement.setAttribute("data-theme", theme);
   $("btn-theme").replaceChildren(heroIcon(theme === "dark" ? "sun" : "moon"));
 }
+
 let currentTheme = localStorage.getItem("rfs-theme") === "light" ? "light" : "dark";
 applyTheme(currentTheme);
 $("btn-theme").addEventListener("click", () => {
@@ -661,8 +589,13 @@ for (const id of ["info-modal", "settings-modal"]) {
     if (e.target === $(id)) closeModal(id);
   });
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Charts dock · tabs, panels, and the inspect highlight
+// ═══════════════════════════════════════════════════════════════════════════
 const CHARTS_TABS = ["forecast", "retro", "details"];
-const chartsRendered = { forecast: false, retro: false, details: false };
+const chartsRendered = {forecast: false, retro: false, details: false};
+
 function renderForecastCharts() {
   // Don't fetch the forecast until a river is actually selected — opening the panel from the
   // header button (no reach) shows the same empty placeholder as the retro/details tabs.
@@ -673,11 +606,12 @@ function renderForecastCharts() {
   $("charts-panel-forecast").innerHTML = `<div id="charts-fc-block" class="ts-loading"><span class="spinner"></span>Loading forecast…</div>`;
   loadForecastTimeseries("charts-fc-block");
 }
+
 async function loadForecastTimeseries(blockId) {
   const block = document.getElementById(blockId);
   if (!block) return;
   try {
-    const [{ fetchForecastTimeseries }, { DEV_RIVER_ID }, plots] = await Promise.all([
+    const [{fetchForecastTimeseries}, {DEV_RIVER_ID}, plots] = await Promise.all([
       import("./forecastTimeseries"),
       import("./timeseries"),
       import("./plots/orchestrator")
@@ -695,6 +629,7 @@ async function loadForecastTimeseries(blockId) {
     block.textContent = `Failed to load forecast: ${e.message}`;
   }
 }
+
 function renderRetroCharts() {
   if (selectedRiverId == null) {
     $("charts-panel-retro").innerHTML = `<div class="charts-empty"><p>${t("charts.empty.title")}</p><p class="hint">${t("charts.empty.hint")}</p></div>`;
@@ -703,9 +638,11 @@ function renderRetroCharts() {
     loadRiverTimeseries("charts-ts-block");
   }
 }
+
 function renderChartsDetails() {
   $("charts-panel-details").innerHTML = selectedRiverProps ? renderAttrTable(selectedRiverProps) : `<div class="charts-empty"><p>${t("charts.empty.title")}</p><p class="hint">${t("charts.empty.hint")}</p></div>`;
 }
+
 function activateChartsTab(tab) {
   for (const name of CHARTS_TABS) {
     const on = name === tab;
@@ -720,8 +657,10 @@ function activateChartsTab(tab) {
     chartsRendered[tab] = true;
   }
 }
+
 for (const name of CHARTS_TABS) $(`charts-tab-${name}`).addEventListener("click", () => activateChartsTab(name));
 const INSPECT_NO_MATCH = ["in", ["get", "riverId"], ["literal", []]];
+
 function addInspectHighlightLayer() {
   if (map.getLayer("inspect-highlight")) return;
   map.addLayer({
@@ -730,20 +669,23 @@ function addInspectHighlightLayer() {
     source: "geoglows",
     "source-layer": "streams",
     filter: INSPECT_NO_MATCH,
-    layout: { "line-cap": "round", "line-join": "round" },
+    layout: {"line-cap": "round", "line-join": "round"},
     paint: {
-      "line-color": "#00d1ff",
-      // dark blue, distinct from the streams' return-period palette
-      // widen with zoom so the trace stays clearly on top of the base streams line
-      "line-width": ["interpolate", ["linear"], ["zoom"], 3, 1.8, 8, 3, 13, 5.5, 16, 9],
+      // Bright green, to clash with the blue stream network rather than blend into it.
+      "line-color": "#33FF57",
+      // Runs noticeably wider than the base streams line at every zoom so the inspected reach
+      // reads as a distinct trace on top rather than a slightly recoloured stream.
+      "line-width": ["interpolate", ["linear"], ["zoom"], 3, 3, 8, 5, 13, 9, 16, 14],
       "line-opacity": 0.95
     }
   });
 }
+
 function setInspectHighlight(riverId) {
   if (!map.getLayer("inspect-highlight")) return;
   map.setFilter("inspect-highlight", riverId == null ? INSPECT_NO_MATCH : ["in", ["get", "riverId"], ["literal", [riverId]]]);
 }
+
 // The charts live in a dock that widens the left panel to half the viewport (see style.css),
 // keeping the map visible and interactive on the right. Toggled by `charts-open` on <body>.
 // The MapLibre canvas doesn't track sibling layout changes, so resize it across the transition.
@@ -755,16 +697,19 @@ function reflowMap(durationMs = 340) {
   };
   requestAnimationFrame(step);
 }
+
 function openChartsDock() {
   document.body.classList.add("charts-open");
   reflowMap();
 }
+
 function closeChartsDock() {
   if (!document.body.classList.contains("charts-open")) return;
   document.body.classList.remove("charts-open");
   reflowMap();
   void import("./plots/orchestrator").then((m) => m.clearPlots());
 }
+
 function openChartsModal(props) {
   if (props) {
     selectedRiverProps = props;
@@ -776,6 +721,7 @@ function openChartsModal(props) {
   activateChartsTab("forecast");
   openChartsDock();
 }
+
 $("btn-charts").addEventListener("click", () => openChartsModal());
 $("charts-close").addEventListener("click", closeChartsDock);
 document.addEventListener("keydown", (e) => {
@@ -785,6 +731,10 @@ document.addEventListener("keydown", (e) => {
 });
 const legendToggle = document.getElementById("set-legend");
 legendToggle?.addEventListener("change", () => document.getElementById("legend-overlay")?.classList.toggle("hidden", !legendToggle.checked));
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Panel controls · language, forecast date, and stream style
+// ═══════════════════════════════════════════════════════════════════════════
 function initLanguagePicker() {
   const btn = $("btn-language");
   const menu = $("lang-menu");
@@ -816,7 +766,9 @@ function initLanguagePicker() {
     if (!menu.contains(target) && !btn.contains(target)) closeMenu();
   });
 }
+
 initLanguagePicker();
+
 function initForecastDatePicker() {
   const input = document.getElementById("forecast-date");
   if (!input) return;
@@ -827,8 +779,14 @@ function initForecastDatePicker() {
     currentForecastDate = date;
     log(`Switching forecast date to ${date}…`, "info");
     anim.setDate(date);
+    // The flood forecast styles read the same initialization date, so they refetch too.
+    if (floodStyle === "forecast" || floodStyle === "forecastmax") {
+      fcPause();
+      loadForecastFlows();
+    }
   });
 }
+
 // The player (bottom timeseries slider) only makes sense for the animated "15 Day Forecast
 // Timeseries" styleset, and only when the user hasn't toggled it off. Any other styleset disables
 // the toggle and hides the player entirely.
@@ -845,6 +803,7 @@ function updateSliderVisibility() {
   btn.title = label;
   btn.setAttribute("aria-label", label);
 }
+
 function initStreamStyleControls() {
   const sel = $("stream-style");
   if (sel) {
@@ -865,8 +824,7 @@ function initStreamStyleControls() {
   });
   updateSliderVisibility();
 }
-$("qmode-ladder").addEventListener("click", () => setQMode("ladder"));
-$("qmode-uniform").addEventListener("click", () => setQMode("uniform"));
+
 $("ladder").addEventListener("input", () => {
   syncLadderLabel();
   computeFlood();
@@ -877,16 +835,25 @@ $("btn-create-flood").addEventListener("click", () => {
   floodEnabled = true;
   refreshControls();
   requestSelect();
+  if (floodStyle === "forecast" || floodStyle === "forecastmax") loadForecastFlows();
 });
+
+// ═══════════════════════════════════════════════════════════════════════════
+// GeoTIFF export
+// ═══════════════════════════════════════════════════════════════════════════
 function updateSaveButton() {
   ;
   $("btn-save-geotiff").disabled = !(floodEnabled && lastFloodedCells > 0);
 }
+
 function currentQLabel() {
-  if (qmode === "uniform") return `${Number($("uniform").value)}cms`;
+  if (floodStyle === "manual") return `${Number($("uniform").value)}cms`;
+  if (floodStyle === "forecastmax") return `fcmax_${currentForecastDate}`;
+  if (floodStyle === "forecast") return `fc_${currentForecastDate}_t${String(fcStep).padStart(2, "0")}`;
   const i = Math.min(Math.round(Number($("ladder").value)), ladderLabels.length - 1);
   return (flowsSpec?.ladderLabels?.[i] ?? ladderLabels[i]).replace(/[^\w.-]+/g, "");
 }
+
 function saveFloodGeoTiff(msg) {
   if (!msg.extent) {
     log("No flood map to export.", "error");
@@ -898,7 +865,7 @@ function saveFloodGeoTiff(msg) {
     bounds: msg.bounds,
     data: new Uint8Array(msg.extent)
   });
-  const url = URL.createObjectURL(new Blob([buf], { type: "image/tiff" }));
+  const url = URL.createObjectURL(new Blob([buf], {type: "image/tiff"}));
   const a = document.createElement("a");
   a.href = url;
   a.download = `flood_extent_${msg.tile}_${currentQLabel()}.tif`;
@@ -908,9 +875,15 @@ function saveFloodGeoTiff(msg) {
   setTimeout(() => URL.revokeObjectURL(url), 0);
   log(`Saved ${a.download} · ${msg.flooded.toLocaleString()} flooded cells.`, "success");
 }
+
 $("btn-save-geotiff").addEventListener("click", () => {
   if (!workerReady || lastFloodedCells === 0) return;
-  worker.postMessage({ type: "export", id: Date.now() });
+  worker.postMessage({type: "export", id: Date.now()});
 });
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Boot
+// ═══════════════════════════════════════════════════════════════════════════
 syncLadderLabel();
 initStreamStyleControls();
+initFloodStyleControls();
