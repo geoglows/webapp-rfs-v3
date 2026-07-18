@@ -1,13 +1,4 @@
-const STREAMS_PMTILES = import.meta.env.VITE_STREAMS_PMTILES ?? `${location.origin}/data/streams.pmtiles`;
-const FORECAST15_BASE = (import.meta.env.VITE_FORECAST15_BASE ?? `${location.origin}/data/forecast15`).replace(/\/+$/, "");
-const STYLES_JSON = import.meta.env.VITE_FORECAST_STYLES_JSON ?? "styles.json";
-const STYLES_BIN = import.meta.env.VITE_FORECAST_STYLES_BIN ?? "styles.bin";
-function summaryBase(date, sub) {
-  const [y, m, d] = date.split("-");
-  return `${FORECAST15_BASE}/year=${y}/month=${m}/day=${d}/summaries/${sub}`;
-}
-// Which summaries/<sub> folder each styleset loads its styles.{json,bin} from.
-const STYLESET_SUB = { forecast15: "app-styles", maxflow: "max-flow", timetopeak: "time-to-peak", q95: "q95" };
+import { STREAMS_PMTILES, STYLES_BIN, STYLES_JSON, mapStylesUrl } from "../../constants";
 const RET_COLORS = ["#3182bd", "#fee08b", "#fdae61", "#f46d43", "#d73027", "#a50026", "#7a0177"];
 // Uniform stream color for the "Standard" styleset (matches the normal-flow return-period blue).
 const STANDARD_COLOR = "#3182bd";
@@ -16,7 +7,6 @@ const WIDTH_BASE = 4;
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 class StreamAnimation {
   map;
-  log;
   meta = null;
   cube = null;
   // [N*T], row-major, delta undone
@@ -43,9 +33,8 @@ class StreamAnimation {
   playBtn = document.getElementById("btn-play");
   progEl = document.getElementById("progress-bar");
   speedEl = document.getElementById("speed");
-  constructor(map, log) {
+  constructor(map) {
     this.map = map;
-    this.log = log;
     this.wirePlayer();
   }
   /** Add the animated global streams source + line layer on top of the loaded basemap. */
@@ -185,18 +174,18 @@ class StreamAnimation {
     const styleset = this.styleset;
     const date = this.currentDate;
     if (styleset === "standard" || !date) return;
-    const sub = STYLESET_SUB[styleset];
-    if (!sub) return;
+    // null for any styleset with no style tables of its own.
+    const base = mapStylesUrl(date, styleset);
+    if (!base) return;
     const t0 = performance.now();
     this.cube = null;
     this.appliedStep = -1;
-    const base = summaryBase(date, sub);
-    this.log(`Loading ${styleset} styles for ${date}…`, "info");
+    console.log(`Loading ${styleset} styles for ${date}…`);
     try {
       this.meta = await (await fetch(`${base}/${STYLES_JSON}`)).json();
       this.N = this.meta.n_reaches;
       this.T = this.meta.n_steps ?? 1;
-      this.log(`  ${this.N.toLocaleString()} reaches × ${this.T} step(s)`, "success");
+      console.log(`  ${this.N.toLocaleString()} reaches × ${this.T} step(s)`);
       let inflated;
       try {
         const resp = await fetch(`${base}/${STYLES_BIN}`);
@@ -225,9 +214,9 @@ class StreamAnimation {
       this.setStep(0, false);
       this.applyAll();
       this.scheduleApply();
-      this.log(`  ${styleset} ready (${((performance.now() - t0) / 1e3).toFixed(1)}s)`, "success");
+      console.log(`  ${styleset} ready (${((performance.now() - t0) / 1e3).toFixed(1)}s)`);
     } catch (e) {
-      this.log(`  ${styleset} (${date}): ${e.message}`, "error");
+      console.error(`  ${styleset} (${date}): ${e.message}`);
     }
   }
   // color NEWLY-seen reaches to the current step (runs on tile load). The cube row comes

@@ -6,6 +6,9 @@ import {applyBasemap, BASEMAPS} from "./map/basemaps";
 import {addRasterOverlays, applyLayerVisibility} from "./map/layers";
 import {StreamAnimation} from "./map/streams/animation";
 import {Selection} from "./map/fim/selection";
+import {FimTilesLayer} from "./map/fim/tilesLayer";
+import {FloodOverlay} from "./map/fim/overlay";
+import {DEFAULT_FORECAST_DATE, FIM_DATA_URL} from "./constants";
 import {flowsAtLadderPosition, uniformFlows} from "./map/fim/hydro";
 import {legendGradient} from "./map/fim/colormap";
 import {encodeExtentGeoTiff} from "./map/fim/geotiff";
@@ -13,38 +16,14 @@ import {heroIcon} from "./icons/heroicons";
 import {setLanguage, t} from "./i18n/i18n";
 
 // ═══════════════════════════════════════════════════════════════════════════
-// Config · data hosts and the forecast date
+// Config · every env-driven value lives in src/constants.js
 // ═══════════════════════════════════════════════════════════════════════════
-const DATA_BASE = import.meta.env.VITE_DATA_URL ?? `${location.origin}/data`;
-const FIM_DATA_URL = import.meta.env.VITE_FIM_DATA_URL ?? `${DATA_BASE}/fim`;
-const FIM_TILES_URL = import.meta.env.VITE_FIM_TILES_PMTILES ?? `${FIM_DATA_URL}/tile_boundaries.pmtiles`;
-// Below this zoom the viewport can cover hundreds of data tiles; loading every one's header
-// would be a request storm, so coverage only loads once you're zoomed in to work.
-const FIM_MIN_COVERAGE_ZOOM = 7;
-
-function todayUtc() {
-  const d = /* @__PURE__ */ new Date();
-  const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
-  const dd = String(d.getUTCDate()).padStart(2, "0");
-  return `${d.getUTCFullYear()}-${mm}-${dd}`;
-}
-
-const DEFAULT_FORECAST_DATE = import.meta.env.VITE_FORECAST_DEFAULT_DATE ?? todayUtc();
 let currentForecastDate = DEFAULT_FORECAST_DATE;
 
 // ═══════════════════════════════════════════════════════════════════════════
-// Shared helpers · DOM lookup and the diagnostics log
+// Shared helpers
 // ═══════════════════════════════════════════════════════════════════════════
 const $ = (id) => document.getElementById(id);
-const logEl = $("log");
-
-function log(msg, cls = "") {
-  const s = document.createElement("span");
-  s.className = cls;
-  s.textContent = msg + "\n";
-  logEl.appendChild(s);
-  logEl.parentElement.scrollTop = logEl.parentElement.scrollHeight;
-}
 
 // ═══════════════════════════════════════════════════════════════════════════
 // App state · flood worker, selection, and the forecast animation
@@ -55,8 +34,13 @@ let coverageSet = null;
 let selectSeq = 0;
 let flowsSpec = null;
 let workerReady = false;
-let floodCanvas = null;
-let floodCtx = null;
+// The flood extent canvas layer, and the FIM data-tile footprints that drive coverage loading.
+// Both own their map layers; see map/fim/overlay.js and map/fim/tilesLayer.js.
+const floodOverlay = new FloodOverlay(map);
+const fimTiles = new FimTilesLayer(map, {
+  isReady: () => workerReady,
+  onTiles: (tiles) => worker.postMessage({type: "viewport", tiles})
+});
 let frameInFlight = false;
 let pendingFlood = false;
 let floodEnabled = false;
@@ -84,18 +68,18 @@ let sliderVisible = true;
 // ═══════════════════════════════════════════════════════════════════════════
 // Map lifecycle · app layers, click handling, and load wiring
 // ═══════════════════════════════════════════════════════════════════════════
-const anim = new StreamAnimation(map, log);
+const anim = new StreamAnimation(map);
 let mapLoaded = false;
 map.on("load", async () => {
   anim.addStreamsLayer();
   applyLayerVisibility(map, "streams");
   addRasterOverlays(map);
   addInspectHighlightLayer();
-  addFimTilesLayer();
+  fimTiles.add();
   // Slot the default basemap in beneath the app layers just added. Not awaited so the (async,
   // fetched) vector style doesn't hold up the rest of load; it inserts under everything when ready.
   applyBasemap(map, BASEMAPS[0]);
-  log("Basemap + streams loaded.", "success");
+  console.log("Basemap + streams loaded.");
   mapLoaded = true;
   map.on("click", (e) => {
     const pad = 10;
@@ -126,7 +110,7 @@ map.on("load", async () => {
   anim.setDate(DEFAULT_FORECAST_DATE);
 });
 map.on("error", (e) => {
-  if (e?.error) log(`map: ${e.error.message}`, "error");
+  if (e?.error) console.error(`map: ${e.error.message}`);
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -138,13 +122,13 @@ worker.onmessage = (ev) => {
   if (msg.type === "ready") {
     workerReady = true;
     $("legend-depth").style.background = `linear-gradient(to right, ${legendGradient()})`;
-    log(`Flood index ready: ${msg.nTiles.toLocaleString()} tiles. Coverage loads from the map viewport.`, "success");
+    console.log(`Flood index ready: ${msg.nTiles.toLocaleString()} tiles. Coverage loads from the map viewport.`);
     refreshControls();
-    syncViewportTiles();
+    fimTiles.sync();
   } else if (msg.type === "coverage") {
     coverageSet = new Set(new Uint32Array(msg.coverage));
     selection?.setCoverage([...coverageSet]);
-    log(`Flood coverage: ${msg.nRivers.toLocaleString()} river(s) across ${msg.nActiveTiles} loaded tile(s).`, "success");
+    console.log(`Flood coverage: ${msg.nRivers.toLocaleString()} river(s) across ${msg.nActiveTiles} loaded tile(s).`);
     selection?.refresh();
     refreshControls();
   } else if (msg.type === "selected") {
@@ -157,16 +141,14 @@ worker.onmessage = (ev) => {
     }
     floodView = {bounds: msg.bounds, width: msg.width, height: msg.height};
     flowsSpec = msg.flows;
-    rebuildFloodOverlay(floodView);
+    if (mapLoaded) floodOverlay.rebuild(floodView);
     const st = msg.stats;
-    log(`Corridor slices: ${st.slices} river-slice(s) from ${st.tiles} tile(s), ${st.relations.toLocaleString()} relations.`, "success");
+    console.log(`Corridor slices: ${st.slices} river-slice(s) from ${st.tiles} tile(s), ${st.relations.toLocaleString()} relations.`);
     computeFlood();
   } else if (msg.type === "frame") {
     frameInFlight = false;
-    if (floodCtx && floodCanvas && msg.width === floodCanvas.width && msg.height === floodCanvas.height) {
-      const img = new ImageData(new Uint8ClampedArray(msg.rgba), msg.width, msg.height);
-      floodCtx.putImageData(img, 0, 0);
-      refreshFloodCanvas();
+    // A frame that no longer matches the canvas is stale (the selection moved on) — paint() drops it.
+    if (floodOverlay.paint(msg.rgba, msg.width, msg.height)) {
       lastFloodedCells = msg.floodedCells;
       updateSaveButton();
       $("flood-status").textContent = `${msg.floodedCells.toLocaleString()} flooded cells · ${msg.computeMs.toFixed(1)} ms`;
@@ -180,7 +162,7 @@ worker.onmessage = (ev) => {
   } else if (msg.type === "query") {
     $("readout").textContent = msg.depth == null ? "no flooding at that pixel" : `depth ≈ ${msg.depth.toFixed(2)} m`;
   } else if (msg.type === "error") {
-    log(`flood worker: ${msg.message}`, "error");
+    console.error(`flood worker: ${msg.message}`);
     $("flood-status").textContent = msg.message;
     frameInFlight = false;
   }
@@ -190,38 +172,6 @@ function requestSelect() {
   if (!workerReady || current.floodable.length === 0) return;
   $("flood-status").textContent = "Fetching river slices…";
   worker.postMessage({type: "select", id: ++selectSeq, comids: current.floodable});
-}
-
-function rebuildFloodOverlay(view) {
-  if (!mapLoaded) return;
-  if (map.getLayer("flood")) map.removeLayer("flood");
-  if (map.getSource("flood")) map.removeSource("flood");
-  floodCanvas = document.createElement("canvas");
-  floodCanvas.width = view.width;
-  floodCanvas.height = view.height;
-  floodCtx = floodCanvas.getContext("2d");
-  const b = view.bounds;
-  map.addSource("flood", {
-    type: "canvas",
-    canvas: floodCanvas,
-    animate: false,
-    coordinates: [[b.west, b.north], [b.east, b.north], [b.east, b.south], [b.west, b.south]]
-  });
-  map.addLayer({
-    id: "flood",
-    type: "raster",
-    source: "flood",
-    paint: {"raster-fade-duration": 0, "raster-resampling": "nearest"}
-  }, "streams");
-  // The layer is recreated on every viewport/selection change, so reapply the picker's toggle state.
-  applyLayerVisibility(map, "flood");
-}
-
-function refreshFloodCanvas() {
-  const src = map.getSource("flood");
-  if (!src) return;
-  src.play();
-  requestAnimationFrame(() => src.pause());
 }
 
 function queryFloodDepth(lngLat) {
@@ -250,9 +200,7 @@ function onSelectionChange(s) {
 function clearFloodOverlay() {
   lastFloodedCells = 0;
   updateSaveButton();
-  if (!floodCtx || !floodCanvas) return;
-  floodCtx.clearRect(0, 0, floodCanvas.width, floodCanvas.height);
-  refreshFloodCanvas();
+  floodOverlay.clear();
 }
 
 function refreshControls() {
@@ -370,21 +318,21 @@ async function loadForecastFlows() {
     if (stale) {
       // fall through to the retry below
     } else if (fc.series.size === 0) {
-      log(`No selected reach is present in the ${currentForecastDate} forecast store.`, "error");
+      console.error(`No selected reach is present in the ${currentForecastDate} forecast store.`);
       $("flood-status").textContent = "None of the selected reaches are in this forecast.";
     } else {
       forecastFlows = fc;
       forecastFlowsKey = key;
       fcStep = Math.min(fcStep, fc.datetime.length - 1);
       if (fc.missing.length) {
-        log(`${fc.missing.length} selected reach(es) are absent from the ${currentForecastDate} forecast — skipped.`, "info");
+        console.log(`${fc.missing.length} selected reach(es) are absent from the ${currentForecastDate} forecast — skipped.`);
       }
-      log(`Forecast flows: ${fc.series.size} reach(es) × ${fc.datetime.length} steps for ${currentForecastDate}.`, "success");
+      console.log(`Forecast flows: ${fc.series.size} reach(es) × ${fc.datetime.length} steps for ${currentForecastDate}.`);
       syncForecastPlayer();
       computeFlood();
     }
   } catch (e) {
-    log(`forecast flows: ${e.message}`, "error");
+    console.error(`forecast flows: ${e.message}`);
     $("flood-status").textContent = `Forecast download failed: ${e.message}`;
   } finally {
     forecastLoading = false;
@@ -457,50 +405,6 @@ function initFloodStyleControls() {
 // ═══════════════════════════════════════════════════════════════════════════
 // Flood coverage · FIM data-tile footprints and flood mapping mode
 // ═══════════════════════════════════════════════════════════════════════════
-function addFimTilesLayer() {
-  if (map.getSource("fim-tiles")) return;
-  map.addSource("fim-tiles", {type: "vector", url: `pmtiles://${FIM_TILES_URL}`});
-  // Invisible fill = the viewport hit-test target. A line layer would miss a viewport sitting
-  // entirely inside one tile with no edge on screen; a fill at opacity 0 still renders, so
-  // queryRenderedFeatures returns it wherever the viewport lands.
-  map.addLayer({
-    id: "fim-tiles-hit",
-    type: "fill",
-    source: "fim-tiles",
-    "source-layer": "fim_tiles",
-    paint: {"fill-opacity": 0}
-  });
-  // Faint outline, shown only in flood mode, so the data-tile footprint is visible.
-  map.addLayer({
-    id: "fim-tiles-outline",
-    type: "line",
-    source: "fim-tiles",
-    "source-layer": "fim_tiles",
-    layout: {visibility: floodMappingMode ? "visible" : "none"},
-    paint: {"line-color": "#38bdf8", "line-width": 1, "line-opacity": 0.5, "line-dasharray": [2, 2]}
-  });
-  map.on("sourcedata", (e) => {
-    if (e.sourceId === "fim-tiles" && e.isSourceLoaded) syncViewportTiles();
-  });
-}
-
-// Which flood-data tiles overlap the current viewport → tell the worker to load their coverage.
-// Gated on flood mode (and a min zoom) so normal browsing never fetches tile headers.
-let lastViewportKey = "";
-
-function syncViewportTiles() {
-  if (!floodMappingMode || !workerReady || !map.getLayer("fim-tiles-hit")) return;
-  if (map.getZoom() < FIM_MIN_COVERAGE_ZOOM) return;
-  const names = [...new Set(
-    map.queryRenderedFeatures({layers: ["fim-tiles-hit"]}).map((f) => f.properties.name)
-  )].sort();
-  const key = names.join(",");
-  if (key === lastViewportKey) return;
-  lastViewportKey = key;
-  if (names.length) worker.postMessage({type: "viewport", tiles: names});
-}
-
-map.on("moveend", syncViewportTiles);
 
 function setFloodMappingMode(on) {
   floodMappingMode = on;
@@ -513,10 +417,11 @@ function setFloodMappingMode(on) {
   // one uniform width, so the selection highlights aren't competing with a variable-width network.
   anim.setFloodMode(on);
   $("stream-style").disabled = on;
-  for (const id of ["fim-tiles-outline", "fim-coverage", "sel-selected", "sel-floodable"]) {
+  // Data-tile footprints follow the mode, and start/stop tracking the viewport with it.
+  fimTiles.setActive(on);
+  for (const id of ["fim-coverage", "sel-selected", "sel-floodable"]) {
     if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", on ? "visible" : "none");
   }
-  if (on) syncViewportTiles();
 }
 
 $("btn-flood-mode").addEventListener("click", () => setFloodMappingMode(!floodMappingMode));
@@ -777,7 +682,7 @@ function initForecastDatePicker() {
     const date = input.value;
     if (!date) return;
     currentForecastDate = date;
-    log(`Switching forecast date to ${date}…`, "info");
+    console.log(`Switching forecast date to ${date}…`);
     anim.setDate(date);
     // The flood forecast styles read the same initialization date, so they refetch too.
     if (floodStyle === "forecast" || floodStyle === "forecastmax") {
@@ -813,7 +718,7 @@ function initStreamStyleControls() {
       anim.setStyleset(currentStyleset);
       if (currentStyleset === "maxflow" || currentStyleset === "timetopeak") {
         const label = sel.options[sel.selectedIndex]?.textContent ?? currentStyleset;
-        log(`“${label}” styleset is a placeholder — not available yet.`, "info");
+        console.log(`“${label}” styleset is a placeholder — not available yet.`);
       }
       updateSliderVisibility();
     });
@@ -856,7 +761,7 @@ function currentQLabel() {
 
 function saveFloodGeoTiff(msg) {
   if (!msg.extent) {
-    log("No flood map to export.", "error");
+    console.error("No flood map to export.");
     return;
   }
   const buf = encodeExtentGeoTiff({
@@ -873,7 +778,7 @@ function saveFloodGeoTiff(msg) {
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 0);
-  log(`Saved ${a.download} · ${msg.flooded.toLocaleString()} flooded cells.`, "success");
+  console.log(`Saved ${a.download} · ${msg.flooded.toLocaleString()} flooded cells.`);
 }
 
 $("btn-save-geotiff").addEventListener("click", () => {

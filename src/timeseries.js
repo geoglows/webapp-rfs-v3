@@ -1,10 +1,9 @@
 import * as zarr from "zarrita";
 import Blosc from "numcodecs/blosc";
+import { DEV_RIVER_ID, RETROSPECTIVE_DAILY_ZARR as DAILY_ZARR_URL } from "./constants";
 const blosc = (() => Promise.resolve(Blosc));
 zarr.registry.set("blosc", blosc);
 zarr.registry.set("numcodecs.blosc", blosc);
-const DAILY_ZARR_URL = import.meta.env.VITE_RETROSPECTIVE_DAILY_ZARR;
-const DEV_RIVER_ID = 710431167;
 const UNIT_SECONDS = { seconds: 1, minutes: 60, hours: 3600, days: 86400 };
 async function openStore() {
   if (!DAILY_ZARR_URL) throw new Error("VITE_RETROSPECTIVE_DAILY_ZARR is not set");

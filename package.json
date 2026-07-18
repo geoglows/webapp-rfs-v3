@@ -20,8 +20,6 @@
     "chartjs-plugin-zoom": "^2.2.0",
     "date-fns": "^4.4.0",
     "heroicons": "^2.2.0",
-    "hyparquet": "^1.26.0",
-    "hyparquet-compressors": "^1.1.1",
     "maplibre-gl": "^5.0.0",
     "pmtiles": "^4.0.1",
     "zarrita": "^0.7.3"

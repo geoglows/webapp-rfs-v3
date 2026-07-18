@@ -1,15 +1,18 @@
 import * as zarr from "zarrita";
 import Blosc from "numcodecs/blosc";
-import { DEV_RIVER_ID } from "./timeseries";
+import {
+  DEV_RIVER_ID,
+  FORECAST15_BASE,
+  FORECAST_DISCHARGE_ZARR,
+  FORECAST_INIT_HOUR,
+  FORECAST_ZARR_BASE as FLAT_FORECAST_BASE,
+  forecastDatePath
+} from "./constants";
 const blosc = (() => Promise.resolve(Blosc));
 zarr.registry.set("blosc", blosc);
 zarr.registry.set("numcodecs.blosc", blosc);
-const FORECAST15_BASE = (import.meta.env.VITE_FORECAST15_BASE ?? `${location.origin}/data/forecast15`).replace(/\/+$/, "");
-const FLAT_FORECAST_BASE = (import.meta.env.VITE_FORECAST_ZARR_BASE ?? "https://d14ritg1bypdp7.cloudfront.net").replace(/\/+$/, "");
-const FORECAST_INIT_HOUR = "00";
 function forecastZarrUrlPartitioned(date) {
-  const [y, m, d] = date.split("-");
-  return `${FORECAST15_BASE}/year=${y}/month=${m}/day=${d}/discharge.zarr`;
+  return `${FORECAST15_BASE}/${forecastDatePath(date)}/${FORECAST_DISCHARGE_ZARR}`;
 }
 function forecastZarrUrlFlat(date) {
   return `${FLAT_FORECAST_BASE}/${date.replace(/-/g, "")}${FORECAST_INIT_HOUR}.zarr`;

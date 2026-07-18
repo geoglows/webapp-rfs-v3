@@ -211,41 +211,6 @@ section h2 {
     flex: 0 0 auto;
 }
 
-/* log — lives in the settings modal, under the display checkboxes */
-#log-container {
-    max-height: 220px;
-    overflow-y: auto;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 8px 10px;
-}
-
-#log {
-    font-family: "JetBrains Mono", ui-monospace, monospace;
-    font-size: 12.5px;
-    line-height: 1.7;
-    color: var(--text-dim);
-    white-space: pre-wrap;
-    word-break: break-word;
-}
-
-#log .info {
-    color: var(--accent);
-}
-
-#log .success {
-    color: var(--success);
-}
-
-#log .error {
-    color: var(--danger);
-}
-
-#log .step {
-    color: var(--warn);
-}
-
 /* mode tabs */
 .mode-row {
     display: flex;

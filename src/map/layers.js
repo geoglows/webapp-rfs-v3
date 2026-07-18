@@ -8,8 +8,8 @@ import { wireMenu } from "./menu";
  * spec addRasterOverlays() adds to the map (the streams and flood layers are created elsewhere,
  * and only have their visibility driven from here).
  *
- * streams/flood default on even though the flood layer starts empty — it's created lazily in
- * rebuildFloodOverlay(), which reapplies this state so a toggle made before the layer exists sticks.
+ * streams/flood default on even though the flood layer starts empty — it's created lazily by
+ * FloodOverlay.rebuild(), which reapplies this state so a toggle made before the layer exists sticks.
  */
 const OVERLAYS = [
   { layerId: "streams", labelKey: "layers.streams", on: true },

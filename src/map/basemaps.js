@@ -91,7 +91,7 @@ async function createEnvironmentBasemap({map, beforeId}) {
     attribution: envMapConf.hillshade.attribution,
     maxzoom: envMapConf.hillshade.maxzoom ?? 19
   });
-  map.addLayer({id: envMapConf.hillshade.id, type: "raster", source: envMapConf.hillshade.id}, map.getStyle().layers?.[0]?.id);
+  map.addLayer({id: envMapConf.hillshade.id, type: "raster", source: envMapConf.hillshade.id}, beforeId);
   basemapSourceIds.push(envMapConf.hillshade.id);
   basemapLayerIds.push(envMapConf.hillshade.id);
 
@@ -100,7 +100,7 @@ async function createEnvironmentBasemap({map, beforeId}) {
   for (const style of styles) {
     for (const [sid, src] of Object.entries(style.sources ?? {})) {
       if (map.getSource(sid)) continue;
-      map.addSource(sid, firstVectorSource ? {...src, attribution: bm.attribution} : src);
+      map.addSource(sid, firstVectorSource ? {...src, attribution: envMapConf.attribution} : src);
       basemapSourceIds.push(sid);
       firstVectorSource = false;
     }
