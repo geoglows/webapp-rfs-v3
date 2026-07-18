@@ -1,5 +1,6 @@
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
+import { VectorTileLayer } from "@esri/maplibre-arcgis";
 import { Protocol } from "pmtiles";
 import { StreamAnimation } from "./map/streams/animation";
 import { Selection } from "./map/fim/selection";
@@ -24,6 +25,29 @@ function todayUtc() {
 const DEFAULT_FORECAST_DATE = import.meta.env.VITE_FORECAST_DEFAULT_DATE ?? todayUtc();
 let currentForecastDate = DEFAULT_FORECAST_DATE;
 const BASEMAPS = [
+  {
+    // Esri "Environment" vector basemap (arcgis.com portal items). Unlike the raster entries below,
+    // these are vector-tile styles, loaded via @esri/maplibre-arcgis's VectorTileLayer in
+    // applyBasemap(). The Environment basemap is composed of several stacked layers that share one
+    // tile server (World_Basemap_v2), glyphs, and sprite; listed bottom-to-top so labels land on top.
+    id: "environment",
+    label: "Environment (Esri)",
+    vector: true,
+    itemIds: [
+      "005b8960ddd04ae781df8d471b6726b3", // Environment Base (land/vegetation/water fills)
+      "3bfd1065c1a748c5ae2f9408c3fb1078", // Environment Watersheds (HydroSHEDS boundary lines)
+      "8b8862d9cc894f5db44231a67ee0e41b" // Environment Detail and Label (admin, roads, labels, POIs)
+    ],
+    attribution: "Esri, TomTom, Garmin, FAO, NOAA, USGS, © OpenStreetMap contributors, and the GIS User Community",
+    // Esri World Hillshade, the terrain relief that pairs with the Environment basemap. Added and
+    // removed with it (see applyBasemap) and drawn beneath the vector layers so relief shows through.
+    companion: {
+      id: "hillshade",
+      tiles: ["https://services.arcgisonline.com/arcgis/rest/services/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}"],
+      maxzoom: 23,
+      attribution: "Hillshade: Esri, Airbus DS, USGS, NGA, NASA, CGIAR, N Robinson, NCEAS, NLS, OS, NMA, Geodatastyrelsen, Rijkswaterstaat, GSA, Geoland, FEMA, Intermap, and the GIS user community"
+    }
+  },
   {
     id: "light",
     label: "Light grey (Carto)",
@@ -67,11 +91,9 @@ const BASEMAPS = [
     attribution: "USGS — The National Map: 3DEP, NHD, GNIS, NLCD, NTD, and others"
   }
 ];
-const basemapStyle = (bm) => ({
-  version: 8,
-  sources: { basemap: { type: "raster", tiles: bm.tiles, tileSize: 256, attribution: bm.attribution, maxzoom: bm.maxzoom ?? 19 } },
-  layers: [{ id: "basemap", type: "raster", source: "basemap" }]
-});
+// The map starts on an empty style; the real basemap (raster or vector) is injected by
+// applyBasemap() so the two kinds share one code path. See applyBasemap() below.
+const EMPTY_STYLE = { version: 8, sources: {}, layers: [] };
 const $ = (id) => document.getElementById(id);
 const logEl = $("log");
 function log(msg, cls = "") {
@@ -105,22 +127,88 @@ const protocol = new Protocol({ metadata: true });
 maplibregl.addProtocol("pmtiles", protocol.tile);
 const map = new maplibregl.Map({
   container: "map",
-  style: basemapStyle(BASEMAPS[0]),
-  center: [-103.8, 40.27],
-  // over the demo tile, so flood coverage is discoverable on load
-  zoom: 4,
+  style: EMPTY_STYLE,
+  // Global overview (lng 0, lat 20); the URL hash overrides this when present.
+  center: [0, 20],
+  zoom: 1.5,
   hash: "map",
-  maxZoom: 13
+  maxZoom: 13,
+  // Non-Latin scripts render locally, so labels don't rely on the fallback glyph collapsed below.
+  localIdeographFontFamily: "sans-serif",
+  // Esri's Environment styles ask for comma-joined font stacks (e.g. "Noto Sans Regular,Arial
+  // Unicode MS Regular"), but its font server only serves single fonts — a stack 404s as JSON,
+  // which MapLibre then fails to parse as a glyph PBF ("Unimplemented type: 3"). Collapse any Esri
+  // glyph request to its primary font. Everything else falls through to default handling.
+  transformRequest: (url) => {
+    if (/\/fonts\/[^/]*(?:,|%2C)/i.test(url)) {
+      return { url: url.replace(/\/fonts\/([^/]+)\//, (_, stack) => `/fonts/${stack.split(/,|%2C/i)[0]}/`) };
+    }
+    return undefined;
+  }
 });
 // Zoom +/- plus the compass button, which resets bearing (and pitch) back to north-up on click.
 map.addControl(new maplibregl.NavigationControl({ showCompass: true, visualizePitch: true }), "top-left");
+// Layers/sources added by the current basemap, so a switch can tear the old one down cleanly.
+// A raster basemap contributes one of each; a vector basemap contributes many.
+let basemapLayerIds = [];
+let basemapSourceIds = [];
+// Swap in a basemap (raster tiles or an ArcGIS vector-tile style) beneath every app layer. App
+// layers (streams, overlays, highlights, FIM tiles) are never touched — only the basemap group is
+// replaced — so map state survives a basemap change.
+async function applyBasemap(bm) {
+  for (const id of basemapLayerIds) if (map.getLayer(id)) map.removeLayer(id);
+  for (const id of basemapSourceIds) if (map.getSource(id)) map.removeSource(id);
+  basemapLayerIds = [];
+  basemapSourceIds = [];
+  // Insert beneath the lowest existing layer so the basemap always renders on the bottom.
+  const beforeId = map.getStyle().layers?.[0]?.id;
+  if (bm.vector) {
+    // @esri/maplibre-arcgis resolves each portal item into a MapLibre style (sources with absolute
+    // tile URLs, glyphs, sprite). We inject the pieces ourselves rather than using the library's
+    // addSourcesAndLayersTo(map) so the basemap lands beneath the app layers and can be torn down
+    // on a basemap switch. The Environment basemap is several stacked items that share one tile
+    // server, glyphs, and sprite, so we load them all and lay their layers down in order.
+    const items = await Promise.all(bm.itemIds.map((id) => VectorTileLayer.fromPortalItem(id)));
+    const styles = items.map((it) => it.style);
+    // glyphs/sprite are style-level (not per-layer) and identical across these items; set from the
+    // first, before adding the layers that reference them.
+    if (styles[0].glyphs) map.setGlyphs(styles[0].glyphs);
+    if (styles[0].sprite) map.setSprite(styles[0].sprite);
+    // Companion raster (terrain hillshade) goes in first, so it sits below the vector basemap
+    // layers added next — all land above `beforeId`, i.e. beneath every app layer.
+    if (bm.companion) {
+      const c = bm.companion;
+      map.addSource(c.id, { type: "raster", tiles: c.tiles, tileSize: 256, attribution: c.attribution, maxzoom: c.maxzoom ?? 19 });
+      map.addLayer({ id: c.id, type: "raster", source: c.id }, beforeId);
+      basemapSourceIds.push(c.id);
+      basemapLayerIds.push(c.id);
+    }
+    // The items share sources (e.g. "esri"), so dedupe by id; hang the attribution off the first.
+    let firstVectorSource = true;
+    for (const style of styles) {
+      for (const [sid, src] of Object.entries(style.sources ?? {})) {
+        if (map.getSource(sid)) continue;
+        map.addSource(sid, firstVectorSource ? { ...src, attribution: bm.attribution } : src);
+        basemapSourceIds.push(sid);
+        firstVectorSource = false;
+      }
+    }
+    // Lay layers down item-by-item, in listed order, so later items stack above earlier ones.
+    for (const style of styles) {
+      for (const layer of style.layers ?? []) {
+        map.addLayer(layer, beforeId);
+        basemapLayerIds.push(layer.id);
+      }
+    }
+  } else {
+    map.addSource("basemap", { type: "raster", tiles: bm.tiles, tileSize: 256, attribution: bm.attribution, maxzoom: bm.maxzoom ?? 19 });
+    map.addLayer({ id: "basemap", type: "raster", source: "basemap" }, beforeId);
+    basemapSourceIds.push("basemap");
+    basemapLayerIds.push("basemap");
+  }
+}
 function setBasemap(id) {
-  const bm = BASEMAPS.find((b) => b.id === id) ?? BASEMAPS[0];
-  if (map.getLayer("basemap")) map.removeLayer("basemap");
-  if (map.getSource("basemap")) map.removeSource("basemap");
-  map.addSource("basemap", { type: "raster", tiles: bm.tiles, tileSize: 256, attribution: bm.attribution, maxzoom: bm.maxzoom ?? 19 });
-  const beforeId = (map.getStyle().layers ?? []).find((l) => l.id !== "basemap")?.id;
-  map.addLayer({ id: "basemap", type: "raster", source: "basemap" }, beforeId);
+  return applyBasemap(BASEMAPS.find((b) => b.id === id) ?? BASEMAPS[0]);
 }
 // Toggleable map overlays (many can be on at once). `on` is the default visibility; `raster`,
 // when present, is a source spec this module adds to the map (streams + flood are added elsewhere).
@@ -270,6 +358,9 @@ map.on("load", async () => {
   addRasterOverlays();
   addInspectHighlightLayer();
   addFimTilesLayer();
+  // Slot the default basemap in beneath the app layers just added. Not awaited so the (async,
+  // fetched) vector style doesn't hold up the rest of load; it inserts under everything when ready.
+  applyBasemap(BASEMAPS[0]);
   log("Basemap + streams loaded.", "success");
   mapLoaded = true;
   map.on("click", (e) => {
