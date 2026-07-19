@@ -1,6 +1,8 @@
-import { defineConfig } from "vite";
-import { createReadStream, statSync } from "node:fs";
-import { join, normalize, resolve, sep } from "node:path";
+import {defineConfig} from "vite";
+import {createReadStream, statSync} from "node:fs";
+import {join, normalize, resolve, sep} from "node:path";
+const PACKAGE_ROOT = resolve("../clients-rfsjs");
+
 function serveDataDir(dir) {
   const root = resolve(dir);
   const TYPES = {
@@ -10,10 +12,10 @@ function serveDataDir(dir) {
     ".bin": "application/octet-stream"
   };
   return {
-    name: "serve-data-dir",
+    name: `serve-data-dir:${dir}`,
     apply: "serve",
     configureServer(server) {
-      server.middlewares.use("/data", (req, res, next) => {
+      server.middlewares.use(`/${dir}`, (req, res, next) => {
         try {
           const rel = decodeURIComponent((req.url ?? "/").split("?")[0]);
           const filePath = normalize(join(root, rel));
@@ -60,7 +62,7 @@ function serveDataDir(dir) {
               res.end();
               return;
             }
-            createReadStream(filePath, { start, end }).pipe(res);
+            createReadStream(filePath, {start, end}).pipe(res);
             return;
           }
           res.statusCode = 200;
@@ -78,23 +80,34 @@ function serveDataDir(dir) {
     }
   };
 }
+
 var vite_config_default = defineConfig({
   plugins: [serveDataDir("data")],
-  worker: { format: "es" },
-  server: {
-    allowedHosts: [".ngrok-free.app", ".ngrok.app", ".ngrok.io", "tunnel.hales.app"],
-    watch: { ignored: ["**/data/**"] },
-    proxy: {
-      "/forecast-zarr": {
-        target: "https://d14ritg1bypdp7.cloudfront.net",
-        changeOrigin: true,
-        rewrite: (p) => p.replace(/^\/forecast-zarr/, "")
+  resolve: {
+    dedupe: ["chart.js", "chartjs-adapter-date-fns", "chartjs-chart-matrix", "chartjs-plugin-zoom", "date-fns", "zarrita"]
+  },
+  worker: {format: "es"},
+  build: {
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          groups: [{name: "maplibre", test: /node_modules[/\\]maplibre-gl[/\\]/}]
+        }
       }
     }
   },
+  server: {
+    allowedHosts: [".ngrok-free.app", ".ngrok.app", ".ngrok.io", "tunnel.hales.app"],
+    watch: {ignored: ["**/data/**"]},
+    // The package is a sibling checkout, outside this project root, and file: deps are symlinked,
+    // so the dev server has to be told it may serve from the real path.
+    fs: {allow: [".", PACKAGE_ROOT]}
+  },
   test: {
     environment: "node",
-    testTimeout: 12e4
+    testTimeout: 12e4,
+    // references/ is vendored read-only code with its own unfulfilled deps — not ours to run.
+    include: ["src/**/*.test.js"]
   }
 });
 export {

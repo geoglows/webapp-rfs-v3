@@ -10,29 +10,14 @@ function flowsAtLadderPosition(spec, t) {
   }
   return out;
 }
+
 function uniformFlows(spec, q) {
   const out = /* @__PURE__ */ new Map();
   for (const comid of Object.keys(spec.comids)) out.set(Number(comid), q);
   return out;
 }
-function hydrographShape(t, tp = 0.35) {
-  if (t <= 0) return 0;
-  const r = t / tp;
-  return r * r * Math.exp(2 * (1 - r));
-}
-function hydrographFlows(spec, t, peakLadderPos) {
-  const s = hydrographShape(t);
-  const peak = flowsAtLadderPosition(spec, peakLadderPos);
-  const out = /* @__PURE__ */ new Map();
-  for (const [comid, e] of Object.entries(spec.comids)) {
-    const qp = peak.get(Number(comid)) ?? e.qBase;
-    out.set(Number(comid), e.qBase + (qp - e.qBase) * s);
-  }
-  return out;
-}
+
 export {
   flowsAtLadderPosition,
-  hydrographFlows,
-  hydrographShape,
   uniformFlows
 };

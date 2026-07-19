@@ -7,6 +7,7 @@ class RiverNetwork {
   areaKm2;
   // upstream contributing area, where the graph has it
   meta;
+
   constructor(graph) {
     this.terminal = graph.schema.terminal_value;
     this.meta = graph.meta;
@@ -24,10 +25,12 @@ class RiverNetwork {
       }
     }
   }
+
   /** Is this reach part of the loaded network? */
   has(id) {
     return this.downMap.has(id);
   }
+
   /** Every reach that drains to `outlet`, inclusive. Reverse BFS with a head pointer, O(V). */
   upstreamOf(outlet) {
     const visited = /* @__PURE__ */ new Set([outlet]);
@@ -42,6 +45,7 @@ class RiverNetwork {
     }
     return visited;
   }
+
   /** Every reach on the flow path from `inlet` to its terminal outlet, inclusive. */
   downstreamOf(inlet) {
     const chain = /* @__PURE__ */ new Set();
@@ -54,22 +58,26 @@ class RiverNetwork {
     }
     return chain;
   }
+
   /** Union of upstreamOf over every outlet. */
   upstreamClosure(outlets) {
     const out = /* @__PURE__ */ new Set();
     for (const o of outlets) for (const id of this.upstreamOf(o)) out.add(id);
     return out;
   }
+
   /** Union of downstreamOf over every inlet. */
   downstreamClosure(inlets) {
     const out = /* @__PURE__ */ new Set();
     for (const i of inlets) for (const id of this.downstreamOf(i)) out.add(id);
     return out;
   }
+
   // ---- click-radius selection ------------------------------------------------------------
   /** Total upstream reach count per node (drainage-area proxy; lazily built once, O(V)).
    * At a junction, the parent with the larger count is treated as the main stem. */
   upCounts = null;
+
   buildUpCounts() {
     if (this.upCounts) return this.upCounts;
     const count = /* @__PURE__ */ new Map();
@@ -93,6 +101,7 @@ class RiverNetwork {
     this.upCounts = count;
     return count;
   }
+
   /** Immediate upstream parents of `id`, main stem first: by true drainage area when the
    * graph carries it for every parent at this junction, else by total upstream reach count
    * (needed for old-snapshot rivers backfilled without metadata attributes). */
@@ -106,6 +115,7 @@ class RiverNetwork {
     const c = this.buildUpCounts();
     return list.sort((a, b) => (c.get(b) ?? 0) - (c.get(a) ?? 0) || a - b);
   }
+
   /** Follow a branch's own principal (largest-drainage) path upstream for `depth`
    * segments total, adding them to `sel`. Sub-branches are not expanded. */
   walkBranch(head, depth, sel) {
@@ -118,6 +128,7 @@ class RiverNetwork {
       cur = parents[0];
     }
   }
+
   /**
    * Click-radius selection: the clicked reach, `mainUp` segments up the main stem and
    * `mainDown` down the flow path, plus the first `branchDepth` segments of every side
@@ -151,6 +162,7 @@ class RiverNetwork {
     for (const head of branchHeads) this.walkBranch(head, branchDepth, sel);
     return sel;
   }
+
   /**
    * Corridor = segments between the inlets and outlets:
    * downstream-closure(inlets) ∩ upstream-closure(outlets). Empty if no inlet reaches an
@@ -168,12 +180,14 @@ class RiverNetwork {
     return corridor;
   }
 }
+
 async function loadNetwork(url) {
   const resp = await fetch(url);
   if (!resp.ok) throw new Error(`network graph fetch failed: ${resp.status}`);
   const graph = await resp.json();
   return new RiverNetwork(graph);
 }
+
 export {
   RiverNetwork,
   loadNetwork

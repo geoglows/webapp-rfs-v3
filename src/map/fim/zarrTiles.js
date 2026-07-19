@@ -1,10 +1,12 @@
 import * as zarr from "zarrita";
+
 const httpFetcher = async (url) => {
   const r = await fetch(url);
   if (r.status === 404) return void 0;
   if (!r.ok) throw new Error(`HTTP ${r.status} for ${url}`);
   return r.arrayBuffer();
 };
+
 function fetcherStore(baseUrl, fetcher) {
   return {
     async get(key) {
@@ -13,6 +15,7 @@ function fetcherStore(baseUrl, fetcher) {
     }
   };
 }
+
 const mPerMm = (v) => {
   const out = new Float32Array(v.length);
   for (let i = 0; i < v.length; i++) out[i] = Math.fround(v[i] / 1e3);
@@ -23,6 +26,28 @@ const globalize = (v, origin) => {
   for (let i = 0; i < v.length; i++) out[i] = v[i] + origin;
   return out;
 };
+// The worker is long-lived, so its caches need a ceiling — a session that pans the globe and
+// selects reach after reach would otherwise grow both without bound (each slice holds ~13 typed
+// arrays of per-pixel library data). Map iterates in insertion order, so re-inserting on hit and
+// dropping the first key gives a plain LRU. Evicting only drops the cache entry: an in-flight
+// consumer already holds the promise, and a later request simply refetches.
+const MAX_CACHED_SLICES = 512;
+const MAX_CACHED_TILES = 64;
+
+function lruGet(cache, key) {
+  const v = cache.get(key);
+  if (v === void 0) return void 0;
+  cache.delete(key);
+  cache.set(key, v);
+  return v;
+}
+
+function lruSet(cache, key, value, max) {
+  cache.set(key, value);
+  while (cache.size > max) cache.delete(cache.keys().next().value);
+  return value;
+}
+
 class FimIndex {
   constructor(dataBase, fetcher, tilePath, comidTiles) {
     this.dataBase = dataBase;
@@ -30,6 +55,7 @@ class FimIndex {
     this.tilePath = tilePath;
     this.comidTiles = comidTiles;
   }
+
   dataBase;
   fetcher;
   tilePath;
@@ -38,13 +64,15 @@ class FimIndex {
   slices = /* @__PURE__ */ new Map();
   // `${tile}/${comid}`
   activeTiles = /* @__PURE__ */ new Set();
+
   // tiles whose rivers.comid have been folded into comidTiles (viewport-driven coverage)
   /**
-   * dataBase serves the tiles-zarr root: manifest.json and the lat=*\/lon=*\/*.zarr stores.
+   * `base` is the tiles-zarr root — manifest.json and the lat=*\/lon=*\/*.zarr stores. It is
+   * passed in rather than read from shared config: the flood library is the app's own data, the
+   * worker is told where it lives in its init message, and nothing else needs to know.
    * Coverage starts empty — call setActiveTiles() to fold viewport tiles' rivers into it.
    */
-  static async open(dataBase, fetcher = httpFetcher) {
-    const base = dataBase.replace(/\/+$/, "");
+  static async open(base, fetcher = httpFetcher) {
     const manBuf = await fetcher(`${base}/manifest.json`);
     if (!manBuf) throw new Error(`manifest.json not found under ${base}`);
     const manifest = JSON.parse(new TextDecoder().decode(manBuf));
@@ -54,11 +82,12 @@ class FimIndex {
     // each tile's own rivers.comid list (read from its zarr.json header) is the source of truth.
     return new FimIndex(base, fetcher, tilePath, /* @__PURE__ */ new Map());
   }
+
   /** Dev/test entry: open named tiles directly (no manifest needed);
-   * coverage is built from each tile's own directory. */
-  static async openTiles(dataBase, tiles, fetcher = httpFetcher) {
+   * coverage is built from each tile's own directory. Takes `base` explicitly, same as open(). */
+  static async openTiles(base, tiles, fetcher = httpFetcher) {
     const idx = new FimIndex(
-      dataBase.replace(/\/+$/, ""),
+      base,
       fetcher,
       new Map(Object.entries(tiles)),
       /* @__PURE__ */ new Map()
@@ -73,13 +102,16 @@ class FimIndex {
     }
     return idx;
   }
+
   /** All comids with flood-library coverage (transfer-friendly). */
   coverage() {
     return Uint32Array.from(this.comidTiles.keys());
   }
+
   hasCoverage(comid) {
     return this.comidTiles.has(comid);
   }
+
   /**
    * Fold the given tiles' river lists into coverage (comid -> tiles), loading each new tile's
    * header once. Accumulates: a tile stays active after it leaves the viewport, so coverage
@@ -112,14 +144,13 @@ class FimIndex {
     }
     return this.coverage();
   }
+
   tile(name) {
-    let h = this.tiles.get(name);
-    if (!h) {
-      h = this.openTile(name);
-      this.tiles.set(name, h);
-    }
+    let h = lruGet(this.tiles, name);
+    if (!h) h = lruSet(this.tiles, name, this.openTile(name), MAX_CACHED_TILES);
     return h;
   }
+
   async openTile(name) {
     const path = this.tilePath.get(name);
     if (!path) throw new Error(`tile ${name} not in manifest`);
@@ -133,16 +164,18 @@ class FimIndex {
     const rank = /* @__PURE__ */ new Map();
     attrs.rivers.comid.forEach((c, i) => rank.set(c, i));
     const root = zarr.root(fetcherStore(storeUrl, this.fetcher));
-    return { attrs, rank, root, arrays: /* @__PURE__ */ new Map() };
+    return {attrs, rank, root, arrays: /* @__PURE__ */ new Map()};
   }
+
   array(h, name) {
     let a = h.arrays.get(name);
     if (!a) {
-      a = zarr.open(h.root.resolve(name), { kind: "array" });
+      a = zarr.open(h.root.resolve(name), {kind: "array"});
       h.arrays.set(name, a);
     }
     return a;
   }
+
   async read1d(h, name, start, count) {
     const arr = await this.array(h, name);
     if (count === 0) {
@@ -151,28 +184,28 @@ class FimIndex {
     const res = await zarr.get(arr, [zarr.slice(start, start + count)]);
     return res.data;
   }
+
   async read2d(h, name, start, count) {
     if (count === 0) return new Float32Array(0);
     const arr = await this.array(h, name);
     const res = await zarr.get(arr, [zarr.slice(start, start + count), null]);
     return res.data;
   }
+
   /** Load (and cache) one river's slice from one tile. */
   slice(tileName, comid) {
     const key = `${tileName}/${comid}`;
-    let s = this.slices.get(key);
-    if (!s) {
-      s = this.loadSlice(tileName, comid);
-      this.slices.set(key, s);
-    }
+    let s = lruGet(this.slices, key);
+    if (!s) s = lruSet(this.slices, key, this.loadSlice(tileName, comid), MAX_CACHED_SLICES);
     return s;
   }
+
   async loadSlice(tileName, comid) {
     const h = await this.tile(tileName);
     const r = h.rank.get(comid);
     if (r === void 0) throw new Error(`comid ${comid} not in tile ${tileName}`);
     const d = h.attrs.rivers;
-    const { gRow0, gCol0 } = h.attrs.grid;
+    const {gRow0, gCol0} = h.attrs.grid;
     const vs = d.visitStart[r];
     const vc = d.visitCount[r];
     const ps = d.pixStart[r];
@@ -220,6 +253,7 @@ class FimIndex {
       relDtf: mPerMm(relDtf)
     };
   }
+
   /**
    * Fetch every (tile, comid) slice for the selected rivers. Comids without coverage are
    * silently skipped (callers gate UI on hasCoverage). A river crossing tiles yields one
@@ -234,6 +268,7 @@ class FimIndex {
     return Promise.all(jobs);
   }
 }
+
 export {
   FimIndex,
   httpFetcher

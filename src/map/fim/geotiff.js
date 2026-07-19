@@ -3,19 +3,21 @@ const T_SHORT = 3;
 const T_LONG = 4;
 const T_DOUBLE = 12;
 const even = (n) => n + 1 & ~1;
+
 function asciiz(s) {
   const bytes = new TextEncoder().encode(s);
   const count = bytes.length + 1;
   const block = new Uint8Array(even(count));
   block.set(bytes);
-  return { block, count };
+  return {block, count};
 }
+
 function encodeExtentGeoTiff(input) {
-  const { width, height, bounds, data } = input;
+  const {width, height, bounds, data} = input;
   if (data.length !== width * height) {
     throw new Error(`data length ${data.length} != width*height ${width * height}`);
   }
-  const software = asciiz(input.software ?? "rfs-v3-app FLDPLN flood extent");
+  const software = asciiz(input.software ?? "RFS v3 FLDPLN flood extent");
   const geoKeys = new Uint16Array([
     1,
     1,
@@ -103,6 +105,7 @@ function encodeExtentGeoTiff(input) {
   new Uint8Array(buf, pixelOff, data.byteLength).set(data);
   return buf;
 }
+
 export {
   encodeExtentGeoTiff
 };

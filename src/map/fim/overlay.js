@@ -1,4 +1,4 @@
-import { applyLayerVisibility } from "../layers";
+import {applyLayerVisibility} from "../layers";
 
 /**
  * The computed flood extent, drawn as a canvas source pinned to the corridor's geographic bounds.
@@ -34,7 +34,7 @@ class FloodOverlay {
       id: "flood",
       type: "raster",
       source: "flood",
-      paint: { "raster-fade-duration": 0, "raster-resampling": "nearest" }
+      paint: {"raster-fade-duration": 0, "raster-resampling": "nearest"}
     }, "streams");
     // The layer is recreated on every viewport/selection change, so reapply the picker's toggle state.
     applyLayerVisibility(map, "flood");
@@ -65,4 +65,4 @@ class FloodOverlay {
   }
 }
 
-export { FloodOverlay };
+export {FloodOverlay};

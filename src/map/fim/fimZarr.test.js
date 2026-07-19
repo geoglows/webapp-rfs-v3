@@ -1,8 +1,10 @@
-import { describe, it, expect } from "vitest";
+import {describe, expect, it} from "vitest";
 import * as fs from "node:fs";
 import * as os from "node:os";
-import { FimIndex } from "./zarrTiles";
-import { computeDofSlice, reduceSliceToCanvas } from "./kernel";
+import {FimIndex} from "./zarrTiles.js";
+import {computeDofSlice, reduceSliceToCanvas} from "./kernel.js";
+import {FloodMapper} from "./mapper.js";
+
 const ROOT = `${os.homedir()}/data/fldpln-merged/tiles-zarr`;
 const TILE = "N24W104_FABDEM_V1-2";
 const TILE_PATH = `lat=24/lon=-104/${TILE}.zarr`;
@@ -18,8 +20,10 @@ const fileFetcher = async (url) => {
   }
 };
 describe.skipIf(!fs.existsSync(`${ROOT}/${TILE_PATH}`))("fim zarr stores", () => {
+  
+
   it("loads a river slice with correct shapes and global coordinates", async () => {
-    const idx = await FimIndex.openTiles(ROOT, { [TILE]: TILE_PATH }, fileFetcher);
+    const idx = await FimIndex.openTiles(ROOT, {[TILE]: TILE_PATH}, fileFetcher);
     expect(idx.comidTiles.size).toBe(159);
     const s = await idx.slice(TILE, 770148173);
     expect(s.nVisit).toBe(280);
@@ -45,7 +49,7 @@ describe.skipIf(!fs.existsSync(`${ROOT}/${TILE_PATH}`))("fim zarr stores", () =>
     expect(dtfMax).toBeLessThanOrEqual(25.5);
   });
   it("computes DoF and floods pixels end-to-end", async () => {
-    const idx = await FimIndex.openTiles(ROOT, { [TILE]: TILE_PATH }, fileFetcher);
+    const idx = await FimIndex.openTiles(ROOT, {[TILE]: TILE_PATH}, fileFetcher);
     const s = await idx.slice(TILE, 770148173);
     let qmax = 0;
     for (const v of s.q) if (Number.isFinite(v) && v > qmax) qmax = v;
@@ -87,4 +91,40 @@ describe.skipIf(!fs.existsSync(`${ROOT}/${TILE_PATH}`))("fim zarr stores", () =>
       expect(slices.length).toBeGreaterThanOrEqual(1);
     }
   );
+  it("maps a selection to a canvas, a frame, a depth query, and an extent", async () => {
+    const idx = await FimIndex.openTiles(ROOT, {[TILE]: TILE_PATH}, fileFetcher);
+    const slices = await idx.slicesFor([770148173]);
+    const mapper = FloodMapper.forSlices(slices);
+    expect(mapper).not.toBeNull();
+    expect(mapper.width).toBeGreaterThan(0);
+    expect(mapper.height).toBeGreaterThan(0);
+    // the canvas is pinned to the arc-second grid the slices came from
+    expect(mapper.bounds.north).toBeGreaterThan(mapper.bounds.south);
+    expect(mapper.bounds.east).toBeGreaterThan(mapper.bounds.west);
+    expect(mapper.stats().slices).toBe(slices.length);
+
+    const spec = mapper.synthesizeFlows();
+    const entry = spec.comids["770148173"];
+    expect(entry.ladder.length).toBe(spec.ladderLabels.length);
+    expect(entry.ladder[entry.ladder.length - 1]).toBeGreaterThan(entry.ladder[0]);
+
+    const s = slices[0];
+    let qmax = 0;
+    for (const v of s.q) if (Number.isFinite(v) && v > qmax) qmax = v;
+    const frame = mapper.frame(new Map([[770148173, qmax]]));
+    expect(frame.floodedCells).toBeGreaterThan(0);
+    expect(frame.rgba.byteLength).toBe(mapper.width * mapper.height * 4);
+
+    // every stream pixel the reach visits sits inside the canvas, and the wettest of them has depth
+    let queried = 0;
+    for (let i = 0; i < s.nPix; i++) {
+      if (mapper.query(s.pixRow[i], s.pixCol[i]) > 0) queried++;
+    }
+    expect(queried).toBeGreaterThan(0);
+    expect(mapper.query(mapper.row0 - 1, mapper.col0)).toBeNull();
+
+    const out = mapper.extent();
+    expect(out.flooded).toBe(frame.floodedCells);
+    expect(out.extent.byteLength).toBe(mapper.width * mapper.height);
+  });
 });

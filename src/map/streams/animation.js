@@ -1,10 +1,12 @@
-import { STREAMS_PMTILES, STYLES_BIN, STYLES_JSON, mapStylesUrl } from "../../constants";
+import {mapStyleUrls, STREAMS_PMTILES} from "../../constants";
+
 const RET_COLORS = ["#3182bd", "#fee08b", "#fdae61", "#f46d43", "#d73027", "#a50026", "#7a0177"];
 // Uniform stream color for the "Standard" styleset (matches the normal-flow return-period blue).
 const STANDARD_COLOR = "#3182bd";
 // Width of the smallest reaches, and the single width every reach takes in flood mapping mode.
 const WIDTH_BASE = 4;
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
 class StreamAnimation {
   map;
   meta = null;
@@ -16,9 +18,7 @@ class StreamAnimation {
   playing = false;
   timer = null;
   fps = 4;
-  // which styleset drives the streams: "forecast15" (animated timeseries) is the only one that
-  // colors by return period and uses the player; the others show a uniform blue network.
-  styleset = "forecast15";
+  styleset = "timeseries";
   // Flood mapping mode flattens the network to one uniform width (see streamWidthExpr).
   floodMode = false;
   currentDate = null;
@@ -33,26 +33,28 @@ class StreamAnimation {
   playBtn = document.getElementById("btn-play");
   progEl = document.getElementById("progress-bar");
   speedEl = document.getElementById("speed");
+
   constructor(map) {
     this.map = map;
     this.wirePlayer();
   }
+
   /** Add the animated global streams source + line layer on top of the loaded basemap. */
   addStreamsLayer() {
     this.map.addSource("geoglows", {
       type: "vector",
       url: `pmtiles://${STREAMS_PMTILES}`,
-      promoteId: { streams: "riverId" },
+      promoteId: {streams: "riverId"},
       // riverId -> feature.id, so setFeatureState keys on it
-      attribution: "GEOGLOWS / TDX-Hydro"
+      attribution: "GEOGLOWS"
     });
-    const animated = this.styleset === "forecast15";
+    const animated = this.styleset === "timeseries";
     this.map.addLayer({
       id: "streams",
       type: "line",
       source: "geoglows",
       "source-layer": "streams",
-      layout: { "line-cap": "round", "line-join": "round" },
+      layout: {"line-cap": "round", "line-join": "round"},
       paint: {
         "line-color": animated ? this.streamColorExpr() : STANDARD_COLOR,
         "line-width": this.streamWidthExpr(animated),
@@ -64,6 +66,7 @@ class StreamAnimation {
       if (this.cube && e.sourceId === "geoglows" && e.isSourceLoaded && ev.tile) this.scheduleApply();
     });
   }
+
   /** Return-period line-color expression driven by each reach's `ret` feature-state. */
   streamColorExpr() {
     const colorMatch = ["match", ["coalesce", ["feature-state", "ret"], 0]];
@@ -71,6 +74,7 @@ class StreamAnimation {
     colorMatch.push(RET_COLORS[0]);
     return colorMatch;
   }
+
   /** Zoom-scaled line-width expression. When `animated`, thickness comes from the per-reach `thk`
    * feature-state (falling back to strahlerOrder); otherwise it comes straight from strahlerOrder
    * so a non-animated styleset ignores any stale animation state. In flood mapping mode the
@@ -100,6 +104,7 @@ class StreamAnimation {
       ["*", 2.2, RAMP]
     ];
   }
+
   /** Line-color for the time-to-peak styleset: warm (imminent) → cool (late), grey for no data. */
   ttpColorExpr() {
     return [
@@ -109,38 +114,48 @@ class StreamAnimation {
         0, "#d73027", 12, "#fdae61", 28, "#fee08b", 52, "#74add1", 80, "#4575b4"]
     ];
   }
-  /** Line-color for the q95 styleset: below Q95 → red, at/above → blue, no data → grey. */
+
+  /** Line-color for the below-q95 styleset: below Q95 → red, at/above → blue, no data → grey. */
   q95ColorExpr() {
     return ["match", ["coalesce", ["feature-state", "q95dir"], 255], 1, "#dc2626", 0, "#3182bd", "#334155"];
   }
+
   /** Per-reach feature-state for a decoded style byte, keyed to the active styleset. */
   featureStateFor(b) {
-    if (this.styleset === "timetopeak") return { ttp: b };
-    if (this.styleset === "q95") return { q95dir: b };
-    return { ret: b >> 3, thk: (b & 7) + 1 };
+    if (this.styleset === "timeToPeak") return {ttp: b};
+    if (this.styleset === "belowQ95") return {q95dir: b};
+    return {ret: b >> 3, thk: (b & 7) + 1};
   }
+
   /** Set the streams line-color/line-width paint for the active styleset. */
   applyPaint() {
     if (!this.map.getLayer("streams")) return;
     const s = this.styleset;
     let color, retWidth = false;
-    if (s === "forecast15" || s === "maxflow") { color = this.streamColorExpr(); retWidth = true; }
-    else if (s === "timetopeak") color = this.ttpColorExpr();
-    else if (s === "q95") color = this.q95ColorExpr();
+    if (s === "timeseries" || s === "maxFlow") {
+      color = this.streamColorExpr();
+      retWidth = true;
+    } else if (s === "timeToPeak") color = this.ttpColorExpr();
+    else if (s === "belowQ95") color = this.q95ColorExpr();
     else color = STANDARD_COLOR;
     this.map.setPaintProperty("streams", "line-color", color);
     this.map.setPaintProperty("streams", "line-width", this.streamWidthExpr(retWidth));
   }
+
   /** Switch styleset: repaint and (re)load its data. `standard` needs no data (uniform blue);
-   * `forecast15` is the only animated one. Stale feature-state from other stylesets is harmless —
+   * `timeseries` is the only animated one. Stale feature-state from other stylesets is harmless —
    * each styleset's paint reads only its own field. */
   setStyleset(styleset) {
     this.styleset = styleset;
     this.pause();
     this.applyPaint();
-    if (styleset === "standard") { this.cube = null; return; }
+    if (styleset === "standard") {
+      this.cube = null;
+      return;
+    }
     this.loadData();
   }
+
   /** Flood mapping mode: flatten the network to one uniform width. Colors are left alone — only
    * the width tiers go away, so the reach highlights stand out against an even network. */
   setFloodMode(on) {
@@ -148,11 +163,13 @@ class StreamAnimation {
     this.floodMode = on;
     this.applyPaint();
   }
+
   /** Set the forecast-initialization date and (re)load the active styleset for it. */
   setDate(date) {
     this.currentDate = date;
     return this.loadData();
   }
+
   /** Re-apply feature-state to every already-discovered reach from the current data + step (used
    * when the styleset or date changes; new tiles are still handled by discoverAndApply). */
   applyAll() {
@@ -161,12 +178,13 @@ class StreamAnimation {
     for (const [rid, fi] of this.idFi) {
       if (fi < 0) continue;
       this.map.setFeatureState(
-        { source: "geoglows", sourceLayer: "streams", id: rid },
+        {source: "geoglows", sourceLayer: "streams", id: rid},
         this.featureStateFor(this.cube[fi * this.T + t])
       );
     }
     this.appliedStep = t;
   }
+
   /** Fetch + decode styles.{json,bin} for the active styleset + current date, then apply. Handles
    * both the animated cube (T>1, delta-encoded) and single-frame stylesets (T=1). riverIndex row
    * order is shared across every styleset, so the discovery cache (idFi) is reused, not cleared. */
@@ -175,23 +193,23 @@ class StreamAnimation {
     const date = this.currentDate;
     if (styleset === "standard" || !date) return;
     // null for any styleset with no style tables of its own.
-    const base = mapStylesUrl(date, styleset);
-    if (!base) return;
+    const styleUrls = mapStyleUrls(date, styleset);
+    if (!styleUrls) return;
     const t0 = performance.now();
     this.cube = null;
     this.appliedStep = -1;
     console.log(`Loading ${styleset} styles for ${date}…`);
     try {
-      this.meta = await (await fetch(`${base}/${STYLES_JSON}`)).json();
+      this.meta = await (await fetch(styleUrls.json)).json();
       this.N = this.meta.n_reaches;
       this.T = this.meta.n_steps ?? 1;
       console.log(`  ${this.N.toLocaleString()} reaches × ${this.T} step(s)`);
       let inflated;
       try {
-        const resp = await fetch(`${base}/${STYLES_BIN}`);
+        const resp = await fetch(styleUrls.bin);
         inflated = await new Response(resp.body.pipeThrough(new DecompressionStream("deflate"))).arrayBuffer();
       } catch {
-        const raw = (await (await fetch(`${base}/${STYLES_BIN}`)).body).pipeThrough(new DecompressionStream("deflate-raw"));
+        const raw = (await (await fetch(styleUrls.bin)).body).pipeThrough(new DecompressionStream("deflate-raw"));
         inflated = await new Response(raw).arrayBuffer();
       }
       const cube = new Uint8Array(inflated);
@@ -219,13 +237,14 @@ class StreamAnimation {
       console.error(`  ${styleset} (${date}): ${e.message}`);
     }
   }
+
   // color NEWLY-seen reaches to the current step (runs on tile load). The cube row comes
   // straight from the tile's `riverIndex` property — no comid.bin / binary search.
   discoverAndApply() {
     if (!this.cube || !this.map.isStyleLoaded()) return;
     let feats;
     try {
-      feats = this.map.querySourceFeatures("geoglows", { sourceLayer: "streams" });
+      feats = this.map.querySourceFeatures("geoglows", {sourceLayer: "streams"});
     } catch {
       return;
     }
@@ -239,12 +258,13 @@ class StreamAnimation {
       this.idFi.set(rid, valid ? fi : -1);
       if (!valid) continue;
       this.map.setFeatureState(
-        { source: "geoglows", sourceLayer: "streams", id: rid },
+        {source: "geoglows", sourceLayer: "streams", id: rid},
         this.featureStateFor(this.cube[fi * this.T + t])
       );
     }
     if (this.appliedStep < 0) this.appliedStep = t;
   }
+
   // update ONLY reaches whose value differs from the previously-applied step
   applyStepChange() {
     if (!this.cube) return;
@@ -260,12 +280,13 @@ class StreamAnimation {
       const b = this.cube[fi * this.T + t];
       if (b === this.cube[fi * this.T + p]) continue;
       this.map.setFeatureState(
-        { source: "geoglows", sourceLayer: "streams", id: rid },
+        {source: "geoglows", sourceLayer: "streams", id: rid},
         this.featureStateFor(b)
       );
     }
     this.appliedStep = t;
   }
+
   scheduleApply() {
     if (this.applyScheduled) return;
     this.applyScheduled = true;
@@ -274,12 +295,14 @@ class StreamAnimation {
       this.discoverAndApply();
     });
   }
+
   // ---- player ----
   fmtStamp(s) {
     const p = s.split("-");
     if (p.length < 4) return s;
     return `${MONTHS[+p[1] - 1] || p[1]} ${+p[2]}, ${p[0]} · ${p[3]}:00 UTC`;
   }
+
   renderLabels() {
     const ts = this.meta?.timestamps?.[this.step];
     this.timeEl.textContent = ts ? this.fmtStamp(ts) : "—";
@@ -287,18 +310,21 @@ class StreamAnimation {
     this.sliderEl.value = String(this.step);
     this.progEl.style.width = (this.T > 1 ? this.step / (this.T - 1) * 100 : 0) + "%";
   }
+
   setStep(t, apply = true) {
     this.step = (t % this.T + this.T) % this.T;
     this.renderLabels();
     if (apply) this.applyStepChange();
   }
+
   play() {
-    if (this.playing || !this.cube || this.styleset !== "forecast15") return;
+    if (this.playing || !this.cube || this.styleset !== "timeseries") return;
     this.playing = true;
     this.playBtn.textContent = "❚❚";
     if (this.timer) clearInterval(this.timer);
     this.timer = setInterval(() => this.setStep(this.step + 1), 1e3 / this.fps);
   }
+
   pause() {
     this.playing = false;
     this.playBtn.textContent = "▶";
@@ -307,9 +333,11 @@ class StreamAnimation {
       this.timer = null;
     }
   }
+
   togglePlay() {
     this.playing ? this.pause() : this.play();
   }
+
   wirePlayer() {
     this.playBtn.addEventListener("click", () => this.togglePlay());
     this.sliderEl.addEventListener("input", () => {
@@ -326,7 +354,7 @@ class StreamAnimation {
     document.addEventListener("keydown", (e) => {
       const tag = e.target?.tagName;
       if (tag === "INPUT" || tag === "SELECT") return;
-      if (this.styleset !== "forecast15") return;
+      if (this.styleset !== "timeseries") return;
       if (e.code === "Space") {
         e.preventDefault();
         this.togglePlay();
@@ -339,6 +367,7 @@ class StreamAnimation {
       }
     });
   }
+
   buildLegend() {
     const box = document.getElementById("legend-items");
     if (!box) return;
@@ -351,12 +380,12 @@ class StreamAnimation {
       row.innerHTML = `<span class="swatch" style="background:${color}"></span>${label}`;
       box.appendChild(row);
     };
-    if (s === "q95") {
+    if (s === "belowQ95") {
       if (titleEl) titleEl.textContent = "Q95 low flow";
       add("#dc2626", "Below Q95 (rare low flow)");
       add("#3182bd", "At or above Q95");
       add("#334155", "No data");
-    } else if (s === "timetopeak") {
+    } else if (s === "timeToPeak") {
       if (titleEl) titleEl.textContent = "Time to peak";
       const h = this.meta?.step_hours ?? 3;
       add("#d73027", "Now / imminent");
@@ -364,12 +393,13 @@ class StreamAnimation {
       add("#4575b4", `~${Math.round(80 * h / 24)} days`);
       add("#334155", "No data");
     } else {
-      if (titleEl) titleEl.textContent = s === "maxflow" ? "Max forecast return period" : "Forecast return period";
+      if (titleEl) titleEl.textContent = s === "maxFlow" ? "Max forecast return period" : "Forecast return period";
       const vals = this.meta?.ret_per_values ?? [0, 2, 5, 10, 25, 50, 100];
       vals.forEach((v, i) => add(RET_COLORS[i], v === 0 ? "Normal (&lt; 2-yr)" : `${v}-year`));
     }
   }
 }
+
 export {
   StreamAnimation
 };

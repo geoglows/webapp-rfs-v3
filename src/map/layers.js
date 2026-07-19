@@ -1,6 +1,6 @@
-import { calciteIcon } from "../icons/icons";
-import { t } from "../i18n/i18n";
-import { wireMenu } from "./menu";
+import {calciteIcon} from "../icons/icons";
+import {t} from "../i18n/i18n";
+import {wireMenu} from "./menu";
 
 /**
  * Toggleable map overlays and their picker. Unlike basemaps these are independent on/off toggles —
@@ -12,8 +12,8 @@ import { wireMenu } from "./menu";
  * FloodOverlay.rebuild(), which reapplies this state so a toggle made before the layer exists sticks.
  */
 const OVERLAYS = [
-  { layerId: "streams", labelKey: "layers.streams", on: true },
-  { layerId: "flood", labelKey: "layers.floodExtents", on: true },
+  {layerId: "streams", labelKey: "layers.streams", on: true},
+  {layerId: "flood", labelKey: "layers.floodExtents", on: true},
   {
     layerId: "riverfld",
     labelKey: "layers.riverfld",
@@ -69,7 +69,7 @@ function addRasterOverlays(map) {
         id: ov.layerId,
         type: "raster",
         source: ov.layerId,
-        layout: { visibility: layerVisible[ov.layerId] ? "visible" : "none" }
+        layout: {visibility: layerVisible[ov.layerId] ? "visible" : "none"}
       }, beforeId);
     }
   }
@@ -105,4 +105,4 @@ function initLayerPicker(map) {
   }
 }
 
-export { OVERLAYS, addRasterOverlays, applyLayerVisibility, initLayerPicker, layerVisible };
+export {OVERLAYS, addRasterOverlays, applyLayerVisibility, initLayerPicker, layerVisible};

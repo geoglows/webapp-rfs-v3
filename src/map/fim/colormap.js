@@ -7,9 +7,11 @@ const STOPS = [
   [0.75, [19, 65, 133, 232]],
   [1, [8, 35, 92, 240]]
 ];
+
 function linear_interpolate(a, b, t) {
   return a + (b - a) * t;
 }
+
 function buildLut() {
   const lut = new Uint32Array(256);
   for (let i = 0; i < 256; i++) {
@@ -27,14 +29,17 @@ function buildLut() {
   }
   return lut;
 }
+
 function lutIndex(depth) {
   const f = depth / DEPTH_MAX;
   const i = Math.round(f * 255);
   return i < 0 ? 0 : i > 255 ? 255 : i;
 }
+
 function legendGradient() {
   return STOPS.map(([f, [r, g, b, a]]) => `rgba(${r},${g},${b},${(a / 255).toFixed(2)}) ${(f * 100).toFixed(0)}%`).join(", ");
 }
+
 export {
   DEPTH_MAX,
   buildLut,

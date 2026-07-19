@@ -2,3 +2,5 @@
 node_modules/
 dist/
 data/
+references/
+.DS_Store

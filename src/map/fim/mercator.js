@@ -16,6 +16,7 @@ function buildMercatorRowMap(north, south, nrowsSrc, nrowsOut) {
   }
   return map;
 }
+
 export {
   buildMercatorRowMap
 };

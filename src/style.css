@@ -16,6 +16,17 @@
     --on-accent: #04121b;
     --shadow-color: 0, 0, 0;
     --radius: 8px;
+
+    /* Chart palette. Charts are <canvas>, so no selector reaches inside them — the plotting code
+       reads these three variables with getComputedStyle() at render time and hands the values to
+       Chart.js. They are the whole styling contract: define them and the charts follow, including
+       across a theme flip. See refreshChartTheme() in plots/shared.js.
+       --rfs-chart-grid needs alpha and --text-dim does not have any, so it is the same colour
+       written out at low opacity rather than a var() references. */
+    --rfs-chart-axis: var(--text-dim);
+    --rfs-chart-text: var(--text);
+    --rfs-chart-grid: rgba(148, 163, 184, .12);
+
     font-family: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
 }
 
@@ -37,6 +48,14 @@
     --library: #0284c7;
     --on-accent: #ffffff;
     --shadow-color: 100, 116, 139;
+
+    /* Deliberately var(--text), not var(--text-dim) as in dark: this preserves the colours the
+       charts already rendered, where light-theme axis labels are full strength and dark-theme ones
+       are dimmed. The two themes disagree, which is almost certainly unintended — switch this to
+       var(--text-dim) to make them consistent, at the cost of slightly fainter light-mode axes. */
+    --rfs-chart-axis: var(--text);
+    --rfs-chart-text: var(--text);
+    --rfs-chart-grid: rgba(15, 23, 42, .14);
 }
 
 * {
@@ -762,11 +781,20 @@ button.mode.active {
 /* async time-series section (retrospective discharge) */
 .ts-loading {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 8px;
-    font-size: 14.5px;
+    justify-content: center;
+    gap: 18px;
+    min-height: min(60vh, 420px);
+    font-size: 16px;
     color: var(--text-dim);
-    padding: 10px 2px;
+    padding: 24px 2px;
+}
+
+.ts-loading .spinner {
+    width: 72px;
+    height: 72px;
+    border-width: 6px;
 }
 
 .ts-error {

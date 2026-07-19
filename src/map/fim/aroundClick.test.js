@@ -1,5 +1,6 @@
-import { describe, it, expect } from "vitest";
-import { RiverNetwork } from "./topology";
+import {describe, expect, it} from "vitest";
+import {RiverNetwork} from "./topology.js";
+
 function net() {
   const edges = [];
   for (let i = 1; i < 30; i++) edges.push([100 + i, 100 + i + 1]);
@@ -9,12 +10,13 @@ function net() {
   edges.push([301, 120]);
   edges.push([302, 301]);
   const graph = {
-    schema: { id: "riverId", downstream: "nextRiverId", terminal_value: -1 },
-    meta: { vpu: 0, total_streams: edges.length, total_edges: edges.length },
+    schema: {id: "riverId", downstream: "nextRiverId", terminal_value: -1},
+    meta: {vpu: 0, total_streams: edges.length, total_edges: edges.length},
     edges
   };
   return new RiverNetwork(graph);
 }
+
 describe("aroundClick", () => {
   it("walks the main stem both ways and takes side-branch starts", () => {
     const sel = net().aroundClick(115, 10, 10, 3);

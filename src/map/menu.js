@@ -13,9 +13,9 @@ function wireMenu(btn, menu) {
     btn.setAttribute("aria-expanded", String(!open));
   });
   document.addEventListener("click", (e) => {
-    const target = e.target;
-    if (!menu.contains(target) && !btn.contains(target)) closeMenu();
+    if (!menu.contains(e.target) && !btn.contains(e.target)) closeMenu();
   });
   return closeMenu;
 }
-export { wireMenu };
+
+export {wireMenu};

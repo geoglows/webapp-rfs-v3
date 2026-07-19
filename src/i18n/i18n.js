@@ -17,10 +17,10 @@ const en = {
   // stream style picker
   "stream.style": "Stream style",
   "stream.style.standard": "Standard",
-  "stream.style.forecast15": "15 Day Forecast Timeseries",
-  "stream.style.maxflow": "Forecasted Max Flows",
-  "stream.style.timetopeak": "Time to Peak",
-  "stream.style.q95": "Below Q95 flow",
+  "stream.style.timeseries": "15 Day Forecast Timeseries",
+  "stream.style.maxFlow": "Forecasted Max Flows",
+  "stream.style.timeToPeak": "Time to Peak",
+  "stream.style.belowQ95": "Below Q95 flow",
   "stream.hideSlider": "Hide timeseries slider",
   "stream.showSlider": "Show timeseries slider",
   // flood mapping
@@ -85,7 +85,6 @@ const en = {
   "charts.tab.forecast": "Forecast",
   "charts.tab.retro": "Retrospective",
   "charts.tab.details": "Details",
-  "charts.axis.datetime": "Datetime (UTC+00:00)"
 };
 const es = {
   "app.title": "Sistema de Pronóstico de Ríos v3",
@@ -103,10 +102,10 @@ const es = {
   "hydro.searchRiver": "Buscar ID de río",
   "stream.style": "Estilo de ríos",
   "stream.style.standard": "Estándar",
-  "stream.style.forecast15": "Serie temporal del pronóstico de 15 días",
-  "stream.style.maxflow": "Caudales máximos pronosticados",
-  "stream.style.timetopeak": "Tiempo hasta el pico",
-  "stream.style.q95": "Caudal por debajo de Q95",
+  "stream.style.timeseries": "Serie temporal del pronóstico de 15 días",
+  "stream.style.maxFlow": "Caudales máximos pronosticados",
+  "stream.style.timeToPeak": "Tiempo hasta el pico",
+  "stream.style.belowQ95": "Caudal por debajo de Q95",
   "stream.hideSlider": "Ocultar control deslizante temporal",
   "stream.showSlider": "Mostrar control deslizante temporal",
   "flood.heading": "Mapeo de inundaciones",
@@ -165,7 +164,6 @@ const es = {
   "charts.tab.forecast": "Pronóstico",
   "charts.tab.retro": "Retrospectivo",
   "charts.tab.details": "Detalles",
-  "charts.axis.datetime": "Fecha y hora (UTC+00:00)"
 };
 const fr = {
   "app.title": "Système de Prévision des Rivières v3",
@@ -183,10 +181,10 @@ const fr = {
   "hydro.searchRiver": "Rechercher un ID de rivière",
   "stream.style": "Style des rivières",
   "stream.style.standard": "Standard",
-  "stream.style.forecast15": "Série temporelle de prévision sur 15 jours",
-  "stream.style.maxflow": "Débits maximaux prévus",
-  "stream.style.timetopeak": "Temps jusqu'au pic",
-  "stream.style.q95": "Débit sous le Q95",
+  "stream.style.timeseries": "Série temporelle de prévision sur 15 jours",
+  "stream.style.maxFlow": "Débits maximaux prévus",
+  "stream.style.timeToPeak": "Temps jusqu'au pic",
+  "stream.style.belowQ95": "Débit sous le Q95",
   "stream.hideSlider": "Masquer le curseur temporel",
   "stream.showSlider": "Afficher le curseur temporel",
   "flood.heading": "Cartographie des inondations",
@@ -245,16 +243,18 @@ const fr = {
   "charts.tab.forecast": "Prévision",
   "charts.tab.retro": "Rétrospectif",
   "charts.tab.details": "Détails",
-  "charts.axis.datetime": "Date et heure (UTC+00:00)"
 };
-const DICTS = { en, es, fr };
+const DICTS = {en, es, fr};
 let currentLang = "en";
+
 function t(key, lang = currentLang) {
   return DICTS[lang]?.[key] ?? en[key] ?? key;
 }
+
 function getLanguage() {
   return currentLang;
 }
+
 function applyTranslations(lang, root = document) {
   root.querySelectorAll("[data-i18n]").forEach((el) => {
     el.textContent = t(el.dataset.i18n, lang);
@@ -269,11 +269,13 @@ function applyTranslations(lang, root = document) {
     el.setAttribute("aria-label", t(el.dataset.i18nAriaLabel, lang));
   });
 }
+
 function setLanguage(lang) {
   currentLang = DICTS[lang] ? lang : "en";
   document.documentElement.lang = currentLang;
   applyTranslations(currentLang);
 }
+
 export {
   applyTranslations,
   getLanguage,

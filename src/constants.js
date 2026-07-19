@@ -1,55 +1,51 @@
-// ── Hosts ────────────────────────────────────────────────────────────────────
-// Base of the co-located data tree; every other data URL falls back to a path under it.
-const DATA_BASE = import.meta.env.VITE_DATA_URL ?? `${location.origin}/data`;
+// Every data URL the app uses, obtained from the rfsjs package.
+//
+// The package owns the v3 layout — which directory a store lives in, how a date is partitioned,
+// what the style tables are called. This module does not rebuild any of that; it calls the
+// package's url builders (`urls.*`) and adds only what is genuinely app-side: the styleset ->
+// directory mapping, which is this app's picker vocabulary, and the flood tile-boundary layer,
+// which the package neither knows nor reads.
+//
+// Overrides: the roots are repointed via configure() in rfsConfig.js (VITE_RFS_V3_BASE,
+// VITE_FIM_DATA_URL), which moves every derived URL at once. The per-URL VITE_* vars below are the
+// finer-grained escape hatch for pointing one file somewhere else while the tree is in flux —
+// each falls back to the package's answer when unset, so nothing here hardcodes a layout.
+//
+// rfsConfig must be imported before this module so those overrides are in effect by the time the
+// builders below run at module scope; main.js does that, and this import makes it true regardless.
+import {absolutize} from "./rfsConfig";
+// The /urls subpath is the url builders only — importing them from the package root would pull
+// zarrita and every reader into the main bundle, which is exactly what the app's dynamic imports
+// of the package (floodController, chartsDock) exist to avoid.
+import * as urls from "rfsjs/urls";
 
 // ── Hydrography ──────────────────────────────────────────────────────────────
-const STREAMS_PMTILES = import.meta.env.VITE_STREAMS_PMTILES ?? `${DATA_BASE}/streams.pmtiles`;
+// The package knows where this lives but never fetches it — MapLibre does, so it can only tell us
+// the URL. The filename comes from the package too: it defaults to whatever the tree its baked-in
+// root publishes. VITE_STREAMS_PMTILES stays because dev serves this 1.7 GB archive from disk
+// while the rest of the v3 tree still comes from the CDN — a whole-URL swap the layout can't express.
+const STREAMS_PMTILES = import.meta.env.VITE_STREAMS_PMTILES ?? urls.streamsPmtiles();
 
 // ── 15-day forecast tree ─────────────────────────────────────────────────────
-// Traversed as <base>/<date partition>/<map-styles dir>/<styleset dir>/styles.{json,bin}, e.g.
-//   forecast15/year=2026/month=07/day=10/map-styles/q-time-series/styles.json
-// Every segment is env-driven so the tree can be reorganized without touching app code.
-const FORECAST15_BASE = (import.meta.env.VITE_FORECAST15_BASE ?? `${DATA_BASE}/forecast15`).replace(/\/+$/, "");
 
-// Date partition template. {YYYY}/{MM}/{DD} are substituted from the forecast initialization date.
-const FORECAST_DATE_PARTITION = import.meta.env.VITE_FORECAST_DATE_PARTITION ?? "year={YYYY}/month={MM}/day={DD}";
-
-// Folder holding the per-styleset stream style tables for a given day.
-const MAP_STYLES_DIR = import.meta.env.VITE_MAP_STYLES_DIR ?? "map-styles";
-
-// Which folder under MAP_STYLES_DIR each stream styleset reads. Keys match the <select> values in
-// index.html ("standard" needs no data, so it has no entry).
-const STYLESET_DIRS = {
-  forecast15: import.meta.env.VITE_STYLES_DIR_FORECAST15 ?? "q-time-series",
-  maxflow: import.meta.env.VITE_STYLES_DIR_MAXFLOW ?? "max-flow",
-  timetopeak: import.meta.env.VITE_STYLES_DIR_TIMETOPEAK ?? "time-to-peak",
-  q95: import.meta.env.VITE_STYLES_DIR_Q95 ?? "q95"
-};
-
-const STYLES_JSON = import.meta.env.VITE_FORECAST_STYLES_JSON ?? "styles.json";
-const STYLES_BIN = import.meta.env.VITE_FORECAST_STYLES_BIN ?? "styles.bin";
-
-/** Expand FORECAST_DATE_PARTITION for a YYYY-MM-DD date. */
-function forecastDatePath(date) {
-  const [y, m, d] = date.split("-");
-  return FORECAST_DATE_PARTITION.replace("{YYYY}", y).replace("{MM}", m).replace("{DD}", d);
-}
-
-/** Folder URL holding styles.{json,bin} for one styleset on one forecast date, or null if the
- * styleset has no style tables (e.g. "standard", which paints a uniform network). */
-function mapStylesUrl(date, styleset) {
-  const dir = STYLESET_DIRS[styleset];
+/**
+ * URLs of the two style-table files for one styleset on one forecast date, or null if the styleset
+ * has no tables — "standard" paints a uniform network and is the only such case today.
+ *
+ * `styleset` is a key of urls.stylesets, which is also what index.html's <option value>s and the
+ * switches in animation.js use. There is deliberately no app-side map from picker value to folder
+ * name: that table is what let the picker, the code and the tree drift apart, and it is why one
+ * folder rename previously had to be made in four places.
+ *
+ * urls.streamsStyles returns a prefix ending in `styles.` rather than a whole filename — one
+ * styleset's tables differ only by extension — so the extension is appended here.
+ */
+function mapStyleUrls(date, styleset) {
+  const dir = urls.stylesets[styleset];
   if (!dir) return null;
-  return `${FORECAST15_BASE}/${forecastDatePath(date)}/${MAP_STYLES_DIR}/${dir}`;
+  const prefix = urls.streamsStyles({date, styleset: dir});
+  return {json: `${prefix}json`, bin: `${prefix}bin`};
 }
-
-// Per-day discharge store inside the partitioned tree — the fallback source for forecast
-// hydrographs when no flat store host is configured.
-const FORECAST_DISCHARGE_ZARR = import.meta.env.VITE_FORECAST_DISCHARGE_ZARR ?? "discharge.zarr";
-
-// Flat per-run forecast Zarr stores (<YYYYMMDD><HH>.zarr), the source for forecast hydrographs.
-const FORECAST_ZARR_BASE = (import.meta.env.VITE_FORECAST_ZARR_BASE ?? "https://d14ritg1bypdp7.cloudfront.net").replace(/\/+$/, "");
-const FORECAST_INIT_HOUR = "00";
 
 /** Today in UTC as YYYY-MM-DD — the default forecast initialization date. */
 function todayUtc() {
@@ -61,41 +57,36 @@ function todayUtc() {
 
 const DEFAULT_FORECAST_DATE = import.meta.env.VITE_FORECAST_DEFAULT_DATE ?? todayUtc();
 
-// ── Retrospective ────────────────────────────────────────────────────────────
-const RETROSPECTIVE_DAILY_ZARR = import.meta.env.VITE_RETROSPECTIVE_DAILY_ZARR;
-
 // ── Flood library (FLDPLN) ───────────────────────────────────────────────────
-// Root serving manifest.json + the per-tile zarr stores the flood worker reads.
-const FIM_DATA_URL = import.meta.env.VITE_FIM_DATA_URL ?? `${DATA_BASE}/fim`;
-// Vector footprints of those data tiles, used to work out what the viewport covers.
-const FIM_TILES_URL = import.meta.env.VITE_FIM_TILES_PMTILES ?? `${FIM_DATA_URL}/tile_boundaries.pmtiles`;
+// The flood library is entirely the app's now — map/fim/ reads these stores directly — so its
+// location is settled here rather than routed through the package's endpoint config. One env var,
+// one default, no indirection.
+//
+// Root serving manifest.json + the per-tile zarr stores the flood worker reads. The worker is a
+// separate module instance and cannot see anything computed on this thread, so it is handed this
+// value in its init message — see ensureWorker() in map/fim/floodController.js.
+const FIM_DATA_URL = absolutize(import.meta.env.VITE_FIM_DATA_URL ?? "/data/fim");
+// Vector footprints of those data tiles, used to work out what the viewport covers. Built by
+// scripts/build_fim_tile_boundaries.mjs from the flood manifest, and read only by MapLibre.
+const FIM_TILES_URL = `${FIM_DATA_URL}/tile_boundaries.pmtiles`;
 // Below this zoom the viewport can cover hundreds of data tiles; loading every one's header
 // would be a request storm, so coverage only loads once you're zoomed in to work.
 const FIM_MIN_COVERAGE_ZOOM = 7;
 
 // ── Development stand-ins ────────────────────────────────────────────────────
 // The charts fetch this reach instead of the clicked one while the model is in development.
+// The zarr stores are indexed by riverIndex (the dense store row the vector tiles carry per
+// reach), so that is what the readers are given; the id is kept for display only.
 const DEV_RIVER_ID = 710431167;
+const DEV_RIVER_INDEX = 0;
 
 export {
-  DATA_BASE,
   DEFAULT_FORECAST_DATE,
   DEV_RIVER_ID,
+  DEV_RIVER_INDEX,
   FIM_DATA_URL,
   FIM_MIN_COVERAGE_ZOOM,
   FIM_TILES_URL,
-  FORECAST15_BASE,
-  FORECAST_DATE_PARTITION,
-  FORECAST_DISCHARGE_ZARR,
-  FORECAST_INIT_HOUR,
-  FORECAST_ZARR_BASE,
-  MAP_STYLES_DIR,
-  RETROSPECTIVE_DAILY_ZARR,
   STREAMS_PMTILES,
-  STYLESET_DIRS,
-  STYLES_BIN,
-  STYLES_JSON,
-  forecastDatePath,
-  mapStylesUrl,
-  todayUtc
+  mapStyleUrls
 };

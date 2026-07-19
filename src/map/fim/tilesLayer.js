@@ -1,4 +1,4 @@
-import { FIM_MIN_COVERAGE_ZOOM, FIM_TILES_URL } from "../../constants";
+import {FIM_MIN_COVERAGE_ZOOM, FIM_TILES_URL} from "../../constants";
 
 /**
  * The FLDPLN data-tile footprints, and the viewport → coverage bridge built on them.
@@ -13,7 +13,7 @@ import { FIM_MIN_COVERAGE_ZOOM, FIM_TILES_URL } from "../../constants";
  *   onTiles(names) — the sorted tile names now under the viewport
  */
 class FimTilesLayer {
-  constructor(map, { isReady, onTiles }) {
+  constructor(map, {isReady, onTiles}) {
     this.map = map;
     this.isReady = isReady;
     this.onTiles = onTiles;
@@ -26,7 +26,7 @@ class FimTilesLayer {
   add() {
     const map = this.map;
     if (map.getSource("fim-tiles")) return;
-    map.addSource("fim-tiles", { type: "vector", url: `pmtiles://${FIM_TILES_URL}` });
+    map.addSource("fim-tiles", {type: "vector", url: `pmtiles://${FIM_TILES_URL}`});
     // Invisible fill = the viewport hit-test target. A line layer would miss a viewport sitting
     // entirely inside one tile with no edge on screen; a fill at opacity 0 still renders, so
     // queryRenderedFeatures returns it wherever the viewport lands.
@@ -35,7 +35,7 @@ class FimTilesLayer {
       type: "fill",
       source: "fim-tiles",
       "source-layer": "fim_tiles",
-      paint: { "fill-opacity": 0 }
+      paint: {"fill-opacity": 0}
     });
     // Faint outline, shown only in flood mode, so the data-tile footprint is visible.
     map.addLayer({
@@ -43,8 +43,8 @@ class FimTilesLayer {
       type: "line",
       source: "fim-tiles",
       "source-layer": "fim_tiles",
-      layout: { visibility: this.active ? "visible" : "none" },
-      paint: { "line-color": "#38bdf8", "line-width": 1, "line-opacity": 0.5, "line-dasharray": [2, 2] }
+      layout: {visibility: this.active ? "visible" : "none"},
+      paint: {"line-color": "#38bdf8", "line-width": 1, "line-opacity": 0.5, "line-dasharray": [2, 2]}
     });
     map.on("sourcedata", (e) => {
       if (e.sourceId === "fim-tiles" && e.isSourceLoaded) this.sync();
@@ -68,7 +68,7 @@ class FimTilesLayer {
     if (!this.active || !this.isReady() || !map.getLayer("fim-tiles-hit")) return;
     if (map.getZoom() < FIM_MIN_COVERAGE_ZOOM) return;
     const names = [...new Set(
-      map.queryRenderedFeatures({ layers: ["fim-tiles-hit"] }).map((f) => f.properties.name)
+      map.queryRenderedFeatures({layers: ["fim-tiles-hit"]}).map((f) => f.properties.name)
     )].sort();
     const key = names.join(",");
     if (key === this.lastKey) return;
@@ -77,4 +77,4 @@ class FimTilesLayer {
   }
 }
 
-export { FimTilesLayer };
+export {FimTilesLayer};
