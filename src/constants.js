@@ -1,22 +1,4 @@
-// Every data URL the app uses, obtained from the rfsjs package.
-//
-// The package owns the v3 layout — which directory a store lives in, how a date is partitioned,
-// what the style tables are called. This module does not rebuild any of that; it calls the
-// package's url builders (`urls.*`) and adds only what is genuinely app-side: the styleset ->
-// directory mapping, which is this app's picker vocabulary, and the flood tile-boundary layer,
-// which the package neither knows nor reads.
-//
-// Overrides: the roots are repointed via configure() in rfsConfig.js (VITE_RFS_V3_BASE,
-// VITE_FIM_DATA_URL), which moves every derived URL at once. The per-URL VITE_* vars below are the
-// finer-grained escape hatch for pointing one file somewhere else while the tree is in flux —
-// each falls back to the package's answer when unset, so nothing here hardcodes a layout.
-//
-// rfsConfig must be imported before this module so those overrides are in effect by the time the
-// builders below run at module scope; main.js does that, and this import makes it true regardless.
 import {absolutize} from "./rfsConfig";
-// The /urls subpath is the url builders only — importing them from the package root would pull
-// zarrita and every reader into the main bundle, which is exactly what the app's dynamic imports
-// of the package (floodController, chartsDock) exist to avoid.
 import * as urls from "rfsjs/urls";
 
 // ── Hydrography ──────────────────────────────────────────────────────────────
@@ -27,19 +9,6 @@ import * as urls from "rfsjs/urls";
 const STREAMS_PMTILES = import.meta.env.VITE_STREAMS_PMTILES ?? urls.streamsPmtiles();
 
 // ── 15-day forecast tree ─────────────────────────────────────────────────────
-
-/**
- * URLs of the two style-table files for one styleset on one forecast date, or null if the styleset
- * has no tables — "standard" paints a uniform network and is the only such case today.
- *
- * `styleset` is a key of urls.stylesets, which is also what index.html's <option value>s and the
- * switches in animation.js use. There is deliberately no app-side map from picker value to folder
- * name: that table is what let the picker, the code and the tree drift apart, and it is why one
- * folder rename previously had to be made in four places.
- *
- * urls.streamsStyles returns a prefix ending in `styles.` rather than a whole filename — one
- * styleset's tables differ only by extension — so the extension is appended here.
- */
 function mapStyleUrls(date, styleset) {
   const dir = urls.stylesets[styleset];
   if (!dir) return null;
@@ -73,12 +42,8 @@ const FIM_TILES_URL = `${FIM_DATA_URL}/tile_boundaries.pmtiles`;
 // would be a request storm, so coverage only loads once you're zoomed in to work.
 const FIM_MIN_COVERAGE_ZOOM = 7;
 
-// ── Development stand-ins ────────────────────────────────────────────────────
-// The charts fetch this reach instead of the clicked one while the model is in development.
-// The zarr stores are indexed by riverIndex (the dense store row the vector tiles carry per
-// reach), so that is what the readers are given; the id is kept for display only.
 const DEV_RIVER_ID = 710431167;
-const DEV_RIVER_INDEX = 0;
+const DEV_RIVER_INDEX = 74225;
 
 export {
   DEFAULT_FORECAST_DATE,
