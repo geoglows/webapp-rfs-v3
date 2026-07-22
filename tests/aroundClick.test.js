@@ -1,5 +1,5 @@
 import {describe, expect, it} from "vitest";
-import {RiverNetwork} from "./topology.js";
+import {RiverNetwork} from "../src/map/flood-maps/topology.js";
 
 function net() {
   const edges = [];

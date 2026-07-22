@@ -1,8 +1,8 @@
-import {inFilter, NO_MATCH} from "./fim/selection";
+import {inFilter, NO_MATCH} from "./flood-maps/selection";
 
 /**
  * The single-reach highlight used when inspecting a river (clicking one outside flood mode).
- * Distinct from the flood selection highlights in fim/selection.js, which can hold many reaches —
+ * Distinct from the flood selection highlights in flood-maps/selection.js, which can hold many reaches —
  * this one tracks whatever the charts dock is currently showing.
  */
 const LAYER_ID = "inspect-highlight";

@@ -17,7 +17,7 @@ const en = {
   // stream style picker
   "stream.style": "Stream style",
   "stream.style.standard": "Standard",
-  "stream.style.timeseries": "15 Day Forecast Timeseries",
+  "stream.style.timeseries": "15 Day Timeseries",
   "stream.style.maxFlow": "Forecasted Max Flows",
   "stream.style.timeToPeak": "Time to Peak",
   "stream.style.belowQ95": "Below Q95 flow",
@@ -70,13 +70,40 @@ const en = {
   "about.credit.zarrita": '<a href="https://github.com/manzt/zarrita.js" target="_blank" rel="noopener">zarrita.js</a> and <a href="https://github.com/manzt/numcodecs.js" target="_blank" rel="noopener">numcodecs</a> (Zarr access)',
   "about.credit.pmtiles": '<a href="https://github.com/protomaps/PMTiles" target="_blank" rel="noopener">PMTiles</a>',
   "about.credit.basemaps": 'Basemaps from <a href="https://livingatlas.arcgis.com/" target="_blank" rel="noopener">ArcGIS Living Atlas</a> and <a href="https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer" target="_blank" rel="noopener">USGS The National Map</a>',
-  "about.credit.geoglows": 'Streams hydrographs and FIM from the <a href="https://geoglows.org/" target="_blank" rel="noopener">GEOGLOWS River Forecast System</a> v2 and v3',
+  "about.credit.geoglows": 'Streams hydrographs and flood maps from the <a href="https://geoglows.org/" target="_blank" rel="noopener">GEOGLOWS River Forecast System</a> v2 and v3',
   "about.credit.riverfld": '<a href="https://floods.ssec.wisc.edu/products/RIVER-FLDglobal-composite" target="_blank" rel="noopener">RIVER-FLD global flood composite</a> — near-real-time river flooding (CIMSS/SSEC, UW–Madison; VIIRS via George Mason University)',
   "about.credit.goes": '<a href="https://www.arcgis.com/home/item.html?id=37a875ff3611496883b7ccca97f0f5f4" target="_blank" rel="noopener">GOES / Himawari colorized IR</a> — near-real-time satellite imagery (NOAA, via Esri Living Atlas)',
   "about.credit.viirs": '<a href="https://www.arcgis.com/home/item.html?id=c873f4c13aa54b25b01270df9358dc64" target="_blank" rel="noopener">VIIRS true color</a> — daily corrected reflectance (NASA Earthdata / GIBS, via Esri)',
   // settings modal
   "settings.display": "Display",
   "settings.showLegend": "Show forecast return-period legend",
+  "settings.data": "Data",
+  "settings.data.hint": "Datasets this app can keep in your browser's database. Anything deleted can be downloaded again.",
+  "settings.data.riverIds": "River IDs",
+  "settings.data.riverIds.hint": "The river network's ID list, which lets rivers be found by ID. Fetched on its own shortly after the app loads, so searching by ID is ready before anyone asks for it.",
+  "settings.data.download": "Download",
+  "settings.data.remove": "Delete",
+  "settings.data.downloadAll": "Download everything",
+  "settings.data.deleteAll": "Delete everything",
+  "settings.data.deleteAllConfirm": "Click again to delete everything",
+  "settings.data.empty": "Nothing downloaded.",
+  "settings.data.starting": "Starting\u2026",
+  "settings.data.downloading": "Downloading",
+  "settings.data.sorting": "Building lookup",
+  "settings.data.verifying": "Verifying",
+  "settings.data.storing": "Saving",
+  "settings.data.cancelled": "Cancelled.",
+  "settings.data.failed": "Failed",
+  // river ID search
+  "search.heading": "Find a river by ID",
+  "search.label": "River ID",
+  "search.placeholder": "e.g. 760021611",
+  "search.submit": "Search",
+  "search.invalid": "Enter a river ID — digits only.",
+  "search.searching": "Searching…",
+  "search.notFound": "No river with ID {id} is in the network.",
+  "search.failed": "Search failed",
+  "common.cancel": "Cancel",
   // river + charts modals
   "river.heading": "River",
   "charts.heading": "Discharge charts",
@@ -85,6 +112,17 @@ const en = {
   "charts.tab.forecast": "Forecast",
   "charts.tab.retro": "Retrospective",
   "charts.tab.details": "Details",
+  "charts.loading": "Loading model results…",
+  "charts.failed": "Failed to load model results",
+  // saved rivers dock
+  "bookmarks.heading": "Saved Rivers",
+  "bookmarks.hint": "Pick a river to fly the map to it and load its charts.",
+  "bookmarks.col.id": "River ID",
+  "bookmarks.col.name": "River Name",
+  "bookmarks.col.lat": "Lat",
+  "bookmarks.col.lon": "Lon",
+  "bookmarks.col.actions": "Actions",
+  "bookmarks.select": "View charts",
 };
 const es = {
   "app.title": "Sistema de Pronóstico de Ríos v3",
@@ -102,7 +140,7 @@ const es = {
   "hydro.searchRiver": "Buscar ID de río",
   "stream.style": "Estilo de ríos",
   "stream.style.standard": "Estándar",
-  "stream.style.timeseries": "Serie temporal del pronóstico de 15 días",
+  "stream.style.timeseries": "Serie temporal de 15 días",
   "stream.style.maxFlow": "Caudales máximos pronosticados",
   "stream.style.timeToPeak": "Tiempo hasta el pico",
   "stream.style.belowQ95": "Caudal por debajo de Q95",
@@ -151,12 +189,39 @@ const es = {
   "about.credit.zarrita": '<a href="https://github.com/manzt/zarrita.js" target="_blank" rel="noopener">zarrita.js</a> y <a href="https://github.com/manzt/numcodecs.js" target="_blank" rel="noopener">numcodecs</a> (acceso a Zarr)',
   "about.credit.pmtiles": '<a href="https://github.com/protomaps/PMTiles" target="_blank" rel="noopener">PMTiles</a>',
   "about.credit.basemaps": 'Mapas base de <a href="https://livingatlas.arcgis.com/" target="_blank" rel="noopener">ArcGIS Living Atlas</a> y <a href="https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer" target="_blank" rel="noopener">USGS The National Map</a>',
-  "about.credit.geoglows": 'Hidrogramas de ríos y FIM del <a href="https://geoglows.org/" target="_blank" rel="noopener">GEOGLOWS River Forecast System</a> v2 y v3',
+  "about.credit.geoglows": 'Hidrogramas de ríos y mapas de inundación del <a href="https://geoglows.org/" target="_blank" rel="noopener">GEOGLOWS River Forecast System</a> v2 y v3',
   "about.credit.riverfld": '<a href="https://floods.ssec.wisc.edu/products/RIVER-FLDglobal-composite" target="_blank" rel="noopener">Compuesto global de inundaciones RIVER-FLD</a> — inundación fluvial casi en tiempo real (CIMSS/SSEC, UW–Madison; VIIRS vía George Mason University)',
   "about.credit.goes": '<a href="https://www.arcgis.com/home/item.html?id=37a875ff3611496883b7ccca97f0f5f4" target="_blank" rel="noopener">IR coloreado GOES / Himawari</a> — imágenes satelitales casi en tiempo real (NOAA, vía Esri Living Atlas)',
   "about.credit.viirs": '<a href="https://www.arcgis.com/home/item.html?id=c873f4c13aa54b25b01270df9358dc64" target="_blank" rel="noopener">Color natural VIIRS</a> — reflectancia corregida diaria (NASA Earthdata / GIBS, vía Esri)',
   "settings.display": "Visualización",
   "settings.showLegend": "Mostrar leyenda del período de retorno del pronóstico",
+  "settings.data": "Datos",
+  "settings.data.hint": "Conjuntos de datos que esta aplicaci\u00f3n puede guardar en la base de datos del navegador. Lo que se borre se puede volver a descargar.",
+  "settings.data.riverIds": "IDs de r\u00edos",
+  "settings.data.riverIds.hint": "La lista de IDs de la red fluvial, que permite buscar r\u00edos por ID. Se descarga sola poco despu\u00e9s de cargar la aplicaci\u00f3n, para que buscar por ID est\u00e9 listo antes de que haga falta.",
+  "settings.data.download": "Descargar",
+  "settings.data.remove": "Borrar",
+  "settings.data.downloadAll": "Descargar todo",
+  "settings.data.deleteAll": "Borrar todo",
+  "settings.data.deleteAllConfirm": "Pulse de nuevo para borrar todo",
+  "settings.data.empty": "No hay nada descargado.",
+  "settings.data.starting": "Iniciando\u2026",
+  "settings.data.downloading": "Descargando",
+  "settings.data.sorting": "Construyendo el \u00edndice",
+  "settings.data.verifying": "Verificando",
+  "settings.data.storing": "Guardando",
+  "settings.data.cancelled": "Cancelada.",
+  "settings.data.failed": "Error",
+  // river ID search
+  "search.heading": "Buscar un río por ID",
+  "search.label": "ID de río",
+  "search.placeholder": "p. ej. 760021611",
+  "search.submit": "Buscar",
+  "search.invalid": "Introduzca un ID de río — solo dígitos.",
+  "search.searching": "Buscando…",
+  "search.notFound": "Ningún río con el ID {id} está en la red.",
+  "search.failed": "Error en la búsqueda",
+  "common.cancel": "Cancelar",
   "river.heading": "Río",
   "charts.heading": "Gráficos de caudal",
   "charts.empty.title": "Aún no se ha seleccionado ningún río.",
@@ -164,6 +229,16 @@ const es = {
   "charts.tab.forecast": "Pronóstico",
   "charts.tab.retro": "Retrospectivo",
   "charts.tab.details": "Detalles",
+  "charts.loading": "Cargando los resultados del modelo…",
+  "charts.failed": "No se pudieron cargar los resultados del modelo",
+  "bookmarks.heading": "Ríos guardados",
+  "bookmarks.hint": "Elige un río para llevar el mapa hasta él y cargar sus gráficos.",
+  "bookmarks.col.id": "ID del río",
+  "bookmarks.col.name": "Nombre del río",
+  "bookmarks.col.lat": "Lat",
+  "bookmarks.col.lon": "Lon",
+  "bookmarks.col.actions": "Acciones",
+  "bookmarks.select": "Ver gráficos",
 };
 const fr = {
   "app.title": "Système de Prévision des Rivières v3",
@@ -181,7 +256,7 @@ const fr = {
   "hydro.searchRiver": "Rechercher un ID de rivière",
   "stream.style": "Style des rivières",
   "stream.style.standard": "Standard",
-  "stream.style.timeseries": "Série temporelle de prévision sur 15 jours",
+  "stream.style.timeseries": "Série temporelle sur 15 jours",
   "stream.style.maxFlow": "Débits maximaux prévus",
   "stream.style.timeToPeak": "Temps jusqu'au pic",
   "stream.style.belowQ95": "Débit sous le Q95",
@@ -230,12 +305,39 @@ const fr = {
   "about.credit.zarrita": '<a href="https://github.com/manzt/zarrita.js" target="_blank" rel="noopener">zarrita.js</a> et <a href="https://github.com/manzt/numcodecs.js" target="_blank" rel="noopener">numcodecs</a> (accès Zarr)',
   "about.credit.pmtiles": '<a href="https://github.com/protomaps/PMTiles" target="_blank" rel="noopener">PMTiles</a>',
   "about.credit.basemaps": 'Fonds de carte de <a href="https://livingatlas.arcgis.com/" target="_blank" rel="noopener">ArcGIS Living Atlas</a> et <a href="https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer" target="_blank" rel="noopener">USGS The National Map</a>',
-  "about.credit.geoglows": 'Hydrogrammes de rivières et FIM du <a href="https://geoglows.org/" target="_blank" rel="noopener">GEOGLOWS River Forecast System</a> v2 et v3',
+  "about.credit.geoglows": 'Hydrogrammes de rivières et cartes d\'inondation du <a href="https://geoglows.org/" target="_blank" rel="noopener">GEOGLOWS River Forecast System</a> v2 et v3',
   "about.credit.riverfld": '<a href="https://floods.ssec.wisc.edu/products/RIVER-FLDglobal-composite" target="_blank" rel="noopener">Composite mondial d\'inondation RIVER-FLD</a> — inondation fluviale en quasi-temps réel (CIMSS/SSEC, UW–Madison ; VIIRS via George Mason University)',
   "about.credit.goes": '<a href="https://www.arcgis.com/home/item.html?id=37a875ff3611496883b7ccca97f0f5f4" target="_blank" rel="noopener">IR colorisé GOES / Himawari</a> — imagerie satellitaire en quasi-temps réel (NOAA, via Esri Living Atlas)',
   "about.credit.viirs": '<a href="https://www.arcgis.com/home/item.html?id=c873f4c13aa54b25b01270df9358dc64" target="_blank" rel="noopener">Couleurs naturelles VIIRS</a> — réflectance corrigée quotidienne (NASA Earthdata / GIBS, via Esri)',
   "settings.display": "Affichage",
   "settings.showLegend": "Afficher la légende de la période de retour de la prévision",
+  "settings.data": "Données",
+  "settings.data.hint": "Jeux de donn\u00e9es que cette application peut conserver dans la base de donn\u00e9es du navigateur. Ce qui est supprim\u00e9 peut \u00eatre t\u00e9l\u00e9charg\u00e9 \u00e0 nouveau.",
+  "settings.data.riverIds": "ID de rivi\u00e8res",
+  "settings.data.riverIds.hint": "La liste des ID du r\u00e9seau hydrographique, qui permet de rechercher les rivi\u00e8res par ID. T\u00e9l\u00e9charg\u00e9e d'elle-m\u00eame peu apr\u00e8s le chargement de l'application, pour que la recherche par ID soit pr\u00eate d'avance.",
+  "settings.data.download": "T\u00e9l\u00e9charger",
+  "settings.data.remove": "Supprimer",
+  "settings.data.downloadAll": "Tout t\u00e9l\u00e9charger",
+  "settings.data.deleteAll": "Tout supprimer",
+  "settings.data.deleteAllConfirm": "Cliquez \u00e0 nouveau pour tout supprimer",
+  "settings.data.empty": "Rien de t\u00e9l\u00e9charg\u00e9.",
+  "settings.data.starting": "D\u00e9marrage\u2026",
+  "settings.data.downloading": "T\u00e9l\u00e9chargement",
+  "settings.data.sorting": "Construction de l\u2019index",
+  "settings.data.verifying": "V\u00e9rification",
+  "settings.data.storing": "Enregistrement",
+  "settings.data.cancelled": "Annul\u00e9e.",
+  "settings.data.failed": "\u00c9chec",
+  // river ID search
+  "search.heading": "Trouver une rivière par ID",
+  "search.label": "ID de rivière",
+  "search.placeholder": "p. ex. 760021611",
+  "search.submit": "Rechercher",
+  "search.invalid": "Saisissez un ID de rivière — chiffres uniquement.",
+  "search.searching": "Recherche…",
+  "search.notFound": "Aucune rivière avec l\'ID {id} dans le réseau.",
+  "search.failed": "Échec de la recherche",
+  "common.cancel": "Annuler",
   "river.heading": "Rivière",
   "charts.heading": "Graphiques de débit",
   "charts.empty.title": "Aucune rivière sélectionnée pour l'instant.",
@@ -243,12 +345,41 @@ const fr = {
   "charts.tab.forecast": "Prévision",
   "charts.tab.retro": "Rétrospectif",
   "charts.tab.details": "Détails",
+  "charts.loading": "Chargement des résultats du modèle…",
+  "charts.failed": "Échec du chargement des résultats du modèle",
+  "bookmarks.heading": "Rivières enregistrées",
+  "bookmarks.hint": "Choisissez une rivière pour amener la carte jusqu'à elle et charger ses graphiques.",
+  "bookmarks.col.id": "ID de rivière",
+  "bookmarks.col.name": "Nom de la rivière",
+  "bookmarks.col.lat": "Lat",
+  "bookmarks.col.lon": "Lon",
+  "bookmarks.col.actions": "Actions",
+  "bookmarks.select": "Voir les graphiques",
 };
 const DICTS = {en, es, fr};
 let currentLang = "en";
 
 function t(key, lang = currentLang) {
   return DICTS[lang]?.[key] ?? en[key] ?? key;
+}
+
+// The phases a cached dataset's build reports, in the order it reports them.
+const DATA_PHASES = {
+  download: "settings.data.downloading",
+  sort: "settings.data.sorting",
+  verify: "settings.data.verifying",
+  store: "settings.data.storing"
+};
+
+/**
+ * "Downloading 42%" — one build's progress as a line of text in the current language. The same
+ * download is watched from three places now (the Settings row, the search box, the charts dock), so
+ * it reads the same in all three. A percentage rather than a count: the download reports per chunk
+ * over hundreds of chunks, and nothing else stays legible at that rate.
+ */
+function dataProgress({phase, done, total}) {
+  const pct = total ? Math.round((done / total) * 100) : 0;
+  return `${t(DATA_PHASES[phase] ?? "settings.data.starting")} ${pct}%`;
 }
 
 function getLanguage() {
@@ -261,6 +392,9 @@ function applyTranslations(lang, root = document) {
   });
   root.querySelectorAll("[data-i18n-html]").forEach((el) => {
     el.innerHTML = t(el.dataset.i18nHtml, lang);
+  });
+  root.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
+    el.setAttribute("placeholder", t(el.dataset.i18nPlaceholder, lang));
   });
   root.querySelectorAll("[data-i18n-title]").forEach((el) => {
     el.setAttribute("title", t(el.dataset.i18nTitle, lang));
@@ -278,6 +412,7 @@ function setLanguage(lang) {
 
 export {
   applyTranslations,
+  dataProgress,
   getLanguage,
   setLanguage,
   t

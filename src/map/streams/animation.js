@@ -239,7 +239,7 @@ class StreamAnimation {
   }
 
   // color NEWLY-seen reaches to the current step (runs on tile load). The cube row comes
-  // straight from the tile's `riverIndex` property — no comid.bin / binary search.
+  // straight from the tile's `riverIndex` property — no riverId lookup table / binary search.
   discoverAndApply() {
     if (!this.cube || !this.map.isStyleLoaded()) return;
     let feats;

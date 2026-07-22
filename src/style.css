@@ -737,6 +737,156 @@ button.mode.active {
     cursor: pointer;
 }
 
+/* a setting that is an action rather than a toggle: label, explanation, live status, button */
+.setting-block {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 6px 0;
+    font-size: 14.5px;
+    color: var(--text);
+}
+
+.setting-block .hint {
+    margin: 0;
+}
+
+/* ---- settings: the downloadable dataset list ---- */
+.data-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin: 8px 0 4px;
+}
+
+/* name takes the slack, size sits against the buttons, status spans the full width beneath */
+.data-row {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 14.5px;
+}
+
+.data-row:last-child {
+    border-bottom: 0;
+}
+
+.data-name {
+    font-weight: 600;
+}
+
+.data-size {
+    color: var(--text-dim);
+    font-variant-numeric: tabular-nums;
+    font-size: 13.5px;
+}
+
+.data-actions {
+    display: flex;
+    gap: 4px;
+}
+
+/* No padding: .icon-btn centres with place-items, and padding here shrank the content box below
+   the inherited 22px icon, which overflowed instead of centring. Size the glyph, not the box. */
+.row-icon {
+    width: 40px;
+    height: 40px;
+}
+
+.row-icon svg {
+    width: 22px;
+    height: 22px;
+}
+
+/* the pair are each other's inverse, so the disabled one is the state readout — it has to be
+   legible as "not available", not invisible */
+.row-icon:disabled {
+    opacity: .3;
+    cursor: not-allowed;
+}
+
+.act-remove:not(:disabled):hover {
+    border-color: var(--danger);
+    color: var(--danger);
+}
+
+/* spans all three columns: progress and errors belong under the row they describe */
+.data-row-status {
+    grid-column: 1 / -1;
+    margin: 0;
+    font-variant-numeric: tabular-nums;
+}
+
+.data-row-status:empty {
+    display: none;
+}
+
+.data-foot {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+}
+
+#data-foot-status {
+    margin: 0;
+    min-height: 1.2em;
+    font-variant-numeric: tabular-nums;
+}
+
+.data-foot-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.data-foot-actions .btn {
+    margin-top: 0;
+}
+
+/* river ID search modal: the field and its submit share a line */
+.search-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.search-row input {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-variant-numeric: tabular-nums;
+}
+
+/* .btn is full-width by default, which would push the field to nothing */
+.search-row .btn {
+    flex: 0 0 auto;
+    width: auto;
+    margin-top: 0;
+}
+
+/* reserved so the modal doesn't resize as the status line fills in */
+#search-status {
+    min-height: 1.2em;
+}
+
+/* a hint that is a rejection rather than an aside — see say() in ui/riverSearch.js */
+.hint.error {
+    color: var(--danger);
+    font-weight: 600;
+}
+
+.search-row input[aria-invalid="true"] {
+    border-color: var(--danger);
+}
+
+.setting-block .btn {
+    margin-top: 2px;
+}
+
 .attr-table {
     width: 100%;
     border-collapse: collapse;
@@ -789,6 +939,11 @@ button.mode.active {
     font-size: 16px;
     color: var(--text-dim);
     padding: 24px 2px;
+}
+
+/* Rewritten in place while a fetch runs — download progress, then the loading line again. */
+.ts-loading-label {
+    text-align: center;
 }
 
 .ts-loading .spinner {
@@ -1107,52 +1262,54 @@ button.mode.active {
     cursor: pointer;
 }
 
-/* ---- charts dock ---------------------------------------------------------
-   The charts live inside the left panel. When a reach is inspected the panel
-   grows to half the viewport and the chart suite grows in *beneath* the
-   hydrology controls (date picker · stream style · action buttons), which stay
-   pinned so you can retune the forecast while reading the charts. The other
-   control sections (flood, legend) give way to the charts. Driven by the
-   `charts-open` class on <body> (openChartsDock/closeChartsDock in main.js);
-   main.js calls map.resize() during the transition to track the width change. */
+/* ---- docks (charts · saved rivers) ---------------------------------------
+   The docks live inside the left panel. When one opens the panel grows to half
+   the viewport and the dock grows in *beneath* the hydrology controls (date
+   picker · stream style · action buttons), which stay pinned so you can retune
+   the forecast while reading the charts. The other control sections (flood,
+   legend) give way to it. Only one dock shows at a time: `dock-open` on <body>
+   drives the shared layout, `charts-open` / `bookmarks-open` pick which one
+   (see ui/dock.js, which also calls map.resize() to track the width change). */
 .panel {
     transition: flex-basis .3s ease;
 }
 
-body.charts-open .panel {
+body.dock-open .panel {
     flex-basis: 50%;
 }
 
 /* wide layout: the controls header spreads out into a row (logo · title · actions) */
-body.charts-open .panel header {
+body.dock-open .panel header {
     flex-direction: row;
     align-items: center;
     flex-wrap: wrap;
     gap: 12px 16px;
 }
 
-body.charts-open .panel header .header-actions {
+body.dock-open .panel header .header-actions {
     margin-left: auto;
     /* wide layout: show the actions in reversed order (translate · info · theme · settings) */
     flex-direction: row-reverse;
 }
 
 /* pin the hydrology controls to their natural height; the dock takes the rest */
-body.charts-open #scroll {
+body.dock-open #scroll {
     flex: 0 0 auto;
     overflow: visible;
 }
 
-/* the flood / legend / log sections step aside for the charts */
-body.charts-open #scroll > section:not(#hydrology-section) {
+/* the flood / legend / log sections step aside for the dock */
+body.dock-open #scroll > section:not(#hydrology-section) {
     display: none;
 }
 
-#charts-dock {
+#charts-dock,
+#bookmarks-dock {
     display: none;
 }
 
-body.charts-open #charts-dock {
+body.charts-open #charts-dock,
+body.bookmarks-open #bookmarks-dock {
     display: flex;
     flex: 1 1 auto;
     min-height: 0;
@@ -1160,40 +1317,68 @@ body.charts-open #charts-dock {
 }
 
 /* docked header sits flush against the panel edge, not floating like a modal */
-#charts-dock .modal-head {
+#charts-dock .modal-head,
+#bookmarks-dock .modal-head {
     border-radius: 0;
 }
 
+/* saved rivers table: id · name · the button that jumps to that reach's charts */
+.bookmarks-table td.k {
+    font-variant-numeric: tabular-nums;
+}
+
+/* Coordinates: right-aligned and tabular so the decimal points line up down the column, and never
+   wrapped — a broken "-89.2522" reads as two numbers. */
+.bookmarks-table td.n {
+    width: 1%;
+    text-align: right;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+.bookmarks-table td.a {
+    width: 1%;
+    text-align: right;
+    white-space: nowrap;
+}
+
+.bookmarks-table .row-btn {
+    width: auto;
+    padding: 4px 12px;
+    font-size: 13px;
+    margin: 0;
+}
+
 /* wide layout: lay the hydrology controls out in a row so they use the extra
-   width and free up vertical space for the charts below */
-body.charts-open #hydrology-section {
+   width and free up vertical space for the dock below */
+body.dock-open #hydrology-section {
     display: flex;
     flex-wrap: wrap;
     align-items: flex-end;
     gap: 12px;
 }
 
-body.charts-open #hydrology-section h2 {
+body.dock-open #hydrology-section h2 {
     flex-basis: 100%;
     margin-bottom: 0;
 }
 
-body.charts-open #hydrology-section .hydro-field {
+body.dock-open #hydrology-section .hydro-field {
     flex: 1 1 220px;
     margin-top: 0;
 }
 
-body.charts-open #hydrology-section .hydro-actions {
+body.dock-open #hydrology-section .hydro-actions {
     margin-top: 0;
     align-self: flex-end;
 }
 
 /* keep the map overlays clear of the widened panel */
-body.charts-open #legend-overlay {
+body.dock-open #legend-overlay {
     left: calc(50% + 14px);
 }
 
-body.charts-open #player {
+body.dock-open #player {
     left: 75%;
     width: min(640px, calc(50vw - 48px));
     min-width: 0;

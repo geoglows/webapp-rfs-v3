@@ -1,10 +1,10 @@
 import {Selection} from "./selection";
-import {FimTilesLayer} from "./tilesLayer";
+import {FloodMapsTilesLayer} from "./tilesLayer";
 import {FloodOverlay} from "./overlay";
 import {flowsAtLadderPosition, uniformFlows} from "./hydro";
 import {legendGradient} from "./colormap";
 import {setInspectHighlight} from "../inspectHighlight";
-import {FIM_DATA_URL} from "../../constants";
+import {getConfig} from "rfsjs/v3";
 import {t} from "../../i18n/i18n";
 
 const $ = (id) => document.getElementById(id);
@@ -21,13 +21,13 @@ const FLOOD_STYLE_CTL = {
 /**
  * Flood mapping: the worker protocol, the reach selection, the discharge styles that drive the
  * extent, the forecast player, and the GeoTIFF export. Owns the flood worker, the extent canvas
- * (overlay.js), the FIM data-tile footprints (tilesLayer.js), and the reach picker (selection.js).
+ * (overlay.js), the flood-map data-tile footprints (tilesLayer.js), and the reach picker (selection.js).
  *
  * getForecastDate() is read at fetch time so a date change is picked up without re-wiring.
  * isMapLoaded() guards the overlay rebuild, which needs the map's layers to exist.
  */
 function createFloodController({map, anim, getForecastDate, isMapLoaded}) {
-  // The worker is expensive to stand up (it fetches the FIM manifest and pulls in the Zarr codec
+  // The worker is expensive to stand up (it fetches the flood-map manifest and pulls in the Zarr codec
   // WASM), and flood mapping is off until the user asks for it — so it's built on first use.
   let worker = null;
   let workerReady = false;
@@ -56,7 +56,7 @@ function createFloodController({map, anim, getForecastDate, isMapLoaded}) {
   let fcFps = 4;
 
   const floodOverlay = new FloodOverlay(map);
-  const fimTiles = new FimTilesLayer(map, {
+  const floodMapsTiles = new FloodMapsTilesLayer(map, {
     isReady: () => workerReady,
     onTiles: (tiles) => worker?.postMessage({type: "viewport", tiles})
   });
@@ -68,9 +68,10 @@ function createFloodController({map, anim, getForecastDate, isMapLoaded}) {
     if (worker) return worker;
     worker = new Worker(new URL("./worker.js", import.meta.url), {type: "module"});
     worker.onmessage = onWorkerMessage;
-    // The worker has its own instance of the package's config, blank like every other, so the
-    // flood library root travels in the init message rather than through configure() on this side.
-    worker.postMessage({type: "init", fimBase: FIM_DATA_URL});
+    // The worker has its own instance of the package's config, blank like every other, so the v3
+    // root travels in the init message for the worker to configure() itself with. src/rfsConfig.js
+    // has already run on this side, so getConfig() is the absolutized url this app is reading.
+    worker.postMessage({type: "init", v3Base: getConfig().v3Base});
     return worker;
   }
 
@@ -81,7 +82,7 @@ function createFloodController({map, anim, getForecastDate, isMapLoaded}) {
       $("legend-depth").style.background = `linear-gradient(to right, ${legendGradient()})`;
       console.log(`Flood index ready: ${msg.nTiles.toLocaleString()} tiles. Coverage loads from the map viewport.`);
       refreshControls();
-      fimTiles.sync();
+      floodMapsTiles.sync();
     } else if (msg.type === "coverage") {
       coverageSet = new Set(new Uint32Array(msg.coverage));
       selection?.setCoverage([...coverageSet]);
@@ -128,7 +129,7 @@ function createFloodController({map, anim, getForecastDate, isMapLoaded}) {
   function requestSelect() {
     if (!workerReady || current.floodable.length === 0) return;
     $("flood-status").textContent = "Fetching river slices…";
-    worker.postMessage({type: "select", id: ++selectSeq, comids: current.floodable});
+    worker.postMessage({type: "select", id: ++selectSeq, riverIds: current.floodable});
   }
 
   function queryDepth(lngLat) {
@@ -192,14 +193,14 @@ function createFloodController({map, anim, getForecastDate, isMapLoaded}) {
     if (floodStyle === "manual") return uniformFlows(flowsSpec, Number($("uniform").value));
     if (floodStyle === "returnperiod") return flowsAtLadderPosition(flowsSpec, Number($("ladder").value));
     if (!forecastFlows) return null;
-    // forecasts is Map(comid -> {riverIndex, median, peak, memberCount}) — the per-reach median
+    // forecasts is Map(riverId -> {riverIndex, median, peak, memberCount}) — the per-reach median
     // series and its peak, so both forecast styles read off the same entry.
     const out = new Map();
-    for (const [comid, entry] of forecastFlows.forecasts) {
+    for (const [riverId, entry] of forecastFlows.forecasts) {
       const v = floodStyle === "forecastmax"
         ? entry.peak
         : entry.median[Math.min(fcStep, entry.median.length - 1)];
-      if (Number.isFinite(v)) out.set(comid, v);
+      if (Number.isFinite(v)) out.set(riverId, v);
     }
     return out;
   }
@@ -213,7 +214,7 @@ function createFloodController({map, anim, getForecastDate, isMapLoaded}) {
     const full = flowsForFloodStyle();
     if (!full) return;
     const flows = [];
-    for (const comid of current.floodable) if (full.has(comid)) flows.push([comid, full.get(comid)]);
+    for (const riverId of current.floodable) if (full.has(riverId)) flows.push([riverId, full.get(riverId)]);
     if (flows.length === 0) return;
     frameInFlight = true;
     $("flood-status").textContent = "Computing…";
@@ -261,8 +262,8 @@ function createFloodController({map, anim, getForecastDate, isMapLoaded}) {
     $("flood-status").textContent = `Downloading forecast for ${ids.length} reach(es)…`;
     let stale = false;
     try {
-      const {v3} = await import("rfsjs");
-      const fc = await v3.discharge.forecastsBulk({
+      const {forecastsBulk} = await import("rfsjs/v3/discharge");
+      const fc = await forecastsBulk({
         date,
         riverIds: ids,
         onProgress: (done, total) => {
@@ -398,8 +399,8 @@ function createFloodController({map, anim, getForecastDate, isMapLoaded}) {
     anim.setFloodMode(on);
     $("stream-style").disabled = on;
     // Data-tile footprints follow the mode, and start/stop tracking the viewport with it.
-    fimTiles.setActive(on);
-    for (const id of ["fim-coverage", "sel-selected", "sel-floodable"]) {
+    floodMapsTiles.setActive(on);
+    for (const id of ["flood-maps-coverage", "sel-selected", "sel-floodable"]) {
       if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", on ? "visible" : "none");
     }
   }
@@ -443,7 +444,7 @@ function createFloodController({map, anim, getForecastDate, isMapLoaded}) {
 
   /** Add the flood-related map layers and stand up the reach picker. Call once, on map load. */
   function onMapLoad() {
-    fimTiles.add();
+    // floodMapsTiles adds itself on first entry into flood mode — see FloodMapsTilesLayer.add().
     selection = new Selection(map, onSelectionChange, (id) => coverageSet?.has(id) ?? false);
     selection.addHighlightLayers();
   }

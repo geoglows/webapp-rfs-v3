@@ -1,15 +1,16 @@
 import {describe, expect, it} from "vitest";
 import * as fs from "node:fs";
 import * as os from "node:os";
-import {FimIndex} from "./zarrTiles.js";
-import {computeDofSlice, reduceSliceToCanvas} from "./kernel.js";
-import {FloodMapper} from "./mapper.js";
+import {FloodMapsIndex} from "../clients-rfsjs/dist/v3/floodmaps.esm.js";
+import {computeDofSlice, reduceSliceToCanvas} from "../src/map/flood-maps/kernel.js";
+import {FloodMapper} from "../src/map/flood-maps/mapper.js";
 
-const ROOT = `${os.homedir()}/data/fldpln-merged/tiles-zarr`;
+// Reading the tile stores is rfsjs' job and is tested there (test/v3/floodMapsTiles.test.js); what is
+// tested here is what the app still owns — the DoF kernel and the mapper — against real slices.
+const ROOT = process.env.RFS_FLOOD_MAPS_ROOT ?? `${os.homedir()}/data/fldpln-merged/tiles-zarr`;
 const TILE = "N24W104_FABDEM_V1-2";
 const TILE_PATH = `lat=24/lon=-104/${TILE}.zarr`;
-const G_ROW0 = Math.round((90 - (24 + 1.1)) * 3600);
-const G_COL0 = Math.round((-104 - 0.1 + 180) * 3600);
+const RIVER_ID = 770148173;
 const fileFetcher = async (url) => {
   try {
     const b = await fs.promises.readFile(url);
@@ -19,38 +20,12 @@ const fileFetcher = async (url) => {
     throw e;
   }
 };
-describe.skipIf(!fs.existsSync(`${ROOT}/${TILE_PATH}`))("fim zarr stores", () => {
-  
+const openTile = () => FloodMapsIndex.openTiles({tiles: {[TILE]: TILE_PATH}, fetcher: fileFetcher, base: ROOT});
 
-  it("loads a river slice with correct shapes and global coordinates", async () => {
-    const idx = await FimIndex.openTiles(ROOT, {[TILE]: TILE_PATH}, fileFetcher);
-    expect(idx.comidTiles.size).toBe(159);
-    const s = await idx.slice(TILE, 770148173);
-    expect(s.nVisit).toBe(280);
-    expect(s.relFspLocal.length).toBe(31193);
-    expect(s.relDtf.length).toBe(31193);
-    let relSum = 0;
-    for (const c of s.relCount) relSum += c;
-    expect(relSum).toBe(31193);
-    expect(s.runStarts[0]).toBe(0);
-    expect(s.runStarts[s.runStarts.length - 1]).toBe(s.nVisit);
-    expect(s.q.length).toBe(s.nVisit * 30);
-    for (const v of [s.row[0], s.row[s.nVisit - 1], s.pixRow[0], s.pixRow[s.nPix - 1]]) {
-      expect(v).toBeGreaterThanOrEqual(G_ROW0);
-      expect(v).toBeLessThan(G_ROW0 + 4320);
-    }
-    for (const v of [s.col[0], s.pixCol[0], s.pixCol[s.nPix - 1]]) {
-      expect(v).toBeGreaterThanOrEqual(G_COL0);
-      expect(v).toBeLessThan(G_COL0 + 4320);
-    }
-    let dtfMax = 0;
-    for (const d of s.relDtf) if (d > dtfMax) dtfMax = d;
-    expect(dtfMax).toBeGreaterThan(0);
-    expect(dtfMax).toBeLessThanOrEqual(25.5);
-  });
+describe.skipIf(!fs.existsSync(`${ROOT}/${TILE_PATH}`))("flood compute over real slices", () => {
   it("computes DoF and floods pixels end-to-end", async () => {
-    const idx = await FimIndex.openTiles(ROOT, {[TILE]: TILE_PATH}, fileFetcher);
-    const s = await idx.slice(TILE, 770148173);
+    const idx = await openTile();
+    const s = await idx.slice(TILE, RIVER_ID);
     let qmax = 0;
     for (const v of s.q) if (Number.isFinite(v) && v > qmax) qmax = v;
     expect(qmax).toBeGreaterThan(0);
@@ -75,25 +50,9 @@ describe.skipIf(!fs.existsSync(`${ROOT}/${TILE_PATH}`))("fim zarr stores", () =>
     expect(dmax).toBeGreaterThan(0);
     expect(dmax).toBeLessThan(700);
   });
-  it.skipIf(!fs.existsSync(`${ROOT}/manifest.json`))(
-    "opens via manifest and builds coverage from active (viewport) tiles",
-    async () => {
-      const idx = await FimIndex.open(ROOT, fileFetcher);
-      expect(idx.tilePath.size).toBe(1106);
-      // no global comid->tile index anymore; coverage is empty until a tile is made active
-      expect(idx.comidTiles.size).toBe(0);
-      const coverage = await idx.setActiveTiles([TILE]);
-      expect(idx.activeTiles.has(TILE)).toBe(true);
-      expect(coverage.length).toBe(idx.comidTiles.size);
-      expect(coverage.length).toBeGreaterThan(0);
-      expect(idx.comidTiles.get(770148173)).toContain(TILE);
-      const slices = await idx.slicesFor([770148173]);
-      expect(slices.length).toBeGreaterThanOrEqual(1);
-    }
-  );
   it("maps a selection to a canvas, a frame, a depth query, and an extent", async () => {
-    const idx = await FimIndex.openTiles(ROOT, {[TILE]: TILE_PATH}, fileFetcher);
-    const slices = await idx.slicesFor([770148173]);
+    const idx = await openTile();
+    const slices = await idx.slicesFor([RIVER_ID]);
     const mapper = FloodMapper.forSlices(slices);
     expect(mapper).not.toBeNull();
     expect(mapper.width).toBeGreaterThan(0);
@@ -104,14 +63,14 @@ describe.skipIf(!fs.existsSync(`${ROOT}/${TILE_PATH}`))("fim zarr stores", () =>
     expect(mapper.stats().slices).toBe(slices.length);
 
     const spec = mapper.synthesizeFlows();
-    const entry = spec.comids["770148173"];
+    const entry = spec.rivers[String(RIVER_ID)];
     expect(entry.ladder.length).toBe(spec.ladderLabels.length);
     expect(entry.ladder[entry.ladder.length - 1]).toBeGreaterThan(entry.ladder[0]);
 
     const s = slices[0];
     let qmax = 0;
     for (const v of s.q) if (Number.isFinite(v) && v > qmax) qmax = v;
-    const frame = mapper.frame(new Map([[770148173, qmax]]));
+    const frame = mapper.frame(new Map([[RIVER_ID, qmax]]));
     expect(frame.floodedCells).toBeGreaterThan(0);
     expect(frame.rgba.byteLength).toBe(mapper.width * mapper.height * 4);
 

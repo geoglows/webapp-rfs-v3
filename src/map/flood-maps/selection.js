@@ -9,7 +9,7 @@ class Selection {
    * the attributes those methods need — see the package's v3.hydrography (RiverNetwork), kept
    * dormant for their return.
    *
-   * hasCoverage(comid): whether a reach has flood-library data in the loaded (viewport) tiles.
+   * hasCoverage(riverId): whether a reach has flood-library data in the loaded (viewport) tiles.
    * It arrives async and grows as you pan, so call refresh() when it updates.
    */
   constructor(map, onChange, hasCoverage = () => false) {
@@ -57,7 +57,7 @@ class Selection {
     };
     // Base `streams` lines are LIGHT BLUE — highlights MUST clash (dark/contrasting), never
     // light blue. Flood-mappable coverage = solid RED; selected = amber; ready = green.
-    line("fim-coverage", "#dc2626", 3, 0.95);
+    line("flood-maps-coverage", "#dc2626", 3, 0.95);
     line("sel-selected", "#f59e0b", 3, 0.95);
     line("sel-floodable", "#22c55e", 4, 0.95);
     this.setCoverage(this.coverageIds);
@@ -67,12 +67,12 @@ class Selection {
    * see which reaches are worth clicking. The set grows as more tiles load with panning. */
   setCoverage(ids) {
     this.coverageIds = ids;
-    if (!this.map.getLayer("fim-coverage")) return;
+    if (!this.map.getLayer("flood-maps-coverage")) return;
     if (!this.map.isStyleLoaded()) {
       this.map.once("idle", () => this.setCoverage(this.coverageIds));
       return;
     }
-    this.map.setFilter("fim-coverage", inFilter(ids));
+    this.map.setFilter("flood-maps-coverage", inFilter(ids));
     this.updateInfo([...this.selected].filter((id) => this.hasCoverage(id)).length);
   }
 

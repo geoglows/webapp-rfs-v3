@@ -14,13 +14,16 @@ import {readFileSync} from "node:fs";
 const ids = new Set([...readFileSync("index.html", "utf8").matchAll(/id="([^"]+)"/g)].map((m) => m[1]));
 const nodes = new Map();
 const listeners = [];
+let detached = 0;
 
 function stubEl(id) {
   if (nodes.has(id)) return nodes.get(id);
   const node = {
     id, style: {}, dataset: {}, options: [], selectedIndex: 0,
-    value: "0", textContent: "", innerHTML: "", className: "",
-    disabled: false, hidden: false, max: "0",
+    value: "0", textContent: "", innerHTML: "", className: "", title: "",
+    disabled: false, hidden: false, max: "0", isConnected: false,
+    // What a <template> exposes: heroIcon() builds one and reads the icon back out of it.
+    content: {firstElementChild: null},
     classList: {
       add() {
       }, remove() {
@@ -31,7 +34,11 @@ function stubEl(id) {
     }, removeAttribute() {
     }, replaceChildren() {
     },
+    focus() {
+    }, select() {
+    },
     appendChild() {
+    }, append() {
     }, remove() {
     },
     addEventListener: (type, fn) => listeners.push([id, type, fn]),
@@ -62,6 +69,9 @@ const map = {
   setFilter() {
   }, setLayoutProperty() {
   }, queryRenderedFeatures: () => [],
+  flyTo() {
+  }, easeTo() {
+  },
   isStyleLoaded: () => true, getZoom: () => 5,
   resize() {
   }, on() {
@@ -85,7 +95,8 @@ beforeAll(() => {
       }
     },
     getElementById: (id) => (ids.has(id) ? stubEl(id) : null),
-    createElement: () => stubEl("__detached"),
+    // A fresh node per call: the settings list builds a row out of several and keeps them apart.
+    createElement: () => stubEl(`__detached-${detached++}`),
     querySelectorAll: () => [],
     addEventListener() {
     }
@@ -107,7 +118,7 @@ describe("feature module initialization", () => {
   let flood, dock, panel;
 
   it("createFloodController initializes and exposes its surface", async () => {
-    const {createFloodController} = await import("../map/fim/floodController");
+    const {createFloodController} = await import("../src/map/flood-maps/floodController.js");
     flood = createFloodController({
       map, anim, getForecastDate: () => "2026-07-18", isMapLoaded: () => true
     });
@@ -120,7 +131,7 @@ describe("feature module initialization", () => {
   });
 
   it("createChartsDock initializes and exposes its surface", async () => {
-    const {createChartsDock} = await import("./chartsDock");
+    const {createChartsDock} = await import("../src/ui/chartsDock.js");
     dock = createChartsDock({map, getForecastDate: () => "2026-07-18"});
     // close() and restyleCharts() must no-op cleanly before any chart has ever been rendered —
     // that is exactly the path that used to fetch the 274 KB chart bundle for nothing.
@@ -128,8 +139,37 @@ describe("feature module initialization", () => {
     dock.restyleCharts();
   });
 
+  it("createBookmarksDock initializes and exposes its surface", async () => {
+    const {createBookmarksDock} = await import("../src/ui/bookmarksDock.js");
+    const bookmarks = createBookmarksDock({
+      map, onSelectRiver: () => {
+      }
+    });
+    // Rendering the table and closing must both survive being called before the dock is ever shown.
+    bookmarks.open();
+    bookmarks.close();
+  });
+
+  it("createRiverSearch initializes and exposes its surface", async () => {
+    const {createRiverSearch} = await import("../src/ui/riverSearch.js");
+    const search = createRiverSearch({
+      onFound: () => {
+      }
+    });
+    search.open();
+    search.close();
+  });
+
+  it("the settings data list initializes and exposes its surface", async () => {
+    const {createDataSettings} = await import("../src/ui/dataSettings.js");
+    // Surveys every registered dataset on construction; with no IndexedDB here that path must
+    // degrade to empty rows, not throw.
+    const data = createDataSettings();
+    await data.refresh();
+  });
+
   it("createPanelControls initializes and exposes its surface", async () => {
-    const {createPanelControls} = await import("./panelControls");
+    const {createPanelControls} = await import("../src/ui/panelControls.js");
     panel = createPanelControls({
       anim, onForecastDateChange: () => {
       }
@@ -155,8 +195,9 @@ describe("feature module initialization", () => {
 
   it("references only element ids that exist in index.html", () => {
     const files = [
-      "src/main.js", "src/map/fim/floodController.js",
-      "src/ui/chartsDock.js", "src/ui/panelControls.js"
+      "src/main.js", "src/map/flood-maps/floodController.js",
+      "src/ui/chartsDock.js", "src/ui/bookmarksDock.js", "src/ui/panelControls.js",
+      "src/ui/riverSearch.js", "src/ui/dataSettings.js"
     ];
     const missing = [];
     for (const f of files) {

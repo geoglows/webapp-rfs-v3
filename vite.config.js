@@ -1,7 +1,12 @@
 import {defineConfig} from "vite";
 import {createReadStream, statSync} from "node:fs";
 import {join, normalize, resolve, sep} from "node:path";
+
 const PACKAGE_ROOT = resolve("../clients-rfsjs");
+// This app no longer imports zarrita: every zarr store it reads — flood library tiles and discharge
+// alike — is read through rfsjs, whose build bundles one zarrita with numcodecs' lz4 and zstd wasm
+// stubbed out (see its rollup.config.js). blosc is left as a bare external there, which is the only
+// reason numcodecs is a direct dependency here: it must resolve to exactly one copy.
 
 function serveDataDir(dir) {
   const root = resolve(dir);
@@ -24,15 +29,22 @@ function serveDataDir(dir) {
             res.end("Forbidden");
             return;
           }
+          // 404 rather than next(). Falling through hands the SPA's index.html to whatever asked —
+          // with a 200 — so a missing zarr chunk surfaces as "Failed to decode JSON" from inside a
+          // decoder, and a missing pmtiles as a byte-serving complaint. Neither names the file.
           let st;
           try {
             st = statSync(filePath);
           } catch {
-            next();
+            res.statusCode = 404;
+            res.end(`Not found: ${rel}`);
             return;
           }
+          // This mount serves files, not listings; a directory hit is a caller's bad path, not a
+          // request for the app shell.
           if (st.isDirectory()) {
-            next();
+            res.statusCode = 404;
+            res.end(`Not a file: ${rel}`);
             return;
           }
           const dot = filePath.lastIndexOf(".");
@@ -84,7 +96,7 @@ function serveDataDir(dir) {
 var vite_config_default = defineConfig({
   plugins: [serveDataDir("data")],
   resolve: {
-    dedupe: ["chart.js", "chartjs-adapter-date-fns", "chartjs-chart-matrix", "chartjs-plugin-zoom", "date-fns", "zarrita"]
+    dedupe: ["chart.js", "chartjs-adapter-date-fns", "chartjs-chart-matrix", "chartjs-plugin-zoom", "date-fns", "numcodecs"],
   },
   worker: {format: "es"},
   build: {
@@ -99,15 +111,12 @@ var vite_config_default = defineConfig({
   server: {
     allowedHosts: [".ngrok-free.app", ".ngrok.app", ".ngrok.io", "tunnel.hales.app"],
     watch: {ignored: ["**/data/**"]},
-    // The package is a sibling checkout, outside this project root, and file: deps are symlinked,
-    // so the dev server has to be told it may serve from the real path.
     fs: {allow: [".", PACKAGE_ROOT]}
   },
   test: {
     environment: "node",
     testTimeout: 12e4,
-    // references/ is vendored read-only code with its own unfulfilled deps — not ours to run.
-    include: ["src/**/*.test.js"]
+    include: ["tests/**/*.test.js"]
   }
 });
 export {

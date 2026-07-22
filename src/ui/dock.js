@@ -1,0 +1,65 @@
+/**
+ * Shared plumbing for the panels that dock into the left column — the charts dock and the saved
+ * rivers dock. At most one is open at a time: they occupy the same space beneath the hydrology
+ * controls and both widen the panel to half the viewport (see the charts dock block in style.css).
+ *
+ * Each dock `name` has a `#<name>-dock` element in index.html, shown by the `<name>-open` class on
+ * <body>; `dock-open` marks "some dock is open" and drives the shared layout rules.
+ */
+const DOCKS = ["charts", "bookmarks"];
+const cleanups = new Map();
+
+/** Register work to run when `name` closes — including implicitly, when another dock opens. */
+function onDockClosed(name, fn) {
+  cleanups.set(name, fn);
+}
+
+function isDockOpen(name) {
+  return document.body.classList.contains(`${name}-open`);
+}
+
+// The MapLibre canvas doesn't track sibling layout changes, so it needs a resize once the panel
+// settles at its new width. Resizing every frame of the transition instead would force ~20 full GL
+// viewport resets and a layout read apiece; the canvas is stretched by CSS in the meantime, so one
+// resize at the end is all that's needed. The timeout is a fallback for when transitionend doesn't
+// fire (panel already at its target width, reduced motion, …).
+function reflowMap(map, durationMs = 340) {
+  const panel = document.getElementById("left-panel");
+  let done = false;
+  const finish = () => {
+    if (done) return;
+    done = true;
+    panel?.removeEventListener("transitionend", onEnd);
+    map.resize();
+  };
+  const onEnd = (e) => {
+    if (e.propertyName === "flex-basis") finish();
+  };
+  panel?.addEventListener("transitionend", onEnd);
+  setTimeout(finish, durationMs);
+}
+
+function openDock(map, name) {
+  // Swapping one dock for another leaves the panel at the same width, so only a cold open reflows.
+  const wasWide = document.body.classList.contains("dock-open");
+  for (const other of DOCKS) {
+    if (other === name || !isDockOpen(other)) continue;
+    document.body.classList.remove(`${other}-open`);
+    cleanups.get(other)?.();
+  }
+  document.body.classList.add("dock-open", `${name}-open`);
+  if (!wasWide) reflowMap(map);
+}
+
+function closeDock(map, name) {
+  if (!isDockOpen(name)) return;
+  document.body.classList.remove(`${name}-open`, "dock-open");
+  cleanups.get(name)?.();
+  reflowMap(map);
+}
+
+function closeAllDocks(map) {
+  for (const name of DOCKS) closeDock(map, name);
+}
+
+export {closeAllDocks, closeDock, isDockOpen, onDockClosed, openDock};

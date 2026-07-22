@@ -19,7 +19,7 @@ const map = new maplibregl.Map({
   zoom: 1.5,
   hash: "map",
   maxZoom: 13,
-  // Non-Latin scripts render locally, so labels don't rely on the fallback glyph collapsed below.
+  // Non-Latin map-styles render locally, so labels don't rely on the fallback glyph collapsed below.
   localIdeographFontFamily: "sans-serif",
   // Esri's Environment styles ask for comma-joined font stacks (e.g. "Noto Sans Regular,Arial
   // Unicode MS Regular"), but its font server only serves single fonts — a stack 404s as JSON,

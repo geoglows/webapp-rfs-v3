@@ -7,6 +7,9 @@ import chartBarSolid from "heroicons/24/solid/chart-bar.svg?raw";
 import bookmarkSolid from "heroicons/24/solid/bookmark.svg?raw";
 import magnifyingGlassSolid from "heroicons/24/solid/magnifying-glass.svg?raw";
 import clockSolid from "heroicons/24/solid/clock.svg?raw";
+import arrowDownTray from "heroicons/24/outline/arrow-down-tray.svg?raw";
+import trash from "heroicons/24/outline/trash.svg?raw";
+import xMark from "heroicons/24/outline/x-mark.svg?raw";
 
 const ICONS = {
   "information-circle": informationCircle,
@@ -17,7 +20,10 @@ const ICONS = {
   "chart-bar-solid": chartBarSolid,
   "bookmark-solid": bookmarkSolid,
   "magnifying-glass-solid": magnifyingGlassSolid,
-  "clock-solid": clockSolid
+  "clock-solid": clockSolid,
+  "arrow-down-tray": arrowDownTray,
+  trash,
+  "x-mark": xMark
 };
 
 function heroIcon(name) {

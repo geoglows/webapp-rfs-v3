@@ -1,4 +1,5 @@
-import {FimIndex} from "./zarrTiles.js";
+import {FloodMapsIndex} from "rfsjs/v3/floodmaps";
+import {configure} from "rfsjs/v3";
 import {FloodMapper} from "./mapper.js";
 
 /**
@@ -6,9 +7,9 @@ import {FloodMapper} from "./mapper.js";
  * the bottom of this file.
  *
  * post(message, transfer) is the worker's own postMessage. Messages in:
- *   init      {fimBase}                  open the tile manifest              -> ready
+ *   init      {v3Base}                   point the package at the data, open the manifest -> ready
  *   viewport  {tiles}                    fold those tiles into coverage      -> coverage
- *   select    {id, comids}               fetch slices, build the canvas      -> selected
+ *   select    {id, riverIds}             fetch slices, build the canvas      -> selected
  *   frame     {id, flows}                render one discharge state          -> frame
  *   query     {id, row, col}             depth at one arc-second cell        -> query
  *   export    {id}                       the last frame's wet/dry mask       -> export
@@ -26,9 +27,11 @@ function createFloodWorker(post) {
   return async (msg) => {
     try {
       if (msg.type === "init") {
-        // A Worker is its own module instance, so it cannot see anything the page computed —
-        // init carries the flood library root across and it is handed straight to the index.
-        index = await FimIndex.open(msg.fimBase);
+        // A Worker is its own module instance, so it has its own blank copy of the package's
+        // config and cannot see the configure() the page ran at startup — init carries the v3 root
+        // across so the flood library resolves under it here too.
+        configure({v3Base: msg.v3Base});
+        index = await FloodMapsIndex.open();
         post({type: "ready", nTiles: index.tilePath.size});
       } else if (msg.type === "viewport") {
         if (!index) throw new Error("worker not initialized");
@@ -38,7 +41,7 @@ function createFloodWorker(post) {
             type: "coverage",
             coverage: coverage.buffer,
             nActiveTiles: index.activeTiles.size,
-            nRivers: index.comidTiles.size
+            nRivers: index.riverTiles.size
           },
           [coverage.buffer]
         );
@@ -46,7 +49,7 @@ function createFloodWorker(post) {
         if (!index) throw new Error("worker not initialized");
         if (msg.id < latestSelectId) return;
         latestSelectId = msg.id;
-        const slices = await index.slicesFor(msg.comids);
+        const slices = await index.slicesFor(msg.riverIds);
         // A newer selection arrived while we were fetching — that one owns `mapper` now.
         if (msg.id < latestSelectId) return;
         mapper = FloodMapper.forSlices(slices);

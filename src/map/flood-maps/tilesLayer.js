@@ -1,4 +1,5 @@
-import {FIM_MIN_COVERAGE_ZOOM, FIM_TILES_URL} from "../../constants";
+import {urls} from "rfsjs/v3";
+import {FLOOD_MAPS_MIN_COVERAGE_ZOOM} from "../../constants";
 
 /**
  * The FLDPLN data-tile footprints, and the viewport → coverage bridge built on them.
@@ -12,7 +13,7 @@ import {FIM_MIN_COVERAGE_ZOOM, FIM_TILES_URL} from "../../constants";
  *   isReady() — is the worker up? (no point asking for coverage before it is)
  *   onTiles(names) — the sorted tile names now under the viewport
  */
-class FimTilesLayer {
+class FloodMapsTilesLayer {
   constructor(map, {isReady, onTiles}) {
     this.map = map;
     this.isReady = isReady;
@@ -22,41 +23,50 @@ class FimTilesLayer {
     this.lastKey = "";
   }
 
-  /** Add the source + both layers, and start watching for viewport/tile-load changes. */
+  /** Add the source + both layers, and start watching for viewport/tile-load changes. Called
+   * lazily on first entry into flood mode, not at map load: addSource() fetches the pmtiles
+   * header immediately, and normal browsing should never pay for (or 404 on) that archive. */
   add() {
     const map = this.map;
-    if (map.getSource("fim-tiles")) return;
-    map.addSource("fim-tiles", {type: "vector", url: `pmtiles://${FIM_TILES_URL}`});
+    if (map.getSource("flood-maps-tiles")) return;
+    map.addSource("flood-maps-tiles", {type: "vector", url: `pmtiles://${urls.floodMapsTileBoundaries()}`});
+    // Keep the footprints under the selection highlights, which were added back at map load.
+    const beforeId = map.getLayer("flood-maps-coverage") ? "flood-maps-coverage" : undefined;
     // Invisible fill = the viewport hit-test target. A line layer would miss a viewport sitting
     // entirely inside one tile with no edge on screen; a fill at opacity 0 still renders, so
     // queryRenderedFeatures returns it wherever the viewport lands.
     map.addLayer({
-      id: "fim-tiles-hit",
+      id: "flood-maps-tiles-hit",
       type: "fill",
-      source: "fim-tiles",
+      source: "flood-maps-tiles",
+      // "fim_tiles" is the layer name inside the published pmtiles — it stays until that archive is
+      // rebuilt by references/map-styles/build_flood_maps_tile_boundaries.mjs and redeployed.
       "source-layer": "fim_tiles",
       paint: {"fill-opacity": 0}
-    });
+    }, beforeId);
     // Faint outline, shown only in flood mode, so the data-tile footprint is visible.
     map.addLayer({
-      id: "fim-tiles-outline",
+      id: "flood-maps-tiles-outline",
       type: "line",
-      source: "fim-tiles",
+      source: "flood-maps-tiles",
       "source-layer": "fim_tiles",
       layout: {visibility: this.active ? "visible" : "none"},
       paint: {"line-color": "#38bdf8", "line-width": 1, "line-opacity": 0.5, "line-dasharray": [2, 2]}
-    });
+    }, beforeId);
     map.on("sourcedata", (e) => {
-      if (e.sourceId === "fim-tiles" && e.isSourceLoaded) this.sync();
+      if (e.sourceId === "flood-maps-tiles" && e.isSourceLoaded) this.sync();
     });
     map.on("moveend", () => this.sync());
   }
 
-  /** Flood mapping mode on/off: show the footprints and start (or stop) tracking the viewport. */
+  /** Flood mapping mode on/off: show the footprints and start (or stop) tracking the viewport.
+   * The first `on` is also what creates the source and layers — same lazy pattern as the flood
+   * worker, so nothing is fetched until the user actually enters flood mode. */
   setActive(on) {
     this.active = on;
-    if (this.map.getLayer("fim-tiles-outline")) {
-      this.map.setLayoutProperty("fim-tiles-outline", "visibility", on ? "visible" : "none");
+    if (on) this.add();
+    if (this.map.getLayer("flood-maps-tiles-outline")) {
+      this.map.setLayoutProperty("flood-maps-tiles-outline", "visibility", on ? "visible" : "none");
     }
     if (on) this.sync();
   }
@@ -65,10 +75,10 @@ class FimTilesLayer {
    * against the last report, so panning within one tile doesn't re-request anything. */
   sync() {
     const map = this.map;
-    if (!this.active || !this.isReady() || !map.getLayer("fim-tiles-hit")) return;
-    if (map.getZoom() < FIM_MIN_COVERAGE_ZOOM) return;
+    if (!this.active || !this.isReady() || !map.getLayer("flood-maps-tiles-hit")) return;
+    if (map.getZoom() < FLOOD_MAPS_MIN_COVERAGE_ZOOM) return;
     const names = [...new Set(
-      map.queryRenderedFeatures({layers: ["fim-tiles-hit"]}).map((f) => f.properties.name)
+      map.queryRenderedFeatures({layers: ["flood-maps-tiles-hit"]}).map((f) => f.properties.name)
     )].sort();
     const key = names.join(",");
     if (key === this.lastKey) return;
@@ -77,4 +87,4 @@ class FimTilesLayer {
   }
 }
 
-export {FimTilesLayer};
+export {FloodMapsTilesLayer};

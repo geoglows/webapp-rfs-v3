@@ -1,6 +1,8 @@
 .idea
 node_modules/
 dist/
-data/
-references/
+# anchored to the repo root on purpose: unanchored, `data/` also matches src/data/ (the river
+# index cache modules) and silently keeps source out of the repo
+/data/
+/references/
 .DS_Store

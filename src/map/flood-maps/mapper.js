@@ -93,14 +93,14 @@ class FloodMapper {
    * there is no forecast to drive the extent.
    */
   synthesizeFlows() {
-    const byComid = /* @__PURE__ */ new Map();
+    const byRiver = /* @__PURE__ */ new Map();
     for (const s of this.slices) {
-      const list = byComid.get(s.comid);
+      const list = byRiver.get(s.riverId);
       if (list) list.push(s);
-      else byComid.set(s.comid, [s]);
+      else byRiver.set(s.riverId, [s]);
     }
-    const comids = {};
-    for (const [comid, group] of byComid) {
+    const rivers = {};
+    for (const [riverId, group] of byRiver) {
       const qBase = [];
       const perIdx = LADDER_IDX.map(() => []);
       for (const s of group) {
@@ -111,13 +111,13 @@ class FloodMapper {
           for (let k = 0; k < LADDER_IDX.length; k++) perIdx[k].push(s.q[o + LADDER_IDX[k]]);
         }
       }
-      comids[String(comid)] = {qBase: median(qBase) || 0, ladder: perIdx.map(median)};
+      rivers[String(riverId)] = {qBase: median(qBase) || 0, ladder: perIdx.map(median)};
     }
-    return {source: "rating-curve medians (per selection)", ladderLabels: LADDER_LABELS, comids};
+    return {source: "rating-curve medians (per selection)", ladderLabels: LADDER_LABELS, rivers};
   }
 
   /**
-   * Render one frame for a Map of comid -> discharge. Reaches missing from the map keep no water.
+   * Render one frame for a Map of riverId -> discharge. Reaches missing from the map keep no water.
    * Returns the RGBA buffer (transferable) plus how much of the canvas came out flooded.
    */
   frame(flows) {
@@ -129,7 +129,7 @@ class FloodMapper {
     let floodedCells = 0;
     for (let k = 0; k < this.slices.length; k++) {
       const s = this.slices[k];
-      const flow = flows.get(s.comid);
+      const flow = flows.get(s.riverId);
       if (flow === void 0) continue;
       computeDofSlice(s, flow, this.dof[k], this.scratch);
       floodedCells += reduceSliceToCanvas(s, this.dof[k], this.grid, this.row0, this.col0, this.width);

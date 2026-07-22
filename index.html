@@ -144,6 +144,17 @@
         <div id="charts-panel-details" role="tabpanel" aria-labelledby="charts-tab-details" hidden></div>
       </div>
     </div>
+
+    <!-- saved rivers dock — shares the charts dock's slot beneath the hydrology controls (only one
+         of the two is ever open). Table of bookmarked reaches; each row jumps to its charts.
+         Rows are rendered by ui/bookmarksDock.js. -->
+    <div id="bookmarks-dock">
+      <div class="modal-head">
+        <h3 data-i18n="bookmarks.heading">Saved Rivers</h3>
+        <button class="modal-close" id="bookmarks-close" data-i18n-aria-label="common.close" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body" id="bookmarks-body"></div>
+    </div>
   </div>
 
   <!-- BOTTOM: animation player -->
@@ -210,7 +221,7 @@
           Terrain: FABDEM (© DLR / Airbus, CC BY-NC-SA 4.0). Hydrography &amp; forecast: GEOGLOWS.</p>
         <h4 data-i18n="about.dataHeading">Data</h4>
         <ul class="credits">
-          <li data-i18n-html="about.credit.geoglows">Streams hydrographs and FIM from the
+          <li data-i18n-html="about.credit.geoglows">Streams hydrographs and flood maps from the
             <a href="https://geoglows.org/" target="_blank" rel="noopener">GEOGLOWS River Forecast System</a> v2 and v3</li>
         </ul>
         <h4 data-i18n="about.layersHeading">Map layers</h4>
@@ -233,6 +244,29 @@
     </div>
   </div>
 
+  <!-- river ID search (🔍 in the hydrology actions) — resolves a typed id to its position on the
+       zarr riverId axis through the optional lookup below, then opens that reach's charts. The only
+       feature that needs the lookup; see src/ui/riverSearch.js. -->
+  <div id="search-modal" class="modal-backdrop hidden">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="search-modal-title">
+      <div class="modal-head">
+        <h3 id="search-modal-title" data-i18n="search.heading">Find a river by ID</h3>
+        <button class="modal-close" data-close="search-modal" data-i18n-aria-label="common.close" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body">
+        <form id="search-form" autocomplete="off">
+          <label class="field-label" for="search-river-id" data-i18n="search.label">River ID</label>
+          <div class="search-row">
+            <input id="search-river-id" class="select" type="text" inputmode="numeric"
+              data-i18n-placeholder="search.placeholder" placeholder="e.g. 760021611" />
+            <button type="submit" class="btn primary" data-i18n="search.submit">Search</button>
+          </div>
+        </form>
+        <div id="search-status" class="hint" role="status" aria-live="polite"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- settings modal (header ⚙ button) -->
   <div id="settings-modal" class="modal-backdrop hidden">
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="settings-modal-title">
@@ -246,6 +280,22 @@
           <input type="checkbox" id="set-legend" checked />
           <span data-i18n="settings.showLegend">Show forecast return-period legend</span>
         </label>
+
+        <!-- Downloads the user keeps on the device. Every one is explicit and optional: they are
+             large transfers, and no feature depends on one having been taken (river-ID search is
+             the only thing that even reads one, and it says so when it can't). Rows are rendered
+             from the registry in src/data/datasets.js — see src/ui/dataSettings.js. -->
+        <h4 data-i18n="settings.data">Data</h4>
+        <p class="hint" data-i18n="settings.data.hint">Datasets this app can keep in your browser's
+          database. Anything deleted can be downloaded again.</p>
+        <div id="data-list" class="data-list"></div>
+        <div class="data-foot">
+          <div id="data-foot-status" class="hint"></div>
+          <div class="data-foot-actions">
+            <button id="btn-download-all" class="btn ghost" data-i18n="settings.data.downloadAll">Download everything</button>
+            <button id="btn-delete-all" class="btn ghost" data-i18n="settings.data.deleteAll">Delete everything</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
