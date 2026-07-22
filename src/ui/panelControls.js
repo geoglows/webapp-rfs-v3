@@ -1,6 +1,7 @@
-import {setLanguage, t} from "../i18n/i18n";
+import {getLanguage, setLanguage, t} from "../i18n/i18n";
 import {wireMenu} from "../map/menu";
 import {DEFAULT_FORECAST_DATE} from "../constants";
+import {DEFAULT_LANGUAGE} from "../settings";
 
 const $ = (id) => document.getElementById(id);
 
@@ -35,13 +36,16 @@ function createPanelControls({anim, onForecastDateChange, onLanguageChange}) {
   function initLanguagePicker() {
     const menu = $("lang-menu");
     const options = [...menu.querySelectorAll(".layer-opt[data-lang]")];
-    const saved = localStorage.getItem("rfs-lang") ?? "en";
-    setLanguage(saved);
+    // What this device last chose, or the deployment's configured default for one that never has.
+    setLanguage(localStorage.getItem("rfs-lang") ?? DEFAULT_LANGUAGE);
+    // setLanguage() is the authority on what that resolved to — an unsupported code (a typo in
+    // .env, a stale stored value) lands on English, and the menu has to agree with the app.
+    const active = getLanguage();
     // Same dropdown behaviour as the basemap and layer pickers.
     const closeMenu = wireMenu($("btn-language"), menu);
     for (const opt of options) {
       const code = opt.dataset.lang;
-      opt.classList.toggle("active", code === saved);
+      opt.classList.toggle("active", code === active);
       opt.addEventListener("click", () => {
         setLanguage(code);
         // Re-translates the toggle's title/aria-label in the newly picked language.
@@ -88,10 +92,8 @@ function createPanelControls({anim, onForecastDateChange, onLanguageChange}) {
     });
   }
 
-  const legendToggle = $("set-legend");
-  legendToggle?.addEventListener("change", () =>
-    $("legend-overlay")?.classList.toggle("hidden", !legendToggle.checked));
-
+  // The legend's checkbox is not read here: settings.js owns the modal's preferences and main.js
+  // subscribes this one to the overlay.
   initLanguagePicker();
   initStreamStyleControls();
 

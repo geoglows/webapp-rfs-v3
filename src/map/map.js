@@ -3,6 +3,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import {Protocol} from "pmtiles";
 import {initBasemapPicker} from "./basemaps";
 import {initLayerPicker} from "./layers";
+import {MAP_CENTER, MAP_ZOOM} from "../constants";
 
 // The map starts on an empty style; the real basemap (raster or vector) is injected by
 // applyBasemap() so the two kinds share one code path. See basemaps.js.
@@ -14,9 +15,10 @@ maplibregl.addProtocol("pmtiles", protocol.tile);
 const map = new maplibregl.Map({
   container: "map",
   style: EMPTY_STYLE,
-  // Global overview (lng 0, lat 20); the URL hash overrides this when present.
-  center: [0, 20],
-  zoom: 1.5,
+  // The opening camera, from the environment and defaulting to a global overview (lng 0, lat 20) —
+  // see MAP_CENTER in constants.js. The URL hash overrides it when present.
+  center: MAP_CENTER,
+  zoom: MAP_ZOOM,
   hash: "map",
   maxZoom: 13,
   // Non-Latin map-styles render locally, so labels don't rely on the fallback glyph collapsed below.

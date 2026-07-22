@@ -1,4 +1,5 @@
-import {mapStyleUrls, STREAMS_PMTILES} from "../../constants";
+import {mapStyleUrls} from "../../constants";
+import {urls} from "rfsjs/v3";
 
 const RET_COLORS = ["#3182bd", "#fee08b", "#fdae61", "#f46d43", "#d73027", "#a50026", "#7a0177"];
 // Uniform stream color for the "Standard" styleset (matches the normal-flow return-period blue).
@@ -43,7 +44,7 @@ class StreamAnimation {
   addStreamsLayer() {
     this.map.addSource("geoglows", {
       type: "vector",
-      url: `pmtiles://${STREAMS_PMTILES}`,
+      url: `pmtiles://${urls.streamsPmtiles()}`,
       promoteId: {streams: "riverId"},
       // riverId -> feature.id, so setFeatureState keys on it
       attribution: "GEOGLOWS"

@@ -132,8 +132,16 @@ body {
     gap: 6px;
 }
 
-/* GEOGLOWS wordmark in the controls header (served from /public). A light chip keeps the
-   dark-navy logo legible on the dark header surface. */
+/* The wordmark links out (VITE_LOGO_HREF, default this app's root). The anchor is only a hit area —
+   it carries no ink of its own, so it must not add a line box around the image. */
+.app-logo-link {
+    display: block;
+    flex: 0 0 auto;
+    line-height: 0;
+}
+
+/* Wordmark in the controls header — GEOGLOWS from /public by default, VITE_LOGO_SRC otherwise. A
+   light chip keeps the dark-navy logo legible on the dark header surface. */
 .app-logo {
     height: 30px;
     width: auto;
@@ -634,6 +642,12 @@ button.mode.active {
     max-height: 88vh;
 }
 
+/* Settings sits between the two: its rows are a checkbox and a sentence, and the dataset rows a
+   name and its buttons, both of which wrap badly at 440px. */
+#settings-modal .modal {
+    width: min(640px, calc(100vw - 32px));
+}
+
 .modal-head {
     flex: 0 0 auto;
     display: flex;
@@ -1037,6 +1051,7 @@ button.mode.active {
     color: var(--accent);
     border-color: var(--accent);
 }
+
 
 .chart-hint {
     margin-left: auto;

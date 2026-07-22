@@ -1,6 +1,7 @@
 import {dataProgress, getLanguage, t} from "../i18n/i18n";
 import {SAMPLE_DATA_RIVER_INDEX} from "../constants";
 import {resolve} from "../data/riverIndex";
+import {getSetting} from "../settings";
 import {setInspectHighlight} from "../map/inspectHighlight";
 import {closeDock, onDockClosed, openDock} from "./dock";
 
@@ -106,15 +107,31 @@ function createChartsDock({map, getForecastDate}) {
     render: (plots, host, ts) => plots.plotAllRetro(host, ts, {lang: getLanguage()})
   });
 
+  // The hydrograph and the warning levels it is read against live in different stores, so they are
+  // two reads issued together rather than one. The chart is drawn from whichever arrive: return
+  // periods are context for the forecast, so a reach the fit has no values for — or a store that
+  // fails — costs the bands, not the forecast.
   const loadForecast = (blockId) => loadChartBlock(blockId, {
     fetchData: async (setStatus) => {
       const riverIndex = await targetIndex(setStatus);
       setStatus(t("charts.loading"));
-      const {forecast} = await import("rfsjs/v3/discharge");
-      // TODO(sample-data): send `riverIndex` — see the note in loadRetro.
-      return {...await forecast({date: getForecastDate(), riverIndex: SAMPLE_DATA_RIVER_INDEX}), riverId: selectedRiverId};
+      const {forecast, returnPeriods} = await import("rfsjs/v3/discharge");
+      // TODO(sample-data): send `riverIndex` to both — see the note in loadRetro.
+      const [fc, rp] = await Promise.all([
+        forecast({date: getForecastDate(), riverIndex: SAMPLE_DATA_RIVER_INDEX}),
+        // hourly: the forecast is an instantaneous series, so the hourly fit is the like-for-like
+        // exceedance — the daily fit answers a question about daily means, which this is not.
+        returnPeriods({riverIndex: SAMPLE_DATA_RIVER_INDEX, resolution: "hourly"}).catch(() => null)
+      ]);
+      return {forecast: {...fc, riverId: selectedRiverId}, returnPeriods: rp};
     },
-    render: (plots, host, fc) => plots.plotAllForecast(host, fc, {lang: getLanguage()})
+    render: (plots, host, {forecast, returnPeriods}) => plots.plotAllForecast(host, forecast, {
+      lang: getLanguage(),
+      returnPeriods,
+      // Shaded boxes or plain lines is the user's standing preference, not a per-chart control —
+      // read at render time, which is why changing it re-renders (see rerenderCharts).
+      levelsAs: getSetting("shadedWarningLevels") ? "boxes" : "lines"
+    })
   });
 
   function renderTab(tab) {
@@ -186,12 +203,15 @@ function createChartsDock({map, getForecastDate}) {
   }
 
   /**
-   * Re-render the open chart tab in the newly picked language. Chart text is drawn into a canvas,
-   * so unlike the rest of the UI it cannot be retranslated in place by walking [data-i18n] — the
-   * charts have to be built again. Cheap: the language chunk is cached after first use, and the
-   * series comes back from the reader's own cache rather than the network.
+   * Build the open chart tab again — for a language change, or for a display preference the charts
+   * read when they render.
+   *
+   * Language is the reason this can't be done in place: chart text is drawn into a canvas, so unlike
+   * the rest of the UI it cannot be retranslated by walking [data-i18n]. Cheap either way — the
+   * language chunk is cached after first use, and the series comes back from the reader's own cache
+   * rather than the network.
    */
-  function relocalizeCharts() {
+  function rerenderCharts() {
     if (!plotsLoaded) return;
     const active = CHARTS_TABS.find((name) => $(`charts-tab-${name}`)?.classList.contains("active"));
     if (!active || active === "details") return;
@@ -202,7 +222,7 @@ function createChartsDock({map, getForecastDate}) {
   $("btn-charts").addEventListener("click", () => openForRiver());
   $("charts-close").addEventListener("click", close);
 
-  return {openForRiver, close, restyleCharts, relocalizeCharts};
+  return {openForRiver, close, restyleCharts, rerenderCharts};
 }
 
 export {createChartsDock};

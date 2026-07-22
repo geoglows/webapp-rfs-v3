@@ -1,6 +1,7 @@
 import {VectorTileLayer} from "@esri/maplibre-arcgis";
 import {calciteIcon} from "../icons/icons";
 import {wireMenu} from "./menu";
+import {MAP_DEFAULT_BASEMAP} from "../constants";
 
 const BASEMAPS = [
   {
@@ -22,34 +23,42 @@ const BASEMAPS = [
     attribution: "© OpenStreetMap contributors © CARTO"
   },
   {
-    id: "streets",
+    id: "streetsOSM",
     label: "Streets (OSM)",
     maxzoom: 19,
     tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
     attribution: "© OpenStreetMap contributors"
   },
   {
-    id: "satellite",
+    id: "satelliteEsri",
     label: "Satellite (Esri)",
     maxzoom: 19,
     tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],
     attribution: "Imagery © Esri, Maxar, Earthstar Geographics"
   },
   {
-    id: "topographic",
+    id: "topoEsri",
     label: "Topographic (Esri)",
     maxzoom: 19,
     tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"],
     attribution: "Tiles © Esri — Esri, HERE, Garmin, USGS, NGA, FAO, NOAA, © OpenStreetMap contributors, and the GIS User Community"
   },
   {
-    id: "usgstopo",
+    id: "topoUsgs",
     label: "Topographic (USGS)",
     maxzoom: 16,
     tiles: ["https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer/tile/{z}/{y}/{x}"],
     attribution: "USGS — The National Map: 3DEP, NHD, GNIS, NLCD, NTD, and others"
   }
 ];
+
+/**
+ * The basemap the app opens on — the deployment's configured id (VITE_MAP_DEFAULT_BASEMAP), or the
+ * first in the list. Read by both the caller that applies it on load and the picker that marks it
+ * active, so the two cannot disagree; an id that isn't in the list falls back here rather than
+ * leaving the map with no basemap at all.
+ */
+const defaultBasemap = () => BASEMAPS.find((bm) => bm.id === MAP_DEFAULT_BASEMAP) ?? BASEMAPS[0];
 
 // keep track of layers used in the current basemap so switching can fully remove it before adding the new one
 let basemapLayerIds = [];
@@ -148,7 +157,7 @@ function initBasemapPicker(map) {
     opt.className = "layer-opt";
     opt.setAttribute("role", "menuitemradio");
     opt.textContent = bm.label;
-    const active = bm.id === BASEMAPS[0].id;
+    const active = bm.id === defaultBasemap().id;
     opt.setAttribute("aria-checked", String(active));
     opt.classList.toggle("active", active);
     opt.addEventListener("click", () => {
@@ -165,4 +174,4 @@ function initBasemapPicker(map) {
   }
 }
 
-export {BASEMAPS, applyBasemap, initBasemapPicker, setBasemap};
+export {BASEMAPS, applyBasemap, defaultBasemap, initBasemapPicker, setBasemap};

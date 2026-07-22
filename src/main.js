@@ -10,7 +10,7 @@
 // Must stay the first import — see the note in that file about import hoisting.
 import "./rfsConfig";
 import {map} from "./map/map";
-import {applyBasemap, BASEMAPS} from "./map/basemaps";
+import {applyBasemap, defaultBasemap} from "./map/basemaps";
 import {addRasterOverlays, applyLayerVisibility} from "./map/layers";
 import {StreamAnimation} from "./map/streams/animation";
 import {addInspectHighlightLayer} from "./map/inspectHighlight";
@@ -21,6 +21,7 @@ import {heroIcon} from "./icons/heroicons";
 import {createChartsDock} from "./ui/chartsDock";
 import {createBookmarksDock} from "./ui/bookmarksDock";
 import {closeAllDocks} from "./ui/dock";
+import {DEFAULT_THEME, initSettings, onSetting} from "./settings";
 import {createPanelControls} from "./ui/panelControls";
 import {createDataSettings} from "./ui/dataSettings";
 import {createRiverSearch} from "./ui/riverSearch";
@@ -78,7 +79,7 @@ const panelControls = createPanelControls({
     currentForecastDate = date;
     flood.onForecastDateChange();
   },
-  onLanguageChange: () => chartsDock.relocalizeCharts()
+  onLanguageChange: () => chartsDock.rerenderCharts()
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -133,7 +134,7 @@ map.on("load", async () => {
   flood.onMapLoad();
   // Slot the default basemap in beneath the app layers just added. Not awaited so the (async,
   // fetched) vector style doesn't hold up the rest of load; it inserts under everything when ready.
-  void applyBasemap(map, BASEMAPS[0]);
+  void applyBasemap(map, defaultBasemap());
   console.log("Basemap + streams loaded.");
   mapLoaded = true;
   map.on("click", (e) => {
@@ -177,6 +178,8 @@ map.on("error", (e) => {
 // ═══════════════════════════════════════════════════════════════════════════
 // Chrome · icons, theme, and modals
 // ═══════════════════════════════════════════════════════════════════════════
+// The header wordmark is not here: image, link and alt text are %VITE_*% placeholders in
+// index.html, substituted before the browser parses it. See .env.
 $("btn-info").replaceChildren(heroIcon("information-circle"));
 $("btn-settings").replaceChildren(heroIcon("cog-6-tooth"));
 $("btn-language").replaceChildren(heroIcon("language"));
@@ -185,12 +188,23 @@ $("btn-charts").replaceChildren(heroIcon("chart-bar-solid"));
 $("btn-bookmarks").replaceChildren(heroIcon("bookmark-solid"));
 $("btn-toggle-slider").replaceChildren(heroIcon("clock-solid"));
 
+// The settings modal's checkboxes: read from .env, then from whatever this device last chose. Wired
+// before anything subscribes, and each subscriber fires straight away — which is what applies a
+// deployment's configured defaults, not just the user's later changes.
+initSettings();
+onSetting("legend", (on) => $("legend-overlay").classList.toggle("hidden", !on));
+// Charts read this preference at render time, so an open one has to be built again to pick it up.
+onSetting("shadedWarningLevels", () => chartsDock.rerenderCharts());
+
 function applyTheme(theme) {
   document.documentElement.setAttribute("data-theme", theme);
   $("btn-theme").replaceChildren(heroIcon(theme === "dark" ? "sun" : "moon"));
 }
 
-let currentTheme = localStorage.getItem("rfs-theme") === "light" ? "light" : "dark";
+// What this device last chose, or the deployment's configured default for one that never has. A
+// stored value that is neither theme is treated as never having chosen.
+const storedTheme = localStorage.getItem("rfs-theme");
+let currentTheme = storedTheme === "light" || storedTheme === "dark" ? storedTheme : DEFAULT_THEME;
 applyTheme(currentTheme);
 $("btn-theme").addEventListener("click", () => {
   currentTheme = currentTheme === "dark" ? "light" : "dark";

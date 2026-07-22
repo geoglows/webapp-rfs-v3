@@ -1,305 +1,308 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>River Forecast System v3</title>
-  <link rel="stylesheet" href="/src/style.css" />
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>%VITE_APP_TITLE%</title>
+  <link rel="stylesheet" href="/src/style.css"/>
 </head>
 <body>
-  <div id="map"></div>
-  <div id="left-panel" class="panel">
-    <header>
-      <img id="app-logo" class="app-logo" src="/geoglows-logo-nav.png" alt="GEOGLOWS" />
-      <h1 data-i18n="app.title">River Forecast System v3</h1>
-      <div class="header-actions">
-        <button id="btn-settings" class="icon-btn" data-i18n-title="settings.label" data-i18n-aria-label="settings.label" title="Settings" aria-label="Settings"></button>
-        <button id="btn-theme" class="icon-btn" data-i18n-title="theme.toggle" data-i18n-aria-label="theme.toggle" title="Toggle light / dark theme" aria-label="Toggle light or dark theme"></button>
-        <button id="btn-info" class="icon-btn" data-i18n-title="about.label" data-i18n-aria-label="about.label" title="About" aria-label="About"></button>
-        <div id="lang-control">
-          <button id="btn-language" class="icon-btn" data-i18n-title="lang.title" data-i18n-aria-label="lang.aria" title="Language" aria-label="Change language" aria-haspopup="true" aria-expanded="false"></button>
-          <!-- initLanguagePicker() (src/main.ts) references these entries. -->
-          <div id="lang-menu" class="map-menu hidden" role="menu">
-            <button class="layer-opt" role="menuitemradio" data-lang="en">English</button>
-            <button class="layer-opt" role="menuitemradio" data-lang="es">Español</button>
-            <button class="layer-opt" role="menuitemradio" data-lang="fr">Français</button>
-          </div>
+<div id="map"></div>
+<div id="left-panel" class="panel">
+  <header>
+    <a id="app-logo-link" class="app-logo-link" href="%VITE_LOGO_HREF%"><img id="app-logo" class="app-logo" src="%VITE_LOGO_SRC%" alt="%VITE_LOGO_ALT%"/></a>
+    <h1 data-i18n="app.title">%VITE_APP_TITLE%</h1>
+    <div class="header-actions">
+      <button id="btn-settings" class="icon-btn" data-i18n-title="settings.label" data-i18n-aria-label="settings.label" title="Settings" aria-label="Settings"></button>
+      <div id="lang-control">
+        <button id="btn-language" class="icon-btn" data-i18n-title="lang.title" data-i18n-aria-label="lang.aria" title="Language" aria-label="Change language" aria-haspopup="true" aria-expanded="false"></button>
+        <!-- see initLanguagePicker() in src/ui/panelControls.js -->
+        <div id="lang-menu" class="map-menu hidden" role="menu">
+          <button class="layer-opt" role="menuitemradio" data-lang="en">English</button>
+          <button class="layer-opt" role="menuitemradio" data-lang="es">Español</button>
+          <button class="layer-opt" role="menuitemradio" data-lang="fr">Français</button>
         </div>
       </div>
-    </header>
+      <button id="btn-theme" class="icon-btn" data-i18n-title="theme.toggle" data-i18n-aria-label="theme.toggle" title="Toggle light / dark theme" aria-label="Toggle light or dark theme"></button>
+      <button id="btn-info" class="icon-btn" data-i18n-title="about.label" data-i18n-aria-label="about.label" title="About" aria-label="About"></button>
+    </div>
+  </header>
+  <div id="scroll">
+    <section id="hydrology-section">
+      <h2 data-i18n="hydro.heading">Hydrology predictions</h2>
+      <div class="hydro-field">
+        <label class="field-label" for="forecast-date" data-i18n="hydro.forecastDate">Forecast Initialization Date</label>
+        <input id="forecast-date" type="date" class="select"/>
+      </div>
+      <div class="hydro-field">
+        <label class="field-label" for="stream-style" data-i18n="stream.style">Stream style</label>
+        <select id="stream-style" class="select">
+          <option value="standard" data-i18n="stream.style.standard">Standard</option>
+          <option value="timeseries" selected data-i18n="stream.style.timeseries">15 Day Forecast Timeseries</option>
+          <option value="maxFlow" data-i18n="stream.style.maxFlow">Forecasted Max Flows</option>
+          <option value="timeToPeak" data-i18n="stream.style.timeToPeak">Time to Peak</option>
+          <option value="belowQ95" data-i18n="stream.style.belowQ95">Below Q95 flow</option>
+        </select>
+      </div>
+      <div class="hydro-actions">
+        <button id="btn-charts" class="icon-btn" data-i18n-title="hydro.charts" data-i18n-aria-label="hydro.charts"
+                title="View discharge charts" aria-label="View discharge charts"></button>
+        <button id="btn-bookmarks" class="icon-btn" data-i18n-title="hydro.bookmarks.title" data-i18n-aria-label="hydro.bookmarks.aria"
+                title="Bookmarked rivers" aria-label="Browse bookmarked rivers"></button>
+        <button id="btn-search-river" class="icon-btn" data-i18n-title="hydro.searchRiver" data-i18n-aria-label="hydro.searchRiver"
+                title="Search River ID" aria-label="Search River ID"></button>
+        <button id="btn-toggle-slider" class="icon-btn" data-i18n-title="stream.hideSlider" data-i18n-aria-label="stream.hideSlider"
+                title="Hide timeseries slider" aria-label="Hide timeseries slider"></button>
+      </div>
+    </section>
 
-    <div id="scroll">
-      <section id="hydrology-section">
-        <h2 data-i18n="hydro.heading">Hydrology predictions</h2>
-        <div class="hydro-field">
-          <label class="field-label" for="forecast-date" data-i18n="hydro.forecastDate">Forecast Initialization Date</label>
-          <input id="forecast-date" type="date" class="select" />
-        </div>
-        <div class="hydro-field">
-          <label class="field-label" for="stream-style" data-i18n="stream.style">Stream style</label>
-          <select id="stream-style" class="select">
-            <option value="standard" data-i18n="stream.style.standard">Standard</option>
-            <option value="timeseries" selected data-i18n="stream.style.timeseries">15 Day Forecast Timeseries</option>
-            <option value="maxFlow" data-i18n="stream.style.maxFlow">Forecasted Max Flows</option>
-            <option value="timeToPeak" data-i18n="stream.style.timeToPeak">Time to Peak</option>
-            <option value="belowQ95" data-i18n="stream.style.belowQ95">Below Q95 flow</option>
-          </select>
-        </div>
-        <div class="hydro-actions">
-          <button id="btn-charts" class="icon-btn" data-i18n-title="hydro.charts" data-i18n-aria-label="hydro.charts"
-            title="View discharge charts" aria-label="View discharge charts"></button>
-          <button id="btn-bookmarks" class="icon-btn" data-i18n-title="hydro.bookmarks.title" data-i18n-aria-label="hydro.bookmarks.aria"
-            title="Bookmarked rivers" aria-label="Browse bookmarked rivers"></button>
-          <button id="btn-search-river" class="icon-btn" data-i18n-title="hydro.searchRiver" data-i18n-aria-label="hydro.searchRiver"
-            title="Search River ID" aria-label="Search River ID"></button>
-          <button id="btn-toggle-slider" class="icon-btn" data-i18n-title="stream.hideSlider" data-i18n-aria-label="stream.hideSlider"
-            title="Hide timeseries slider" aria-label="Hide timeseries slider"></button>
-        </div>
-      </section>
+    <!-- ── Flood mapping ── -->
+    <section>
+      <h2 data-i18n="flood.heading">Flood Mapping</h2>
+      <button id="btn-flood-mode" class="btn toggle" data-i18n="flood.enable">Enable flood mapping mode</button>
+      <div class="hydro-field">
+        <label class="field-label" for="flood-style" data-i18n="flood.style">Flood style</label>
+        <select id="flood-style" class="select">
+          <option value="manual" data-i18n="flood.style.manual">Manually Specified Flow</option>
+          <option value="returnperiod" selected data-i18n="flood.style.returnperiod">Return Period Indexed</option>
+          <option value="forecast" data-i18n="flood.style.forecast">Forecast Timeseries</option>
+          <option value="forecastmax" data-i18n="flood.style.forecastmax">Forecast Maximum</option>
+        </select>
+      </div>
+      <div id="flood-controls" class="mode-off">
+        <div id="selection-info" class="readout" data-i18n="flood.noReaches">No reaches selected.</div>
+        <div id="warning" class="warning hidden"></div>
+        <button id="btn-create-flood" class="btn primary" disabled data-i18n="flood.create">Create flood map</button>
+        <button id="btn-clear" class="btn ghost" data-i18n="flood.clear">Clear selection</button>
+      </div>
 
-      <!-- ── Flood mapping ── -->
-      <section>
-        <h2 data-i18n="flood.heading">Flood Mapping</h2>
-        <button id="btn-flood-mode" class="btn toggle" data-i18n="flood.enable">Enable flood mapping mode</button>
-        <div class="hydro-field">
-          <label class="field-label" for="flood-style" data-i18n="flood.style">Flood style</label>
-          <select id="flood-style" class="select">
-            <option value="manual" data-i18n="flood.style.manual">Manually Specified Flow</option>
-            <option value="returnperiod" selected data-i18n="flood.style.returnperiod">Return Period Indexed</option>
-            <option value="forecast" data-i18n="flood.style.forecast">Forecast Timeseries</option>
-            <option value="forecastmax" data-i18n="flood.style.forecastmax">Forecast Maximum</option>
-          </select>
-        </div>
-        <div id="flood-controls" class="mode-off">
-          <div id="selection-info" class="readout" data-i18n="flood.noReaches">No reaches selected.</div>
-          <div id="warning" class="warning hidden"></div>
-          <button id="btn-create-flood" class="btn primary" disabled data-i18n="flood.create">Create flood map</button>
-          <button id="btn-clear" class="btn ghost" data-i18n="flood.clear">Clear selection</button>
-        </div>
-
-        <div id="qctl-ladder" class="ctl">
-          <label for="ladder"><span data-i18n="flood.dischargeLevel">Discharge level</span> <em id="ladder-val"></em></label>
-          <input id="ladder" type="range" min="0" max="8" step="0.05" value="4" />
-        </div>
-        <div id="qctl-uniform" class="ctl hidden">
-          <label for="uniform" data-i18n="flood.uniformLabel">Discharge for every selected reach (m³/s)</label>
-          <input id="uniform" type="number" min="0" step="10" value="400" />
-        </div>
-        <!-- forecast player: drives the extent animation from the selected reaches' downloaded
-             forecast hydrographs. Shown only for the "Forecast Timeseries" flood style. -->
-        <div id="qctl-forecast" class="ctl hidden">
-          <div class="fc-player">
-            <button id="btn-fc-play" data-i18n-title="flood.fcPlay" title="Play / pause the forecast animation" disabled>▶</button>
-            <div class="timewrap">
-              <div class="timerow">
-                <span id="fc-time-label">—</span>
-                <span id="fc-step-label">–/–</span>
-              </div>
-              <input id="fc-slider" type="range" min="0" max="0" step="1" value="0" disabled />
+      <div id="qctl-ladder" class="ctl">
+        <label for="ladder"><span data-i18n="flood.dischargeLevel">Discharge level</span> <em id="ladder-val"></em></label>
+        <input id="ladder" type="range" min="0" max="8" step="0.05" value="4"/>
+      </div>
+      <div id="qctl-uniform" class="ctl hidden">
+        <label for="uniform" data-i18n="flood.uniformLabel">Discharge for every selected reach (m³/s)</label>
+        <input id="uniform" type="number" min="0" step="10" value="400"/>
+      </div>
+      <!-- forecast player: drives the extent animation from the selected reaches' downloaded
+           forecast hydrographs. Shown only for the "Forecast Timeseries" flood style. -->
+      <div id="qctl-forecast" class="ctl hidden">
+        <div class="fc-player">
+          <button id="btn-fc-play" data-i18n-title="flood.fcPlay" title="Play / pause the forecast animation" disabled>▶</button>
+          <div class="timewrap">
+            <div class="timerow">
+              <span id="fc-time-label">—</span>
+              <span id="fc-step-label">–/–</span>
             </div>
-            <div class="speedwrap">
-              <label for="fc-speed" data-i18n="player.speed">Speed</label>
-              <select id="fc-speed">
-                <option value="1">1×</option>
-                <option value="2">2×</option>
-                <option value="4" selected>4×</option>
-                <option value="8">8×</option>
-              </select>
-            </div>
+            <input id="fc-slider" type="range" min="0" max="0" step="1" value="0" disabled/>
           </div>
-        </div>
-        <div id="flood-status" class="hint" data-i18n="flood.status">Flood updates live as you move the slider.</div>
-      </section>
-
-      <section>
-        <div class="legend-label"><span>0 m</span><span data-i18n="legend.floodDepth">flood depth</span><span>≥8 m</span></div>
-        <div id="legend-depth"></div>
-        <div id="readout" class="hint" data-i18n="legend.readout">click a flooded pixel for depth</div>
-        <button id="btn-save-geotiff" class="btn ghost" disabled data-i18n="flood.saveGeotiff">⬇ Save GeoTIFF</button>
-      </section>
-    </div>
-
-    <!-- charts dock — shown in place of the controls when a reach is inspected (map river click)
-         or via the header charts button. Widens the left column to half the viewport so the map
-         stays visible and interactive on the right. Forecast / Retrospective / Details tabs. -->
-    <div id="charts-dock">
-      <div class="modal-head">
-        <h3 id="charts-modal-title" data-i18n="charts.heading">Discharge charts</h3>
-        <button class="modal-close" id="charts-close" data-i18n-aria-label="common.close" aria-label="Close">✕</button>
-      </div>
-      <div class="charts-tabs mode-row" role="tablist">
-        <button id="charts-tab-forecast" class="mode active" role="tab" aria-selected="true"
-          aria-controls="charts-panel-forecast" data-charts-tab="forecast"
-          data-i18n="charts.tab.forecast">Forecast</button>
-        <button id="charts-tab-retro" class="mode" role="tab" aria-selected="false"
-          aria-controls="charts-panel-retro" data-charts-tab="retro"
-          data-i18n="charts.tab.retro">Retrospective</button>
-        <button id="charts-tab-details" class="mode" role="tab" aria-selected="false"
-          aria-controls="charts-panel-details" data-charts-tab="details"
-          data-i18n="charts.tab.details">Details</button>
-      </div>
-      <div class="modal-body">
-        <div id="charts-panel-forecast" role="tabpanel" aria-labelledby="charts-tab-forecast"></div>
-        <div id="charts-panel-retro" role="tabpanel" aria-labelledby="charts-tab-retro" hidden></div>
-        <div id="charts-panel-details" role="tabpanel" aria-labelledby="charts-tab-details" hidden></div>
-      </div>
-    </div>
-
-    <!-- saved rivers dock — shares the charts dock's slot beneath the hydrology controls (only one
-         of the two is ever open). Table of bookmarked reaches; each row jumps to its charts.
-         Rows are rendered by ui/bookmarksDock.js. -->
-    <div id="bookmarks-dock">
-      <div class="modal-head">
-        <h3 data-i18n="bookmarks.heading">Saved Rivers</h3>
-        <button class="modal-close" id="bookmarks-close" data-i18n-aria-label="common.close" aria-label="Close">✕</button>
-      </div>
-      <div class="modal-body" id="bookmarks-body"></div>
-    </div>
-  </div>
-
-  <!-- BOTTOM: animation player -->
-  <div id="player">
-    <div id="progress-bar"></div>
-    <button id="btn-play" data-i18n-title="player.play" title="Play / pause (space)">▶</button>
-    <div class="timewrap">
-      <div class="timerow">
-        <span id="time-label">—</span>
-        <span id="step-label">–/–</span>
-      </div>
-      <input id="slider" type="range" min="0" max="0" step="1" value="0" disabled />
-    </div>
-    <div class="speedwrap">
-      <label data-i18n="player.speed">Speed</label>
-      <select id="speed">
-        <option value="1">1×</option>
-        <option value="2">2×</option>
-        <option value="4" selected>4×</option>
-        <option value="8">8×</option>
-      </select>
-    </div>
-  </div>
-
-  <!-- MAP OVERLAY: map controls (top-right) — separate layer + basemap pickers -->
-  <div id="map-controls">
-    <!-- layer picker: independent on/off toggles -->
-    <div id="layer-control">
-      <!-- icon injected from @esri/calcite-ui-icons at runtime (see src/icons/icons.js) -->
-      <button id="layer-btn" class="map-btn icon-only" aria-haspopup="true" aria-expanded="false"
-        data-i18n-title="layers.label" data-i18n-aria-label="layers.label"
-        title="Map layers" aria-label="Map layers"></button>
-      <div id="layer-menu" class="map-menu hidden" role="menu"></div>
-    </div>
-    <!-- basemap picker: single-choice radio group, sits beneath the layer picker -->
-    <div id="basemap-control">
-      <!-- icon injected from @esri/calcite-ui-icons at runtime (see src/icons/icons.js) -->
-      <button id="basemap-btn" class="map-btn icon-only" aria-haspopup="true" aria-expanded="false"
-        data-i18n-title="basemap.label" data-i18n-aria-label="basemap.label"
-        title="Basemap" aria-label="Basemap"></button>
-      <div id="basemap-menu" class="map-menu hidden" role="menu"></div>
-    </div>
-  </div>
-
-  <!-- MAP OVERLAY: forecast return-period legend (bottom-left) -->
-  <div id="legend-overlay">
-    <h2 data-i18n="legend.returnPeriod">Forecast return period</h2>
-    <div id="legend-items"></div>
-  </div>
-
-  <!-- info / about modal (header ℹ button) -->
-  <div id="info-modal" class="modal-backdrop hidden">
-    <div class="modal medium" role="dialog" aria-modal="true" aria-labelledby="info-modal-title">
-      <div class="modal-head">
-        <h3 id="info-modal-title" data-i18n="about.label">About</h3>
-        <button class="modal-close" data-close="info-modal" data-i18n-aria-label="common.close" aria-label="Close">✕</button>
-      </div>
-      <div class="modal-body">
-        <p data-i18n="about.intro">Global GEOGLOWS forecast animation · select reaches · FLDPLN flood extent
-          for the segments between them.</p>
-        <h4 data-i18n="about.coverageHeading">Model notes</h4>
-        <p data-i18n-html="about.model">FLDPLN is a steady-state, DEM-only screening model driven by synthetic rating curves;
-          extents saturate at the library's maximum stage. <strong>Not for emergency use.</strong>
-          Terrain: FABDEM (© DLR / Airbus, CC BY-NC-SA 4.0). Hydrography &amp; forecast: GEOGLOWS.</p>
-        <h4 data-i18n="about.dataHeading">Data</h4>
-        <ul class="credits">
-          <li data-i18n-html="about.credit.geoglows">Streams hydrographs and flood maps from the
-            <a href="https://geoglows.org/" target="_blank" rel="noopener">GEOGLOWS River Forecast System</a> v2 and v3</li>
-        </ul>
-        <h4 data-i18n="about.layersHeading">Map layers</h4>
-        <ul class="credits">
-          <li data-i18n-html="about.credit.basemaps">Basemaps from <a href="https://livingatlas.arcgis.com/" target="_blank" rel="noopener">ArcGIS Living Atlas</a> and <a href="https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer" target="_blank" rel="noopener">USGS The National Map</a></li>
-          <li data-i18n-html="about.credit.riverfld"><a href="https://floods.ssec.wisc.edu/products/RIVER-FLDglobal-composite" target="_blank" rel="noopener">RIVER-FLD global flood composite</a> — near-real-time river flooding (CIMSS/SSEC, UW–Madison)</li>
-          <li data-i18n-html="about.credit.goes"><a href="https://www.arcgis.com/home/item.html?id=37a875ff3611496883b7ccca97f0f5f4" target="_blank" rel="noopener">GOES / Himawari colorized IR</a> — near-real-time satellite imagery (NOAA, via Esri)</li>
-          <li data-i18n-html="about.credit.viirs"><a href="https://www.arcgis.com/home/item.html?id=c873f4c13aa54b25b01270df9358dc64" target="_blank" rel="noopener">VIIRS true color</a> — daily corrected reflectance (NASA Earthdata, via Esri)</li>
-        </ul>
-        <h4 data-i18n="about.codeHeading">Open source software</h4>
-        <ul class="credits">
-          <li data-i18n-html="about.credit.maplibre"><a href="https://maplibre.org/" target="_blank" rel="noopener">MapLibre GL JS</a></li>
-          <li data-i18n-html="about.credit.calcite"><a href="https://github.com/Esri/calcite-ui-icons" target="_blank" rel="noopener">Calcite UI Icons</a></li>
-          <li data-i18n-html="about.credit.heroicons"><a href="https://github.com/tailwindlabs/heroicons" target="_blank" rel="noopener">Heroicons</a></li>
-          <li data-i18n-html="about.credit.chartjs"><a href="https://www.chartjs.org/" target="_blank" rel="noopener">Chart.js</a> and plugins (date-fns adapter, matrix, zoom)</li>
-          <li data-i18n-html="about.credit.zarrita"><a href="https://github.com/manzt/zarrita.js" target="_blank" rel="noopener">zarrita.js</a> and <a href="https://github.com/manzt/numcodecs.js" target="_blank" rel="noopener">numcodecs</a> (Zarr access)</li>
-          <li data-i18n-html="about.credit.pmtiles"><a href="https://github.com/protomaps/PMTiles" target="_blank" rel="noopener">PMTiles</a></li>
-        </ul>
-      </div>
-    </div>
-  </div>
-
-  <!-- river ID search (🔍 in the hydrology actions) — resolves a typed id to its position on the
-       zarr riverId axis through the optional lookup below, then opens that reach's charts. The only
-       feature that needs the lookup; see src/ui/riverSearch.js. -->
-  <div id="search-modal" class="modal-backdrop hidden">
-    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="search-modal-title">
-      <div class="modal-head">
-        <h3 id="search-modal-title" data-i18n="search.heading">Find a river by ID</h3>
-        <button class="modal-close" data-close="search-modal" data-i18n-aria-label="common.close" aria-label="Close">✕</button>
-      </div>
-      <div class="modal-body">
-        <form id="search-form" autocomplete="off">
-          <label class="field-label" for="search-river-id" data-i18n="search.label">River ID</label>
-          <div class="search-row">
-            <input id="search-river-id" class="select" type="text" inputmode="numeric"
-              data-i18n-placeholder="search.placeholder" placeholder="e.g. 760021611" />
-            <button type="submit" class="btn primary" data-i18n="search.submit">Search</button>
-          </div>
-        </form>
-        <div id="search-status" class="hint" role="status" aria-live="polite"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- settings modal (header ⚙ button) -->
-  <div id="settings-modal" class="modal-backdrop hidden">
-    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="settings-modal-title">
-      <div class="modal-head">
-        <h3 id="settings-modal-title" data-i18n="settings.label">Settings</h3>
-        <button class="modal-close" data-close="settings-modal" data-i18n-aria-label="common.close" aria-label="Close">✕</button>
-      </div>
-      <div class="modal-body">
-        <h4 data-i18n="settings.display">Display</h4>
-        <label class="setting-row">
-          <input type="checkbox" id="set-legend" checked />
-          <span data-i18n="settings.showLegend">Show forecast return-period legend</span>
-        </label>
-
-        <!-- Downloads the user keeps on the device. Every one is explicit and optional: they are
-             large transfers, and no feature depends on one having been taken (river-ID search is
-             the only thing that even reads one, and it says so when it can't). Rows are rendered
-             from the registry in src/data/datasets.js — see src/ui/dataSettings.js. -->
-        <h4 data-i18n="settings.data">Data</h4>
-        <p class="hint" data-i18n="settings.data.hint">Datasets this app can keep in your browser's
-          database. Anything deleted can be downloaded again.</p>
-        <div id="data-list" class="data-list"></div>
-        <div class="data-foot">
-          <div id="data-foot-status" class="hint"></div>
-          <div class="data-foot-actions">
-            <button id="btn-download-all" class="btn ghost" data-i18n="settings.data.downloadAll">Download everything</button>
-            <button id="btn-delete-all" class="btn ghost" data-i18n="settings.data.deleteAll">Delete everything</button>
+          <div class="speedwrap">
+            <label for="fc-speed" data-i18n="player.speed">Speed</label>
+            <select id="fc-speed">
+              <option value="1">1×</option>
+              <option value="2">2×</option>
+              <option value="4" selected>4×</option>
+              <option value="8">8×</option>
+            </select>
           </div>
         </div>
       </div>
+      <div id="flood-status" class="hint" data-i18n="flood.status">Flood updates live as you move the slider.</div>
+    </section>
+
+    <section>
+      <div class="legend-label"><span>0 m</span><span data-i18n="legend.floodDepth">flood depth</span><span>≥8 m</span></div>
+      <div id="legend-depth"></div>
+      <div id="readout" class="hint" data-i18n="legend.readout">click a flooded pixel for depth</div>
+      <button id="btn-save-geotiff" class="btn ghost" disabled data-i18n="flood.saveGeotiff">⬇ Save GeoTIFF</button>
+    </section>
+  </div>
+  <div id="charts-dock">
+    <div class="modal-head">
+      <h3 id="charts-modal-title" data-i18n="charts.heading">Discharge charts</h3>
+      <button class="modal-close" id="charts-close" data-i18n-aria-label="common.close" aria-label="Close">✕</button>
+    </div>
+    <div class="charts-tabs mode-row" role="tablist">
+      <button id="charts-tab-forecast" class="mode active" role="tab" aria-selected="true"
+              aria-controls="charts-panel-forecast" data-charts-tab="forecast"
+              data-i18n="charts.tab.forecast">Forecast
+      </button>
+      <button id="charts-tab-retro" class="mode" role="tab" aria-selected="false"
+              aria-controls="charts-panel-retro" data-charts-tab="retro"
+              data-i18n="charts.tab.retro">Retrospective
+      </button>
+      <button id="charts-tab-details" class="mode" role="tab" aria-selected="false"
+              aria-controls="charts-panel-details" data-charts-tab="details"
+              data-i18n="charts.tab.details">Details
+      </button>
+    </div>
+    <div class="modal-body">
+      <div id="charts-panel-forecast" role="tabpanel" aria-labelledby="charts-tab-forecast"></div>
+      <div id="charts-panel-retro" role="tabpanel" aria-labelledby="charts-tab-retro" hidden></div>
+      <div id="charts-panel-details" role="tabpanel" aria-labelledby="charts-tab-details" hidden></div>
     </div>
   </div>
+  <div id="bookmarks-dock">
+    <div class="modal-head">
+      <h3 data-i18n="bookmarks.heading">Saved Rivers</h3>
+      <button class="modal-close" id="bookmarks-close" data-i18n-aria-label="common.close" aria-label="Close">✕</button>
+    </div>
+    <div class="modal-body" id="bookmarks-body"></div>
+  </div>
+</div>
 
-  <script type="module" src="/src/main.js"></script>
+<!-- BOTTOM: animation player -->
+<div id="player">
+  <div id="progress-bar"></div>
+  <button id="btn-play" data-i18n-title="player.play" title="Play / pause (space)">▶</button>
+  <div class="timewrap">
+    <div class="timerow">
+      <span id="time-label">—</span>
+      <span id="step-label">–/–</span>
+    </div>
+    <input id="slider" type="range" min="0" max="0" step="1" value="0" disabled/>
+  </div>
+  <div class="speedwrap">
+    <label data-i18n="player.speed">Speed</label>
+    <select id="speed">
+      <option value="1">1×</option>
+      <option value="2">2×</option>
+      <option value="4" selected>4×</option>
+      <option value="8">8×</option>
+    </select>
+  </div>
+</div>
+
+<!-- MAP OVERLAY: map controls (top-right) — separate layer + basemap pickers -->
+<div id="map-controls">
+  <!-- layer picker: independent on/off toggles -->
+  <div id="layer-control">
+    <!-- icon injected from @esri/calcite-ui-icons at runtime (see src/icons/icons.js) -->
+    <button id="layer-btn" class="map-btn icon-only" aria-haspopup="true" aria-expanded="false"
+            data-i18n-title="layers.label" data-i18n-aria-label="layers.label"
+            title="Map layers" aria-label="Map layers"></button>
+    <div id="layer-menu" class="map-menu hidden" role="menu"></div>
+  </div>
+  <!-- basemap picker: single-choice radio group, sits beneath the layer picker -->
+  <div id="basemap-control">
+    <!-- icon injected from @esri/calcite-ui-icons at runtime (see src/icons/icons.js) -->
+    <button id="basemap-btn" class="map-btn icon-only" aria-haspopup="true" aria-expanded="false"
+            data-i18n-title="basemap.label" data-i18n-aria-label="basemap.label"
+            title="Basemap" aria-label="Basemap"></button>
+    <div id="basemap-menu" class="map-menu hidden" role="menu"></div>
+  </div>
+</div>
+
+<!-- MAP OVERLAY: forecast return-period legend (bottom-left) -->
+<div id="legend-overlay">
+  <h2 data-i18n="legend.returnPeriod">Forecast return period</h2>
+  <div id="legend-items"></div>
+</div>
+
+<!-- info / about modal -->
+<div id="info-modal" class="modal-backdrop hidden">
+  <div class="modal medium" role="dialog" aria-modal="true" aria-labelledby="info-modal-title">
+    <div class="modal-head">
+      <h3 id="info-modal-title" data-i18n="about.label">About</h3>
+      <button class="modal-close" data-close="info-modal" data-i18n-aria-label="common.close" aria-label="Close">✕</button>
+    </div>
+    <div class="modal-body">
+      <p data-i18n="about.intro">Global GEOGLOWS forecast animation · select reaches · FLDPLN flood extent
+                                 for the segments between them.</p>
+      <h4 data-i18n="about.coverageHeading">Model notes</h4>
+      <p data-i18n-html="about.model">FLDPLN is a steady-state, DEM-only screening model driven by synthetic rating curves;
+                                      extents saturate at the library's maximum stage. <strong>Not for emergency use.</strong>
+                                      Terrain: FABDEM (© DLR / Airbus, CC BY-NC-SA 4.0). Hydrography &amp; forecast: GEOGLOWS.</p>
+      <h4 data-i18n="about.dataHeading">Data</h4>
+      <ul class="credits">
+        <li data-i18n-html="about.credit.geoglows">Streams hydrographs and flood maps from the
+          <a href="https://geoglows.org/" target="_blank" rel="noopener">GEOGLOWS River Forecast System</a> v2 and v3
+        </li>
+      </ul>
+      <h4 data-i18n="about.layersHeading">Map layers</h4>
+      <ul class="credits">
+        <li data-i18n-html="about.credit.basemaps">Basemaps from <a href="https://livingatlas.arcgis.com/" target="_blank" rel="noopener">ArcGIS Living Atlas</a> and
+          <a href="https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer" target="_blank" rel="noopener">USGS The National Map</a></li>
+        <li data-i18n-html="about.credit.riverfld"><a href="https://floods.ssec.wisc.edu/products/RIVER-FLDglobal-composite" target="_blank" rel="noopener">RIVER-FLD global flood composite</a> — near-real-time river flooding (CIMSS/SSEC, UW–Madison)
+        </li>
+        <li data-i18n-html="about.credit.goes"><a href="https://www.arcgis.com/home/item.html?id=37a875ff3611496883b7ccca97f0f5f4" target="_blank" rel="noopener">GOES / Himawari colorized IR</a> — near-real-time satellite imagery (NOAA, via Esri)
+        </li>
+        <li data-i18n-html="about.credit.viirs"><a href="https://www.arcgis.com/home/item.html?id=c873f4c13aa54b25b01270df9358dc64" target="_blank" rel="noopener">VIIRS true color</a> — daily corrected reflectance (NASA Earthdata, via Esri)</li>
+      </ul>
+      <h4 data-i18n="about.codeHeading">Open source software</h4>
+      <ul class="credits">
+        <li data-i18n-html="about.credit.maplibre"><a href="https://maplibre.org/" target="_blank" rel="noopener">MapLibre GL JS</a></li>
+        <li data-i18n-html="about.credit.calcite"><a href="https://github.com/Esri/calcite-ui-icons" target="_blank" rel="noopener">Calcite UI Icons</a></li>
+        <li data-i18n-html="about.credit.heroicons"><a href="https://github.com/tailwindlabs/heroicons" target="_blank" rel="noopener">Heroicons</a></li>
+        <li data-i18n-html="about.credit.chartjs"><a href="https://www.chartjs.org/" target="_blank" rel="noopener">Chart.js</a> and plugins (date-fns adapter, matrix, zoom)</li>
+        <li data-i18n-html="about.credit.zarrita"><a href="https://github.com/manzt/zarrita.js" target="_blank" rel="noopener">zarrita.js</a> and <a href="https://github.com/manzt/numcodecs.js" target="_blank" rel="noopener">numcodecs</a> (Zarr
+                                                                                                                                              access)
+        </li>
+        <li data-i18n-html="about.credit.pmtiles"><a href="https://github.com/protomaps/PMTiles" target="_blank" rel="noopener">PMTiles</a></li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- river ID search, see src/ui/riverSearch.js. -->
+<div id="search-modal" class="modal-backdrop hidden">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="search-modal-title">
+    <div class="modal-head">
+      <h3 id="search-modal-title" data-i18n="search.heading">Find a river by ID</h3>
+      <button class="modal-close" data-close="search-modal" data-i18n-aria-label="common.close" aria-label="Close">✕</button>
+    </div>
+    <div class="modal-body">
+      <form id="search-form" autocomplete="off">
+        <label class="field-label" for="search-river-id" data-i18n="search.label">River ID</label>
+        <div class="search-row">
+          <input id="search-river-id" class="select" type="text" inputmode="numeric"
+                 data-i18n-placeholder="search.placeholder" placeholder="e.g. 760021611"/>
+          <button type="submit" class="btn primary" data-i18n="search.submit">Search</button>
+        </div>
+      </form>
+      <div id="search-status" class="hint" role="status" aria-live="polite"></div>
+    </div>
+  </div>
+</div>
+
+<!-- settings modal -->
+<div id="settings-modal" class="modal-backdrop hidden">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="settings-modal-title">
+    <div class="modal-head">
+      <h3 id="settings-modal-title" data-i18n="settings.label">Settings</h3>
+      <button class="modal-close" data-close="settings-modal" data-i18n-aria-label="common.close" aria-label="Close">✕</button>
+    </div>
+    <div class="modal-body">
+      <!-- Checked stat is set by defaults in the env file, then overriden by previous choice found in localStorage. -->
+      <h4 data-i18n="settings.display">Display</h4>
+      <label class="setting-row">
+        <input type="checkbox" id="set-legend"/>
+        <span data-i18n="settings.showLegend">Show forecast return-period legend</span>
+      </label>
+      <label class="setting-row">
+        <input type="checkbox" id="set-shaded-warning-levels"/>
+        <span data-i18n="settings.shadedWarningLevels">Shade warning levels on the forecast chart</span>
+      </label>
+
+      <!-- Downloads the user keeps on the device. Every one is explicit and optional: they are
+           large transfers, and no feature depends on one having been taken (river-ID search is
+           the only thing that even reads one, and it says so when it can't). Rows are rendered
+           from the registry in src/data/datasets.js — see src/ui/dataSettings.js. -->
+      <h4 data-i18n="settings.data">Downloaded Data</h4>
+      <p class="hint" data-i18n="settings.data.hint">This site keeps local copies of some datasets
+                                                     for better performance. These can be redownloaded at any time and are safe to delete.</p>
+      <div id="data-list" class="data-list"></div>
+      <div class="data-foot">
+        <div id="data-foot-status" class="hint"></div>
+        <div class="data-foot-actions">
+          <button id="btn-download-all" class="btn ghost" data-i18n="settings.data.downloadAll">Download everything</button>
+          <button id="btn-delete-all" class="btn ghost" data-i18n="settings.data.deleteAll">Delete everything</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="/src/main.js"></script>
 </body>
 </html>

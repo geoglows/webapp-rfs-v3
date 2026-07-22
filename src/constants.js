@@ -1,7 +1,15 @@
 import {urls} from "rfsjs/v3";
 
+// An env var arrives as a string or not at all, and an unset one is "" as often as it is undefined
+// — both mean "not configured", so both fall through to the default. A number that doesn't parse is
+// a typo in .env, and taking the default beats putting NaN into a map camera.
+const envNumber = (value, fallback) => (value != null && value !== "" && Number.isFinite(Number(value)) ? Number(value) : fallback);
+
+// The header wordmark is configured too, but it is not here: image, link and alt text are %VITE_*%
+// placeholders substituted into index.html itself, so no JS is involved. See .env.
+
 // ── Hydrography ──────────────────────────────────────────────────────────────
-const STREAMS_PMTILES = import.meta.env.VITE_STREAMS_PMTILES ?? urls.streamsPmtiles();
+const STREAMS_PMTILES = urls.streamsPmtiles();
 
 // ── 15-day forecast tree ─────────────────────────────────────────────────────
 function mapStyleUrls(date, styleset) {
@@ -68,11 +76,28 @@ const DEFAULT_BOOKMARKS = [
 // so close that a sinuous one runs off the edges. Matches the zoom a map click settles at.
 const BOOKMARK_ZOOM = 10;
 
+// ── Opening camera ───────────────────────────────────────────────────────────
+// Where the map starts before anything has been selected. Configurable so a deployment covering one
+// basin or one country opens on it rather than on the whole globe; the defaults are the global
+// overview. Overridden in turn by the URL hash whenever there is one — a shared link is a camera
+// the user chose, and it outranks a default. See map/map.js.
+const MAP_CENTER = [envNumber(import.meta.env.VITE_MAP_CENTER_LON, 0), envNumber(import.meta.env.VITE_MAP_CENTER_LAT, 20)];
+const MAP_ZOOM = envNumber(import.meta.env.VITE_MAP_ZOOM, 1.5);
+
+// The basemap the map opens on, as an id from the list in map/basemaps.js. Passed through
+// unvalidated on purpose: that list is the only thing that knows which ids exist, so it resolves
+// this one and falls back to its own first entry. Config rather than a preference — unlike the
+// theme and the language, nothing persists a basemap choice, so every load starts here.
+const MAP_DEFAULT_BASEMAP = import.meta.env.VITE_MAP_DEFAULT_BASEMAP || "";
+
 export {
   BOOKMARK_ZOOM,
   DEFAULT_BOOKMARKS,
   DEFAULT_FORECAST_DATE,
   FLOOD_MAPS_MIN_COVERAGE_ZOOM,
+  MAP_CENTER,
+  MAP_DEFAULT_BASEMAP,
+  MAP_ZOOM,
   SAMPLE_DATA_RIVER_INDEX,
   STREAMS_PMTILES,
   mapStyleUrls
