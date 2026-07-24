@@ -1,4 +1,3 @@
-import {mapStyleUrls} from "../../constants";
 import {urls} from "rfsjs/v3";
 
 const RET_COLORS = ["#3182bd", "#fee08b", "#fdae61", "#f46d43", "#d73027", "#a50026", "#7a0177"];
@@ -194,23 +193,22 @@ class StreamAnimation {
     const date = this.currentDate;
     if (styleset === "standard" || !date) return;
     // null for any styleset with no style tables of its own.
-    const styleUrls = mapStyleUrls(date, styleset);
-    if (!styleUrls) return;
+    const stylesBase = urls.streamsStyles({date, styleset});
     const t0 = performance.now();
     this.cube = null;
     this.appliedStep = -1;
     console.log(`Loading ${styleset} styles for ${date}…`);
     try {
-      this.meta = await (await fetch(styleUrls.json)).json();
+      this.meta = await (await fetch(`${stylesBase}.json`)).json();
       this.N = this.meta.n_reaches;
       this.T = this.meta.n_steps ?? 1;
       console.log(`  ${this.N.toLocaleString()} reaches × ${this.T} step(s)`);
       let inflated;
       try {
-        const resp = await fetch(styleUrls.bin);
+        const resp = await fetch(`${stylesBase}.bin`);
         inflated = await new Response(resp.body.pipeThrough(new DecompressionStream("deflate"))).arrayBuffer();
       } catch {
-        const raw = (await (await fetch(styleUrls.bin)).body).pipeThrough(new DecompressionStream("deflate-raw"));
+        const raw = (await (await fetch(`${stylesBase}.bin`)).body).pipeThrough(new DecompressionStream("deflate-raw"));
         inflated = await new Response(raw).arrayBuffer();
       }
       const cube = new Uint8Array(inflated);

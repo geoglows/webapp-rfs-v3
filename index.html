@@ -13,10 +13,10 @@
     <a id="app-logo-link" class="app-logo-link" href="%VITE_LOGO_HREF%"><img id="app-logo" class="app-logo" src="%VITE_LOGO_SRC%" alt="%VITE_LOGO_ALT%"/></a>
     <h1 data-i18n="app.title">%VITE_APP_TITLE%</h1>
     <div class="header-actions">
-      <button id="btn-settings" class="icon-btn" data-i18n-title="settings.label" data-i18n-aria-label="settings.label" title="Settings" aria-label="Settings"></button>
+      <button id="btn-settings" class="icon-btn" data-icon-name="cog-6-tooth" data-i18n-title="settings.label" data-i18n-aria-label="settings.label" title="Settings" aria-label="Settings"></button>
       <div id="lang-control">
-        <button id="btn-language" class="icon-btn" data-i18n-title="lang.title" data-i18n-aria-label="lang.aria" title="Language" aria-label="Change language" aria-haspopup="true" aria-expanded="false"></button>
-        <!-- see initLanguagePicker() in src/ui/panelControls.js -->
+        <button id="btn-language" class="icon-btn" data-icon-name="language" data-i18n-title="lang.title" data-i18n-aria-label="lang.aria" title="Language" aria-label="Change language" aria-haspopup="true" aria-expanded="false"></button>
+        <!-- see initLanguagePicker() in src/settings/settings.js -->
         <div id="lang-menu" class="map-menu hidden" role="menu">
           <button class="layer-opt" role="menuitemradio" data-lang="en">English</button>
           <button class="layer-opt" role="menuitemradio" data-lang="es">Español</button>
@@ -24,7 +24,7 @@
         </div>
       </div>
       <button id="btn-theme" class="icon-btn" data-i18n-title="theme.toggle" data-i18n-aria-label="theme.toggle" title="Toggle light / dark theme" aria-label="Toggle light or dark theme"></button>
-      <button id="btn-info" class="icon-btn" data-i18n-title="about.label" data-i18n-aria-label="about.label" title="About" aria-label="About"></button>
+      <button id="btn-info" class="icon-btn" data-icon-name="information-circle" data-i18n-title="about.label" data-i18n-aria-label="about.label" title="About" aria-label="About"></button>
     </div>
   </header>
   <div id="scroll">
@@ -45,13 +45,13 @@
         </select>
       </div>
       <div class="hydro-actions">
-        <button id="btn-charts" class="icon-btn" data-i18n-title="hydro.charts" data-i18n-aria-label="hydro.charts"
+        <button id="btn-charts" class="icon-btn" data-icon-name="chart-bar-solid" data-i18n-title="hydro.charts" data-i18n-aria-label="hydro.charts"
                 title="View discharge charts" aria-label="View discharge charts"></button>
-        <button id="btn-bookmarks" class="icon-btn" data-i18n-title="hydro.bookmarks.title" data-i18n-aria-label="hydro.bookmarks.aria"
+        <button id="btn-bookmarks" class="icon-btn" data-icon-name="bookmark-solid" data-i18n-title="hydro.bookmarks.title" data-i18n-aria-label="hydro.bookmarks.aria"
                 title="Bookmarked rivers" aria-label="Browse bookmarked rivers"></button>
-        <button id="btn-search-river" class="icon-btn" data-i18n-title="hydro.searchRiver" data-i18n-aria-label="hydro.searchRiver"
+        <button id="btn-search-river" class="icon-btn" data-icon-name="magnifying-glass-solid" data-i18n-title="hydro.searchRiver" data-i18n-aria-label="hydro.searchRiver"
                 title="Search River ID" aria-label="Search River ID"></button>
-        <button id="btn-toggle-slider" class="icon-btn" data-i18n-title="stream.hideSlider" data-i18n-aria-label="stream.hideSlider"
+        <button id="btn-toggle-slider" class="icon-btn" data-icon-name="clock-solid" data-i18n-title="stream.hideSlider" data-i18n-aria-label="stream.hideSlider"
                 title="Hide timeseries slider" aria-label="Hide timeseries slider"></button>
       </div>
     </section>
@@ -163,7 +163,7 @@
     <input id="slider" type="range" min="0" max="0" step="1" value="0" disabled/>
   </div>
   <div class="speedwrap">
-    <label data-i18n="player.speed">Speed</label>
+    <label for="speed" data-i18n="player.speed">Speed</label>
     <select id="speed">
       <option value="1">1×</option>
       <option value="2">2×</option>
@@ -177,7 +177,7 @@
 <div id="map-controls">
   <!-- layer picker: independent on/off toggles -->
   <div id="layer-control">
-    <!-- icon injected from @esri/calcite-ui-icons at runtime (see src/icons/icons.js) -->
+    <!-- icon injected from @esri/calcite-ui-icons at runtime (see src/icons/calcite.js) -->
     <button id="layer-btn" class="map-btn icon-only" aria-haspopup="true" aria-expanded="false"
             data-i18n-title="layers.label" data-i18n-aria-label="layers.label"
             title="Map layers" aria-label="Map layers"></button>
@@ -185,7 +185,7 @@
   </div>
   <!-- basemap picker: single-choice radio group, sits beneath the layer picker -->
   <div id="basemap-control">
-    <!-- icon injected from @esri/calcite-ui-icons at runtime (see src/icons/icons.js) -->
+    <!-- icon injected from @esri/calcite-ui-icons at runtime (see src/icons/calcite.js) -->
     <button id="basemap-btn" class="map-btn icon-only" aria-haspopup="true" aria-expanded="false"
             data-i18n-title="basemap.label" data-i18n-aria-label="basemap.label"
             title="Basemap" aria-label="Basemap"></button>

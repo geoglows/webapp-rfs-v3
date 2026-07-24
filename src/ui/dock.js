@@ -9,14 +9,13 @@
 const DOCKS = ["charts", "bookmarks"];
 const cleanups = new Map();
 
-/** Register work to run when `name` closes — including implicitly, when another dock opens. */
-function onDockClosed(name, fn) {
-  cleanups.set(name, fn);
-}
+const onDockClosed = (name, fn) => cleanups.set(name, fn)
+const isDockOpen= name => document.body.classList.contains(`${name}-open`)
 
-function isDockOpen(name) {
-  return document.body.classList.contains(`${name}-open`);
-}
+// Each dock's `#btn-<name>` header button is lit while its dock is open, matching the other
+// stateful icon buttons (e.g. the player toggle).
+const syncDockButton = (name) =>
+  document.getElementById(`btn-${name}`)?.classList.toggle("active", isDockOpen(name))
 
 // The MapLibre canvas doesn't track sibling layout changes, so it needs a resize once the panel
 // settles at its new width. Resizing every frame of the transition instead would force ~20 full GL
@@ -33,8 +32,8 @@ function reflowMap(map, durationMs = 340) {
     map.resize();
   };
   const onEnd = (e) => {
-    if (e.propertyName === "flex-basis") finish();
-  };
+    if (e.propertyName === "flex-basis") finish()
+  }
   panel?.addEventListener("transitionend", onEnd);
   setTimeout(finish, durationMs);
 }
@@ -45,15 +44,18 @@ function openDock(map, name) {
   for (const other of DOCKS) {
     if (other === name || !isDockOpen(other)) continue;
     document.body.classList.remove(`${other}-open`);
+    syncDockButton(other);
     cleanups.get(other)?.();
   }
   document.body.classList.add("dock-open", `${name}-open`);
+  syncDockButton(name);
   if (!wasWide) reflowMap(map);
 }
 
 function closeDock(map, name) {
   if (!isDockOpen(name)) return;
   document.body.classList.remove(`${name}-open`, "dock-open");
+  syncDockButton(name);
   cleanups.get(name)?.();
   reflowMap(map);
 }

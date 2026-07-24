@@ -1,5 +1,4 @@
 import {urls} from "rfsjs/v3";
-import {FLOOD_MAPS_MIN_COVERAGE_ZOOM} from "../../constants";
 
 /**
  * The FLDPLN data-tile footprints, and the viewport → coverage bridge built on them.
@@ -76,7 +75,7 @@ class FloodMapsTilesLayer {
   sync() {
     const map = this.map;
     if (!this.active || !this.isReady() || !map.getLayer("flood-maps-tiles-hit")) return;
-    if (map.getZoom() < FLOOD_MAPS_MIN_COVERAGE_ZOOM) return;
+    if (map.getZoom() < 7) return;
     const names = [...new Set(
       map.queryRenderedFeatures({layers: ["flood-maps-tiles-hit"]}).map((f) => f.properties.name)
     )].sort();

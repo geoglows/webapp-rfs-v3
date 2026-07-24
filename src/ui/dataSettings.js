@@ -1,5 +1,5 @@
 import {dataProgress, t} from "../i18n/i18n";
-import {heroIcon} from "../icons/heroicons";
+import {heroIcon, iconButton} from "../icons/icons.js";
 import {byKey, removeAll, surveyAll} from "../data/datasets";
 
 const $ = (id) => document.getElementById(id);
@@ -28,15 +28,6 @@ function createDataSettings() {
   const rows = new Map();
   let armed = false;
 
-  const iconButton = (icon, titleKey, className) => {
-    const btn = document.createElement("button");
-    btn.className = `icon-btn row-icon ${className}`;
-    btn.replaceChildren(heroIcon(icon));
-    btn.title = t(titleKey);
-    btn.setAttribute("aria-label", t(titleKey));
-    return btn;
-  };
-
   function buildRow(entry) {
     const el = document.createElement("div");
     el.className = "data-row";
@@ -46,8 +37,8 @@ function createDataSettings() {
     size.className = "data-size";
     const actions = document.createElement("span");
     actions.className = "data-actions";
-    const download = iconButton("arrow-down-tray", "settings.data.download", "act-download");
-    const remove = iconButton("trash", "settings.data.remove", "act-remove");
+    const download = iconButton("arrow-down-tray", "settings.data.download", "row-icon act-download");
+    const remove = iconButton("trash", "settings.data.remove", "row-icon act-remove");
     actions.append(download, remove);
     const line = document.createElement("div");
     line.className = "hint data-row-status";
@@ -182,8 +173,6 @@ function createDataSettings() {
     await refresh();
   });
 
-  // Re-read on every open: a row may have been cleared elsewhere, and it disarms a confirmation the
-  // user walked away from rather than leaving it primed.
   $("btn-settings")?.addEventListener("click", () => void refresh());
 
   void refresh();

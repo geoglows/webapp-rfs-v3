@@ -21,7 +21,6 @@ import {clearStore} from "./riverIndexDb.js";
 const DATASETS = [
   {
     key: "riverIds",
-    // Named for the data, not for the lookup built out of it — see above.
     label: "settings.data.riverIds",
     hint: "settings.data.riverIds.hint",
     /** `{n, bytes}` when held, else null. Reads the meta record, never the arrays it describes. */

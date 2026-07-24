@@ -1,4 +1,4 @@
-import {calciteIcon} from "../icons/icons";
+import {calciteIcon} from "../icons/calcite.js";
 import {t} from "../i18n/i18n";
 import {wireMenu} from "./menu";
 

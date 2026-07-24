@@ -1,9 +1,8 @@
 import {dataProgress, getLanguage, t} from "../i18n/i18n";
-import {SAMPLE_DATA_RIVER_INDEX} from "../constants";
 import {resolve} from "../data/riverIndex";
-import {getSetting} from "../settings";
+import {getSetting} from "../settings/settings.js";
 import {setInspectHighlight} from "../map/inspectHighlight";
-import {closeDock, onDockClosed, openDock} from "./dock";
+import {closeDock, isDockOpen, onDockClosed, openDock} from "./dock";
 
 const $ = (id) => document.getElementById(id);
 const CHARTS_TABS = ["forecast", "retro", "details"];
@@ -17,8 +16,7 @@ function renderAttrTable(props) {
 // Shown by every tab when there's no reach to describe — e.g. the dock was opened from the header
 // button rather than by clicking a river.
 const chartsEmpty = () => `<div class="charts-empty"><p>${t("charts.empty.title")}</p><p class="hint">${t("charts.empty.hint")}</p></div>`;
-const chartsLoading = (blockId, label) =>
-  `<div id="${blockId}" class="ts-loading"><span class="spinner"></span><span class="ts-loading-label">${label}</span></div>`;
+const chartsLoading = (blockId, label) => `<div id="${blockId}" class="ts-loading"><span class="spinner"></span><span class="ts-loading-label">${label}</span></div>`;
 
 /**
  * The charts dock: a tabbed panel (forecast / retrospective / attributes) that widens the left
@@ -96,13 +94,14 @@ function createChartsDock({map, getForecastDate}) {
   // chart titles name the reach from it.
   const loadRetro = (blockId) => loadChartBlock(blockId, {
     fetchData: async (setStatus) => {
-      const riverIndex = await targetIndex(setStatus);
+      let riverIndex = await targetIndex(setStatus);
+      riverIndex = 0 // todo override for demo phase
       setStatus(t("charts.loading"));
       const {retrospective} = await import("rfsjs/v3/discharge");
       // TODO(sample-data): send `riverIndex`. It is the reach the user actually asked for and every
       // layer above this line already works in it — only the store is the placeholder, so the call
       // is pinned to a reach the synthetic sample holds. One line to delete, here and below.
-      return {...await retrospective({riverIndex: SAMPLE_DATA_RIVER_INDEX}), riverId: selectedRiverId};
+      return {...await retrospective({riverIndex: riverIndex}), riverId: selectedRiverId};
     },
     render: (plots, host, ts) => plots.plotAllRetro(host, ts, {lang: getLanguage()})
   });
@@ -113,15 +112,16 @@ function createChartsDock({map, getForecastDate}) {
   // fails — costs the bands, not the forecast.
   const loadForecast = (blockId) => loadChartBlock(blockId, {
     fetchData: async (setStatus) => {
-      const riverIndex = await targetIndex(setStatus);
+      let riverIndex = await targetIndex(setStatus);
+      riverIndex = 0 // todo override for demo phase
       setStatus(t("charts.loading"));
       const {forecast, returnPeriods} = await import("rfsjs/v3/discharge");
       // TODO(sample-data): send `riverIndex` to both — see the note in loadRetro.
       const [fc, rp] = await Promise.all([
-        forecast({date: getForecastDate(), riverIndex: SAMPLE_DATA_RIVER_INDEX}),
+        forecast({date: getForecastDate(), riverIndex: riverIndex}),
         // hourly: the forecast is an instantaneous series, so the hourly fit is the like-for-like
         // exceedance — the daily fit answers a question about daily means, which this is not.
-        returnPeriods({riverIndex: SAMPLE_DATA_RIVER_INDEX, resolution: "hourly"}).catch(() => null)
+        returnPeriods({riverIndex: riverIndex, resolution: "hourly"}).catch(() => null)
       ]);
       return {forecast: {...fc, riverId: selectedRiverId}, returnPeriods: rp};
     },
@@ -219,7 +219,7 @@ function createChartsDock({map, getForecastDate}) {
   }
 
   for (const name of CHARTS_TABS) $(`charts-tab-${name}`).addEventListener("click", () => activateTab(name));
-  $("btn-charts").addEventListener("click", () => openForRiver());
+  $("btn-charts").addEventListener("click", () => (isDockOpen("charts") ? close() : openForRiver()));
   $("charts-close").addEventListener("click", close);
 
   return {openForRiver, close, restyleCharts, rerenderCharts};

@@ -1,7 +1,7 @@
 import {VectorTileLayer} from "@esri/maplibre-arcgis";
-import {calciteIcon} from "../icons/icons";
+import {calciteIcon} from "../icons/calcite.js";
 import {wireMenu} from "./menu";
-import {MAP_DEFAULT_BASEMAP} from "../constants";
+import {MAP_DEFAULT_BASEMAP} from "../settings/settings.js";
 
 const BASEMAPS = [
   {
