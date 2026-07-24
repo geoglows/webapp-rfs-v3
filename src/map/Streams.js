@@ -61,8 +61,11 @@ class Streams {
         "line-opacity": ["interpolate", ["linear"], ["zoom"], 3, 0.65, 9, 0.95]
       }
     });
+    // Any tile arrival schedules a discovery pass — waiting for isSourceLoaded too would only
+    // fire when the last tile's own event closes out the source, which tile arrival order
+    // doesn't guarantee. scheduleApply dedupes to one pass per frame, so per-tile is cheap.
     this.map.on("sourcedata", (e) => {
-      if (this.cube && e.sourceId === "geoglows" && e.isSourceLoaded && e.tile) this.scheduleApply();
+      if (this.cube && e.sourceId === "geoglows" && e.tile) this.scheduleApply();
     });
     this.addInspectHighlightLayer();
   }
@@ -270,11 +273,19 @@ class Streams {
   // color NEWLY-seen reaches to the current step (runs on tile load). The cube row comes
   // straight from the tile's `riverIndex` property — no riverId lookup table / binary search.
   discoverAndApply() {
-    if (!this.cube || !this.map.isStyleLoaded()) return;
+    if (!this.cube) return;
+    // The style is often mid-update right after a zoom. Dropping the pass here would leave the
+    // newly loaded reaches unstyled with nothing to retry, so re-arm on the next idle instead.
+    // Stacked handlers are harmless: they all funnel into scheduleApply's per-frame dedupe.
+    if (!this.map.isStyleLoaded()) {
+      this.map.once("idle", () => this.scheduleApply());
+      return;
+    }
     let feats;
     try {
       feats = this.map.querySourceFeatures("geoglows", {sourceLayer: "streams"});
     } catch {
+      this.map.once("idle", () => this.scheduleApply());
       return;
     }
     const t = this.step;
