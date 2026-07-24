@@ -1,5 +1,9 @@
-import maplibregl from "maplibre-gl";
+import {addProtocol, Map as MaplibreMap, NavigationControl, setWorkerUrl} from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
+// maplibre 6 finds its worker with `new URL("./maplibre-gl-worker.mjs", import.meta.url)`, which
+// breaks once vite relocates the library (dep-optimizer in dev, hashed chunk in build) — tiles
+// then silently never parse. Hand it a worker URL vite has bundled instead.
+import maplibreWorkerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import {Protocol} from "pmtiles";
 import {initBasemapPicker} from "./basemaps";
 import {initLayerPicker} from "./layers";
@@ -9,10 +13,12 @@ import {MAP_CENTER, MAP_ZOOM} from "../settings/settings.js";
 // applyBasemap() so the two kinds share one code path. See basemaps.js.
 const EMPTY_STYLE = {version: 8, sources: {}, layers: []};
 
-const protocol = new Protocol({metadata: true});
-maplibregl.addProtocol("pmtiles", protocol.tile);
+setWorkerUrl(maplibreWorkerUrl);
 
-const map = new maplibregl.Map({
+const protocol = new Protocol({metadata: true});
+addProtocol("pmtiles", protocol.tile);
+
+const map = new MaplibreMap({
   container: "map",
   style: EMPTY_STYLE,
   // The opening camera, from the environment and defaulting to a global overview (lng 0, lat 20) —
@@ -36,7 +42,7 @@ const map = new maplibregl.Map({
 });
 
 // Zoom +/- plus the compass button, which resets bearing (and pitch) back to north-up on click.
-map.addControl(new maplibregl.NavigationControl({showCompass: true, visualizePitch: true}), "top-left");
+map.addControl(new NavigationControl({showCompass: true, visualizePitch: true}), "top-left");
 
 // Map-control dropdowns (top-right). Both are pure DOM + map calls, so they can be built before
 // the style finishes loading; the basemap itself is applied on "load" by main.js.

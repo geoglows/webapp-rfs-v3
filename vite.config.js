@@ -93,11 +93,27 @@ function serveDataDir(dir) {
   };
 }
 
+// @esri/maplibre-arcgis 1.x still default-imports maplibre-gl, which v6 no longer provides.
+// Route only that package's imports through the shim; see shims/maplibre-gl-default.js.
+function esriMaplibreDefaultShim() {
+  const SHIM = resolve("shims/maplibre-gl-default.js");
+  const ESRI = join("@esri", "maplibre-arcgis");
+  return {
+    name: "esri-maplibre-default-shim",
+    enforce: "pre",
+    resolveId(source, importer) {
+      if (source === "maplibre-gl" && importer && normalize(importer).includes(ESRI)) return SHIM;
+    }
+  };
+}
+
 let vite_config_default = defineConfig({
-  plugins: [serveDataDir("data")],
+  plugins: [serveDataDir("data"), esriMaplibreDefaultShim()],
   resolve: {
     dedupe: ["chart.js", "chartjs-adapter-date-fns", "chartjs-chart-matrix", "chartjs-plugin-zoom", "date-fns", "numcodecs"],
   },
+  // Keep the Esri package out of dev prebundling so the shim plugin sees its imports.
+  optimizeDeps: {exclude: ["@esri/maplibre-arcgis"]},
   worker: {format: "es"},
   build: {
     rolldownOptions: {
