@@ -1,5 +1,5 @@
 /**
- * Shared behaviour for the map-control dropdowns (basemap picker, layer picker): clicking the
+ * Shared behavior for the map-control dropdowns (basemap picker, layer picker): clicking the
  * button toggles its menu, clicking anywhere else closes it. Returns the close function so the
  * caller can also close on selection.
  */

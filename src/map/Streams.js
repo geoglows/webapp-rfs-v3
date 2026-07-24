@@ -1,4 +1,5 @@
 import {urls} from "rfsjs/v3";
+import {inFilter, NO_MATCH} from "./flood-maps/selection";
 
 const RET_COLORS = ["#3182bd", "#fee08b", "#fdae61", "#f46d43", "#d73027", "#a50026", "#7a0177"];
 // Uniform stream color for the "Standard" styleset (matches the normal-flow return-period blue).
@@ -7,7 +8,7 @@ const STANDARD_COLOR = "#3182bd";
 const WIDTH_BASE = 4;
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-class StreamAnimation {
+class Streams {
   map;
   meta = null;
   cube = null;
@@ -45,7 +46,6 @@ class StreamAnimation {
       type: "vector",
       url: `pmtiles://${urls.streamsPmtiles()}`,
       promoteId: {streams: "riverId"},
-      // riverId -> feature.id, so setFeatureState keys on it
       attribution: "GEOGLOWS"
     });
     const animated = this.styleset === "timeseries";
@@ -62,9 +62,40 @@ class StreamAnimation {
       }
     });
     this.map.on("sourcedata", (e) => {
-      const ev = e;
-      if (this.cube && e.sourceId === "geoglows" && e.isSourceLoaded && ev.tile) this.scheduleApply();
+      if (this.cube && e.sourceId === "geoglows" && e.isSourceLoaded && e.tile) this.scheduleApply();
     });
+    this.addInspectHighlightLayer();
+  }
+
+  /**
+   * The single-reach highlight used when inspecting a river (clicking one outside flood mode).
+   * Distinct from the flood selection highlights in flood-maps/selection.js, which can hold many
+   * reaches — this one tracks whatever the charts dock is currently showing.
+   */
+  addInspectHighlightLayer() {
+    if (this.map.getLayer("inspect-highlight")) return;
+    this.map.addLayer({
+      id: "inspect-highlight",
+      type: "line",
+      source: "geoglows",
+      "source-layer": "streams",
+      filter: NO_MATCH,
+      layout: {"line-cap": "round", "line-join": "round"},
+      paint: {
+        // Bright green, to clash with the blue stream network rather than blend into it.
+        "line-color": "#33FF57",
+        // Runs noticeably wider than the base streams line at every zoom so the inspected reach
+        // reads as a distinct trace on top rather than a slightly recoloured stream.
+        "line-width": ["interpolate", ["linear"], ["zoom"], 3, 3, 8, 5, 13, 9, 16, 14],
+        "line-opacity": 0.95
+      }
+    });
+  }
+
+  /** Pass null to clear the highlight. */
+  setInspectHighlight(riverId) {
+    if (!this.map.getLayer("inspect-highlight")) return;
+    this.map.setFilter("inspect-highlight", riverId == null ? NO_MATCH : inFilter([riverId]));
   }
 
   /** Return-period line-color expression driven by each reach's `ret` feature-state. */
@@ -197,12 +228,10 @@ class StreamAnimation {
     const t0 = performance.now();
     this.cube = null;
     this.appliedStep = -1;
-    console.log(`Loading ${styleset} styles for ${date}…`);
     try {
       this.meta = await (await fetch(`${stylesBase}.json`)).json();
       this.N = this.meta.n_reaches;
       this.T = this.meta.n_steps ?? 1;
-      console.log(`  ${this.N.toLocaleString()} reaches × ${this.T} step(s)`);
       let inflated;
       try {
         const resp = await fetch(`${stylesBase}.bin`);
@@ -231,6 +260,7 @@ class StreamAnimation {
       this.setStep(0, false);
       this.applyAll();
       this.scheduleApply();
+      // todo remove performance counter
       console.log(`  ${styleset} ready (${((performance.now() - t0) / 1e3).toFixed(1)}s)`);
     } catch (e) {
       console.error(`  ${styleset} (${date}): ${e.message}`);
@@ -400,5 +430,5 @@ class StreamAnimation {
 }
 
 export {
-  StreamAnimation
+  Streams
 };

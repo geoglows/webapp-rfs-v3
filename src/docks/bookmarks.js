@@ -1,5 +1,5 @@
-import {t} from "../i18n/i18n";
-import {closeDock, isDockOpen, openDock} from "./dock";
+import {t} from "../i18n/i18n.js";
+import {closeDock, isDockOpen, openDock} from "./dock.js";
 
 // todo the bookmarks should be databased.
 // todo the defaults should be a json fetched async only on first load.
@@ -23,20 +23,12 @@ const defaultBookmarks = [
   {riverId: 140049491, riverIndex: 710249, lat: 4.3350, lon: 6.0729, name: "Niger, Nigeria"}
 ]
 
-const $ = (id) => document.getElementById(id);
-
-/**
- * The saved rivers dock: a small table of bookmarked reaches (id · name · a button that jumps
- * straight to that reach's charts) that opens in the same slot as the charts dock, beneath the
- * hydrology controls.
- *
- * onSelectRiver({riverId, riverIndex, lat, lon, name}) is what the row buttons do — main.js points
- * it at the charts dock and at the camera. The bookmark carries the reach's riverIndex so the
- * readers can go straight at the data without resolving the id first, and its coordinate so the map
- * can fly there rather than leaving the user to find the river they just asked to see.
- */
 function createBookmarksDock({map, onSelectRiver}) {
-  const degrees = (d) => (d == null ? "" : d.toFixed(4));
+  const degrees = (d) => (d == null ? "" : d.toFixed(4))
+
+  const body = document.getElementById("bookmarks-body")
+  const button = document.getElementById("btn-bookmarks")
+  const exit = document.getElementById("bookmarks-close")
 
   function render() {
     const rows = defaultBookmarks.map(({riverId, name, lat, lon}) => `
@@ -47,7 +39,7 @@ function createBookmarksDock({map, onSelectRiver}) {
         <td class="n">${degrees(lon)}</td>
         <td class="a"><button class="btn ghost row-btn" data-river-id="${riverId}">${t("bookmarks.select")}</button></td>
       </tr>`).join("");
-    $("bookmarks-body").innerHTML = `
+    body.innerHTML = `
       <p class="hint">${t("bookmarks.hint")}</p>
       <table class="attr-table bookmarks-table">
         <thead>
@@ -69,15 +61,16 @@ function createBookmarksDock({map, onSelectRiver}) {
   }
 
   const close = () => closeDock(map, "bookmarks");
+
   // Delegated so the rows can be re-rendered freely without rewiring anything.
-  $("bookmarks-body")?.addEventListener("click", (e) => {
+  body?.addEventListener("click", (e) => {
     const id = e.target?.dataset?.riverId;
     if (!id) return;
     const entry = defaultBookmarks.find((b) => String(b.riverId) === id);
     if (entry) onSelectRiver(entry);
   });
-  $("btn-bookmarks")?.addEventListener("click", () => (isDockOpen("bookmarks") ? close() : open()));
-  $("bookmarks-close")?.addEventListener("click", close);
+  button?.addEventListener("click", () => (isDockOpen("bookmarks") ? close() : open()));
+  exit?.addEventListener("click", close);
 
   return {open, close};
 }

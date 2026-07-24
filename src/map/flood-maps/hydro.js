@@ -1,5 +1,5 @@
 function flowsAtLadderPosition(spec, t) {
-  const out = /* @__PURE__ */ new Map();
+  const out = new Map();
   for (const [riverId, e] of Object.entries(spec.rivers)) {
     const L = e.ladder;
     const tt = Math.min(Math.max(t, 0), L.length - 1);
@@ -12,7 +12,7 @@ function flowsAtLadderPosition(spec, t) {
 }
 
 function uniformFlows(spec, q) {
-  const out = /* @__PURE__ */ new Map();
+  const out = new Map();
   for (const riverId of Object.keys(spec.rivers)) out.set(Number(riverId), q);
   return out;
 }

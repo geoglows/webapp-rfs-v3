@@ -2,7 +2,7 @@ import {defineConfig} from "vite";
 import {createReadStream, statSync} from "node:fs";
 import {join, normalize, resolve, sep} from "node:path";
 
-const PACKAGE_ROOT = resolve("../clients-rfsjs");
+const PACKAGE_ROOT = resolve("../rfsjs");
 // This app no longer imports zarrita: every zarr store it reads — flood library tiles and discharge
 // alike — is read through rfsjs, whose build bundles one zarrita with numcodecs' lz4 and zstd wasm
 // stubbed out (see its rollup.config.js). blosc is left as a bare external there, which is the only
@@ -93,7 +93,7 @@ function serveDataDir(dir) {
   };
 }
 
-var vite_config_default = defineConfig({
+let vite_config_default = defineConfig({
   plugins: [serveDataDir("data")],
   resolve: {
     dedupe: ["chart.js", "chartjs-adapter-date-fns", "chartjs-chart-matrix", "chartjs-plugin-zoom", "date-fns", "numcodecs"],

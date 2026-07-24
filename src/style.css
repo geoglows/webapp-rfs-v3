@@ -942,7 +942,7 @@ button.mode.active {
     padding: 8px;
 }
 
-/* async time-series section (retrospective discharge) */
+/* async timeseries section (retrospective discharge) */
 .ts-loading {
     display: flex;
     flex-direction: column;

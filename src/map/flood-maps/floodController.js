@@ -3,7 +3,6 @@ import {FloodMapsTilesLayer} from "./tilesLayer";
 import {FloodOverlay} from "./overlay";
 import {flowsAtLadderPosition, uniformFlows} from "./hydro";
 import {legendGradient} from "./colormap";
-import {setInspectHighlight} from "../inspectHighlight";
 import {getConfig} from "rfsjs/v3";
 import {t} from "../../i18n/i18n";
 
@@ -26,7 +25,7 @@ const FLOOD_STYLE_CTL = {
  * getForecastDate() is read at fetch time so a date change is picked up without re-wiring.
  * isMapLoaded() guards the overlay rebuild, which needs the map's layers to exist.
  */
-function createFloodController({map, anim, getForecastDate, isMapLoaded}) {
+function createFloodController({map, streams, getForecastDate, isMapLoaded}) {
   // The worker is expensive to stand up (it fetches the flood-map manifest and pulls in the Zarr codec
   // WASM), and flood mapping is off until the user asks for it — so it's built on first use.
   let worker = null;
@@ -388,7 +387,7 @@ function createFloodController({map, anim, getForecastDate, isMapLoaded}) {
     // First entry into flood mode is what stands the worker up; see ensureWorker().
     if (on) {
       ensureWorker();
-      setInspectHighlight(map, null);
+      streams.setInspectHighlight(null);
     }
     const btn = $("btn-flood-mode");
     btn.classList.toggle("active", on);
@@ -396,7 +395,7 @@ function createFloodController({map, anim, getForecastDate, isMapLoaded}) {
     $("flood-controls").classList.toggle("mode-off", !on);
     // Flood mode owns the stream rendering: the hydrology styler is locked and every reach drops to
     // one uniform width, so the selection highlights aren't competing with a variable-width network.
-    anim.setFloodMode(on);
+    streams.setFloodMode(on);
     $("stream-style").disabled = on;
     // Data-tile footprints follow the mode, and start/stop tracking the viewport with it.
     floodMapsTiles.setActive(on);

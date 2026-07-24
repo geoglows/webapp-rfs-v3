@@ -1,8 +1,7 @@
-import {dataProgress, getLanguage, t} from "../i18n/i18n";
-import {resolve} from "../data/riverIndex";
+import {dataProgress, getLanguage, t} from "../i18n/i18n.js";
+import {resolve} from "../data/riverIndex.js";
 import {getSetting} from "../settings/settings.js";
-import {setInspectHighlight} from "../map/inspectHighlight";
-import {closeDock, isDockOpen, onDockClosed, openDock} from "./dock";
+import {closeDock, isDockOpen, onDockClosed, openDock} from "./dock.js";
 
 const $ = (id) => document.getElementById(id);
 const CHARTS_TABS = ["forecast", "retro", "details"];
@@ -25,7 +24,7 @@ const chartsLoading = (blockId, label) => `<div id="${blockId}" class="ts-loadin
  * getForecastDate() is read at fetch time rather than captured, so switching the forecast date
  * is picked up by the next render without having to re-wire anything.
  */
-function createChartsDock({map, getForecastDate}) {
+function createChartsDock({map, streams, getForecastDate}) {
   let selectedRiverId = null;
   let selectedRiverProps = null;
   let selectedRiverIndex = null;
@@ -36,15 +35,9 @@ function createChartsDock({map, getForecastDate}) {
   // re-render puts the same id back on a fresh element whichever reach it is for.
   let selectionId = 0;
 
-  // Both chart tabs load the same way: pull in the chart bundle, fetch the series, bail out if the
-  // user navigated away mid-flight, then hand the host element to the renderer. Only the fetch and
-  // the renderer differ — a failure reads the same either way, since which reader was asked is not
-  // something the user chose.
   async function loadChartBlock(blockId, {fetchData, render}) {
     const block = $(blockId);
     if (!block) return;
-    // The loading line is all that is on screen while the fetch runs, and resolving an id can put a
-    // 17 MB download in front of it — so the fetch gets to say what it is doing.
     const setStatus = (text) => {
       const label = $(blockId)?.querySelector(".ts-loading-label");
       if (label) label.textContent = text;
@@ -98,9 +91,6 @@ function createChartsDock({map, getForecastDate}) {
       riverIndex = 0 // todo override for demo phase
       setStatus(t("charts.loading"));
       const {retrospective} = await import("rfsjs/v3/discharge");
-      // TODO(sample-data): send `riverIndex`. It is the reach the user actually asked for and every
-      // layer above this line already works in it — only the store is the placeholder, so the call
-      // is pinned to a reach the synthetic sample holds. One line to delete, here and below.
       return {...await retrospective({riverIndex: riverIndex}), riverId: selectedRiverId};
     },
     render: (plots, host, ts) => plots.plotAllRetro(host, ts, {lang: getLanguage()})
@@ -116,11 +106,8 @@ function createChartsDock({map, getForecastDate}) {
       riverIndex = 0 // todo override for demo phase
       setStatus(t("charts.loading"));
       const {forecast, returnPeriods} = await import("rfsjs/v3/discharge");
-      // TODO(sample-data): send `riverIndex` to both — see the note in loadRetro.
       const [fc, rp] = await Promise.all([
         forecast({date: getForecastDate(), riverIndex: riverIndex}),
-        // hourly: the forecast is an instantaneous series, so the hourly fit is the like-for-like
-        // exceedance — the daily fit answers a question about daily means, which this is not.
         returnPeriods({riverIndex: riverIndex, resolution: "hourly"}).catch(() => null)
       ]);
       return {forecast: {...fc, riverId: selectedRiverId}, returnPeriods: rp};
@@ -128,8 +115,6 @@ function createChartsDock({map, getForecastDate}) {
     render: (plots, host, {forecast, returnPeriods}) => plots.plotAllForecast(host, forecast, {
       lang: getLanguage(),
       returnPeriods,
-      // Shaded boxes or plain lines is the user's standing preference, not a per-chart control —
-      // read at render time, which is why changing it re-renders (see rerenderCharts).
       levelsAs: getSetting("shadedWarningLevels") ? "boxes" : "lines"
     })
   });
@@ -187,7 +172,7 @@ function createChartsDock({map, getForecastDate}) {
       if (props.riverId != null) selectedRiverId = Number(props.riverId);
       selectedRiverIndex = props.riverIndex != null ? Number(props.riverIndex) : null;
     }
-    setInspectHighlight(map, selectedRiverId);
+    streams.setInspectHighlight(selectedRiverId);
     // Reaches opened from the saved-rivers dock carry a name; ones clicked on the map don't.
     const named = selectedRiverProps?.name ? ` · ${selectedRiverProps.name}` : "";
     $("charts-modal-title").textContent =

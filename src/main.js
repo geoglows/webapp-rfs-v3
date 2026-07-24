@@ -3,15 +3,14 @@ import {applyTheme, DEFAULT_THEME, initLanguagePicker, initSettings, onSetting} 
 
 import {map} from "./map/map";
 import {applyBasemap, defaultBasemap} from "./map/basemaps";
-import {addRasterOverlays, applyLayerVisibility} from "./map/layers";
-import {StreamAnimation} from "./map/streams/animation";
-import {addInspectHighlightLayer} from "./map/inspectHighlight";
+import {addRasterLayer, applyLayerVisibility} from "./map/layers";
+import {Streams} from "./map/Streams.js";
 import {createFloodController} from "./map/flood-maps/floodController";
 import {build, status} from "./data/riverIndex";
 import {hydrateIcons} from "./icons/icons";
-import {createChartsDock} from "./ui/chartsDock";
-import {createBookmarksDock} from "./ui/bookmarksDock";
-import {closeAllDocks} from "./ui/dock";
+import {createChartsDock} from "./docks/charts.js";
+import {createBookmarksDock} from "./docks/bookmarks.js";
+import {closeAllDocks} from "./docks/dock.js";
 import {createPanelControls} from "./ui/panelControls";
 import {createDataSettings} from "./ui/dataSettings";
 import {createRiverSearch} from "./ui/riverSearch";
@@ -35,16 +34,16 @@ let mapLoaded = false;
 // ═══════════════════════════════════════════════════════════════════════════
 // Features
 // ═══════════════════════════════════════════════════════════════════════════
-const anim = new StreamAnimation(map);
+const streams = new Streams(map);
 
 const flood = createFloodController({
   map,
-  anim,
+  streams,
   getForecastDate: () => currentForecastDate,
   isMapLoaded: () => mapLoaded
 });
 
-const chartsDock = createChartsDock({map, getForecastDate: () => currentForecastDate});
+const chartsDock = createChartsDock({map, streams, getForecastDate: () => currentForecastDate});
 
 function goToRiver(river) {
   if (river.lat != null && river.lon != null) {
@@ -62,7 +61,7 @@ createBookmarksDock({map, onSelectRiver: goToRiver});
 const dataSettings = createDataSettings();
 
 const panelControls = createPanelControls({
-  anim,
+  streams,
   onForecastDateChange: (date) => {
     currentForecastDate = date;
     flood.onForecastDateChange();
@@ -106,14 +105,11 @@ async function prefetchRiverIndex() {
 // Map lifecycle · app layers, click handling, and load wiring
 // ═══════════════════════════════════════════════════════════════════════════
 map.on("load", async () => {
-  anim.addStreamsLayer();
+  streams.addStreamsLayer();
   applyLayerVisibility(map, "streams");
-  addRasterOverlays(map);
-  addInspectHighlightLayer(map);
+  addRasterLayer(map);
   flood.onMapLoad();
-  // Slot the default basemap in beneath the app layers just added. Not awaited so the (async,
-  // fetched) vector style doesn't hold up the rest of load; it inserts under everything when ready.
-  void applyBasemap(map, defaultBasemap());
+  void applyBasemap(map, defaultBasemap());  // Allow the basemaps to continue to load async
   console.log("Basemap + streams loaded.");
   mapLoaded = true;
   map.on("click", (e) => {
@@ -136,7 +132,7 @@ map.on("load", async () => {
   map.on("mouseenter", "streams", () => map.getCanvas().style.cursor = "pointer")
   map.on("mouseleave", "streams", () => map.getCanvas().style.cursor = "");
   panelControls.initForecastDatePicker({defaultDate: currentForecastDate});
-  void anim.setDate(currentForecastDate);
+  void streams.setDate(currentForecastDate);
   whenIdle(prefetchRiverIndex);
 });
 // MapLibre flattens every failure into a generic `error` event, so a bad tile fetch arrives as

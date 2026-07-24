@@ -39,7 +39,7 @@ class FloodMapsTilesLayer {
       type: "fill",
       source: "flood-maps-tiles",
       // "fim_tiles" is the layer name inside the published pmtiles — it stays until that archive is
-      // rebuilt by references/map-styles/build_flood_maps_tile_boundaries.mjs and redeployed.
+      // rebuilt by references/maps/build_flood_maps_tile_boundaries.mjs and redeployed.
       "source-layer": "fim_tiles",
       paint: {"fill-opacity": 0}
     }, beforeId);

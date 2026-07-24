@@ -22,7 +22,7 @@ class Selection {
   map;
   onChange;
   hasCoverage;
-  selected = /* @__PURE__ */ new Set();
+  selected = new Set();
   infoEl = document.getElementById("selection-info");
   warnEl = document.getElementById("warning");
 
@@ -111,15 +111,12 @@ class Selection {
   updateInfo(floodableCount) {
     const n = this.selected.size;
     const haveCoverage = this.coverageIds.length > 0;
-    if (n === 0) {
-      this.setInfo(haveCoverage ? `<span class="count">${this.coverageIds.length.toLocaleString()}</span> reach(es) here have flood-library coverage (highlighted red) — click them to select.` : "Click reaches on the map to select them. Reaches with flood-library coverage highlight in red as tiles load.");
-    } else {
-      const parts = [`Selected: <span class="count">${n.toLocaleString()}</span> reach(es)`];
-      if (floodableCount) parts.push(`<span class="hint">${floodableCount} with flood-library coverage — ready to compute.</span>`);
-      else if (haveCoverage) parts.push('<span class="hint">None of these are in the flood library — click the red-highlighted reaches instead.</span>');
-      else parts.push('<span class="hint">No flood-library coverage loaded here yet — pan/zoom into an outlined tile.</span>');
-      this.setInfo(parts.join("<br>"));
-    }
+    console.log(`Selection: ${n} selected, ${floodableCount} floodable, ${this.coverageIds.length} with coverage`);
+    const parts = [`Selected: <span class="count">${n.toLocaleString()}</span> reach(es)`];
+    if (floodableCount) parts.push(`<span class="hint">${floodableCount} with flood-library coverage — ready to compute.</span>`);
+    else if (haveCoverage) parts.push('<span class="hint">None of these are in the flood library — click the red-highlighted reaches instead.</span>');
+    else parts.push('<span class="hint">No flood-library coverage loaded here yet — pan/zoom into an outlined tile.</span>');
+    this.setInfo(parts.join("<br>"));
     if (floodableCount > WARN_THRESHOLD) {
       this.warnEl.textContent = `⚠ ${floodableCount.toLocaleString()} reaches ready (> ${WARN_THRESHOLD}). Flood computation may be slow.`;
       this.warnEl.classList.remove("hidden");
