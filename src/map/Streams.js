@@ -8,6 +8,12 @@ const STANDARD_COLOR = "#3182bd";
 const WIDTH_BASE = 4;
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
+const fetchOk = async url => {
+  const resp = await fetch(url);
+  if (!resp.ok) throw new Error(`${resp.status} ${resp.statusText} for ${url}`);
+  return resp;
+};
+
 class Streams {
   map;
   meta = null;
@@ -23,7 +29,7 @@ class Streams {
   // Flood mapping mode flattens the network to one uniform width (see streamWidthExpr).
   floodMode = false;
   currentDate = null;
-  idFi = /* @__PURE__ */ new Map();
+  idFi = new Map();
   // riverId -> riverIndex (cube row; -1 = no forecast)
   appliedStep = -1;
   applyScheduled = false;
@@ -85,10 +91,7 @@ class Streams {
       filter: NO_MATCH,
       layout: {"line-cap": "round", "line-join": "round"},
       paint: {
-        // Bright green, to clash with the blue stream network rather than blend into it.
         "line-color": "#33FF57",
-        // Runs noticeably wider than the base streams line at every zoom so the inspected reach
-        // reads as a distinct trace on top rather than a slightly recoloured stream.
         "line-width": ["interpolate", ["linear"], ["zoom"], 3, 3, 8, 5, 13, 9, 16, 14],
         "line-opacity": 0.95
       }
@@ -232,15 +235,15 @@ class Streams {
     this.cube = null;
     this.appliedStep = -1;
     try {
-      this.meta = await (await fetch(`${stylesBase}.json`)).json();
+      this.meta = await (await fetchOk(`${stylesBase}.json`)).json();
       this.N = this.meta.n_reaches;
       this.T = this.meta.n_steps ?? 1;
       let inflated;
       try {
-        const resp = await fetch(`${stylesBase}.bin`);
+        const resp = await fetchOk(`${stylesBase}.bin`);
         inflated = await new Response(resp.body.pipeThrough(new DecompressionStream("deflate"))).arrayBuffer();
       } catch {
-        const raw = (await (await fetch(`${stylesBase}.bin`)).body).pipeThrough(new DecompressionStream("deflate-raw"));
+        const raw = (await (await fetchOk(`${stylesBase}.bin`)).body).pipeThrough(new DecompressionStream("deflate-raw"));
         inflated = await new Response(raw).arrayBuffer();
       }
       const cube = new Uint8Array(inflated);
