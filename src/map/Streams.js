@@ -25,7 +25,7 @@ class Streams {
   playing = false;
   timer = null;
   fps = 4;
-  styleset = "timeseries";
+  styleset = "max-flow";
   // Flood mapping mode flattens the network to one uniform width (see streamWidthExpr).
   floodMode = false;
   currentDate = null;
@@ -54,19 +54,17 @@ class Streams {
       promoteId: {streams: "riverId"},
       attribution: "GEOGLOWS"
     });
-    const animated = this.styleset === "timeseries";
     this.map.addLayer({
       id: "streams",
       type: "line",
       source: "geoglows",
       "source-layer": "streams",
       layout: {"line-cap": "round", "line-join": "round"},
-      paint: {
-        "line-color": animated ? this.streamColorExpr() : STANDARD_COLOR,
-        "line-width": this.streamWidthExpr(animated),
-        "line-opacity": ["interpolate", ["linear"], ["zoom"], 3, 0.65, 9, 0.95]
-      }
+      paint: {"line-opacity": ["interpolate", ["linear"], ["zoom"], 3, 0.65, 9, 0.95]}
     });
+    // Color and width belong to whichever styleset is active, including the one the app opens on —
+    // applyPaint is the only thing that knows how to pick them.
+    this.applyPaint();
     // Any tile arrival schedules a discovery pass — waiting for isSourceLoaded too would only
     // fire when the last tile's own event closes out the source, which tile arrival order
     // doesn't guarantee. scheduleApply dedupes to one pass per frame, so per-tile is cheap.
@@ -159,8 +157,8 @@ class Streams {
 
   /** Per-reach feature-state for a decoded style byte, keyed to the active styleset. */
   featureStateFor(b) {
-    if (this.styleset === "timeToPeak") return {ttp: b};
-    if (this.styleset === "belowQ95") return {q95dir: b};
+    if (this.styleset === "time-to-peak") return {ttp: b};
+    if (this.styleset === "below-q95") return {q95dir: b};
     return {ret: b >> 3, thk: (b & 7) + 1};
   }
 
@@ -169,11 +167,11 @@ class Streams {
     if (!this.map.getLayer("streams")) return;
     const s = this.styleset;
     let color, retWidth = false;
-    if (s === "timeseries" || s === "maxFlow") {
+    if (s === "timeseries" || s === "max-flow") {
       color = this.streamColorExpr();
       retWidth = true;
-    } else if (s === "timeToPeak") color = this.ttpColorExpr();
-    else if (s === "belowQ95") color = this.q95ColorExpr();
+    } else if (s === "time-to-peak") color = this.ttpColorExpr();
+    else if (s === "below-q95") color = this.q95ColorExpr();
     else color = STANDARD_COLOR;
     this.map.setPaintProperty("streams", "line-color", color);
     this.map.setPaintProperty("streams", "line-width", this.streamWidthExpr(retWidth));
@@ -423,12 +421,12 @@ class Streams {
       row.innerHTML = `<span class="swatch" style="background:${color}"></span>${label}`;
       box.appendChild(row);
     };
-    if (s === "belowQ95") {
+    if (s === "below-q95") {
       if (titleEl) titleEl.textContent = "Q95 low flow";
       add("#dc2626", "Below Q95 (rare low flow)");
       add("#3182bd", "At or above Q95");
       add("#334155", "No data");
-    } else if (s === "timeToPeak") {
+    } else if (s === "time-to-peak") {
       if (titleEl) titleEl.textContent = "Time to peak";
       const h = this.meta?.step_hours ?? 3;
       add("#d73027", "Now / imminent");
@@ -436,7 +434,7 @@ class Streams {
       add("#4575b4", `~${Math.round(80 * h / 24)} days`);
       add("#334155", "No data");
     } else {
-      if (titleEl) titleEl.textContent = s === "maxFlow" ? "Max forecast return period" : "Forecast return period";
+      if (titleEl) titleEl.textContent = s === "max-flow" ? "Max forecast return period" : "Forecast return period";
       const vals = this.meta?.ret_per_values ?? [0, 2, 5, 10, 25, 50, 100];
       vals.forEach((v, i) => add(RET_COLORS[i], v === 0 ? "Normal (&lt; 2-yr)" : `${v}-year`));
     }

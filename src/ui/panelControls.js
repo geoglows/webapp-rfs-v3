@@ -9,8 +9,8 @@ const $ = (id) => document.getElementById(id);
  * onForecastDateChange(date) fires when the user picks a new initialization date — the caller is
  * responsible for propagating it (the stream animation and the flood forecast styles both read it).
  */
-function createPanelControls({anim, onForecastDateChange}) {
-  let currentStyleset = "timeseries";
+function createPanelControls({streams, onForecastDateChange}) {
+  let currentStyleset = "max-flow";
   let sliderVisible = true;
 
   // The player (bottom timeseries slider) only makes sense for the animated "15-Day Forecast
@@ -20,7 +20,7 @@ function createPanelControls({anim, onForecastDateChange}) {
     const isTimeseries = currentStyleset === "timeseries";
     const show = isTimeseries && sliderVisible;
     $("player").classList.toggle("hidden", !show);
-    if (!show) anim.pause();
+    if (!show) streams.pause();
     const btn = $("btn-toggle-slider");
     if (!btn) return;
     btn.disabled = !isTimeseries;
@@ -36,7 +36,7 @@ function createPanelControls({anim, onForecastDateChange}) {
       sel.value = currentStyleset;
       sel.addEventListener("change", () => {
         currentStyleset = sel.value;
-        anim.setStyleset(currentStyleset);
+        streams.setStyleset(currentStyleset);
         updateSliderVisibility();
       });
     }
@@ -56,7 +56,7 @@ function createPanelControls({anim, onForecastDateChange}) {
       const date = input.value;
       if (!date) return;
       console.log(`Switching forecast date to ${date}…`);
-      anim.setDate(date);
+      void streams.setDate(date);
       onForecastDateChange(date);
     });
   }
