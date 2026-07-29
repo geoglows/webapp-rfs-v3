@@ -3,10 +3,6 @@ import {createReadStream, statSync} from "node:fs";
 import {join, normalize, resolve, sep} from "node:path";
 
 const PACKAGE_ROOT = resolve("../rfsjs");
-// This app no longer imports zarrita: every zarr store it reads — flood library tiles and discharge
-// alike — is read through rfsjs, whose build bundles one zarrita with numcodecs' lz4 and zstd wasm
-// stubbed out (see its rollup.config.js). blosc is left as a bare external there, which is the only
-// reason numcodecs is a direct dependency here: it must resolve to exactly one copy.
 
 function serveDataDir(dir) {
   const root = resolve(dir);
