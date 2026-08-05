@@ -4,13 +4,14 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>%VITE_APP_TITLE%</title>
+  <meta name="description" content="%VITE_APP_DESCRIPTION%"/>
   <link rel="stylesheet" href="/src/style.css"/>
 </head>
 <body>
 <div id="map"></div>
 <div id="left-panel" class="panel">
   <header>
-    <a id="app-logo-link" class="app-logo-link" href="%VITE_LOGO_HREF%"><img id="app-logo" class="app-logo" src="%VITE_LOGO_SRC%" alt="%VITE_LOGO_ALT%"/></a>
+    <a id="app-logo-link" class="app-logo-link" href="%VITE_LOGO_HREF%"><img id="app-logo" class="app-logo" src="%VITE_LOGO_SRC%" alt="%VITE_LOGO_ALT%" width="%VITE_LOGO_WIDTH%" height="%VITE_LOGO_HEIGHT%"/></a>
     <h1 data-i18n="app.title">%VITE_APP_TITLE%</h1>
     <div class="header-actions">
       <button id="btn-settings" class="icon-btn" data-icon-name="cog-6-tooth" data-i18n-title="settings.label" data-i18n-aria-label="settings.label" title="Settings" aria-label="Settings"></button>
@@ -24,10 +25,11 @@
         </div>
       </div>
       <button id="btn-theme" class="icon-btn" data-i18n-title="theme.toggle" data-i18n-aria-label="theme.toggle" title="Toggle light / dark theme" aria-label="Toggle light or dark theme"></button>
+      <button id="btn-instructions" class="icon-btn" data-icon-name="question-mark-circle" data-i18n-title="instructions.label" data-i18n-aria-label="instructions.label" title="How to use this site" aria-label="How to use this site"></button>
       <button id="btn-info" class="icon-btn" data-icon-name="information-circle" data-i18n-title="about.label" data-i18n-aria-label="about.label" title="About" aria-label="About"></button>
     </div>
   </header>
-  <div id="scroll">
+  <main id="scroll">
     <section id="hydrology-section">
       <h2 data-i18n="hydro.heading">Hydrology predictions</h2>
       <div class="hydro-field">
@@ -65,37 +67,37 @@
     <!-- ── Flood mapping ── -->
     <section>
       <h2 data-i18n="flood.heading">Flood Mapping</h2>
+      <!-- The order is the order you use them in: turn the mode on, say what kind of flood you want,
+           then act on the selection you have made. Clear and Save GeoTIFF sit below the dropdown
+           because neither does anything until reaches are selected, which is after both. -->
       <div class="flood-actions">
         <button id="btn-flood-mode" class="btn toggle" data-i18n="flood.enable">Enable flood mapping mode</button>
-        <button id="btn-clear" class="btn ghost" disabled data-i18n="flood.clear">Clear selection</button>
-        <button id="btn-save-geotiff" class="btn ghost" disabled data-i18n="flood.saveGeotiff">⬇ Save GeoTIFF</button>
       </div>
       <div class="hydro-field">
         <label class="field-label" for="flood-style" data-i18n="flood.style">Flood style</label>
         <select id="flood-style" class="select">
+          <option value="ratingcurve" selected data-i18n="flood.style.ratingcurve">Synthetic Rating Curve Slider</option>
+          <option value="returnperiod" data-i18n="flood.style.returnperiod">Return Period Indexed</option>
           <option value="manual" data-i18n="flood.style.manual">Manually Specified Flow</option>
-          <option value="returnperiod" selected data-i18n="flood.style.returnperiod">Return Period Indexed</option>
           <option value="forecast" data-i18n="flood.style.forecast">Forecast Timeseries</option>
           <option value="forecastmax" data-i18n="flood.style.forecastmax">Forecast Maximum</option>
         </select>
       </div>
-      <!-- Everything the mode drives: the discharge control for the chosen flood style, the depth
-           legend, and the pixel readout. Hidden outright until flood mapping is turned on, so the
-           panel isn't advertising sliders that do nothing. -->
+      <div class="flood-actions">
+        <button id="btn-clear" class="btn ghost" disabled data-i18n="flood.clear">Clear selection</button>
+        <button id="btn-save-geotiff" class="btn ghost" disabled data-i18n="flood.saveGeotiff">⬇ Save GeoTIFF</button>
+      </div>
       <div id="flood-controls" class="mode-off">
         <!-- Only ever shows a refused click; the selection itself is logged (flood-maps/selection.js). -->
         <div id="warning" class="warning hidden"></div>
-
         <div id="qctl-ladder" class="ctl">
           <label for="ladder"><span data-i18n="flood.dischargeLevel">Discharge level</span> <em id="ladder-val"></em></label>
-          <input id="ladder" type="range" min="0" max="8" step="0.05" value="4"/>
+          <input id="ladder" type="range" min="0" max="10" step="0.05" value="5"/>
         </div>
         <div id="qctl-uniform" class="ctl hidden">
           <label for="uniform" data-i18n="flood.uniformLabel">Discharge for every selected reach (m³/s)</label>
           <input id="uniform" type="number" min="0" step="10" value="400"/>
         </div>
-        <!-- forecast player: drives the extent animation from the selected reaches' downloaded
-             forecast hydrographs. Shown only for the "Forecast Timeseries" flood style. -->
         <div id="qctl-forecast" class="ctl hidden">
           <div class="fc-player">
             <button id="btn-fc-play" data-i18n-title="flood.fcPlay" title="Play / pause the forecast animation" disabled>▶</button>
@@ -124,17 +126,16 @@
         <div id="readout" class="hint" data-i18n="legend.readout">click a flooded pixel for depth</div>
       </div>
     </section>
-  </div>
+  </main>
   <div id="charts-dock">
     <div class="modal-head">
-      <!-- The heart travels with the reach's id, not with the panel: it saves what the title names.
-           The name sits on the far side of it, so the row reads id · heart · what you called it. -->
       <div class="dock-title">
         <h3 id="charts-modal-title" data-i18n="charts.heading">Discharge charts</h3>
         <button id="charts-save" class="icon-btn heart-btn" type="button" aria-pressed="false" hidden></button>
         <span id="charts-river-name" class="dock-river-name"></span>
       </div>
-      <button class="modal-close" id="charts-close" data-i18n-aria-label="common.close" aria-label="Close">✕</button>
+      <button id="charts-close" class="modal-close"
+              data-i18n-aria-label="common.close" aria-label="Close">✕</button>
     </div>
     <div class="charts-tabs mode-row" role="tablist">
       <button id="charts-tab-forecast" class="mode active" role="tab" aria-selected="true"
@@ -220,48 +221,30 @@
   <div id="legend-items"></div>
 </div>
 
-<!-- info / about modal -->
+<!-- info / about modal · body is one document per language under src/modals/about/, fetched the first
+     time this is opened. Credits and attributions change whenever a dependency or data source does,
+     so they live as markup next to each other rather than as forty keys in the label dictionary. See
+     src/modals/about/about.js, and src/modals/docModal.js for the loading the two prose modals share. -->
 <div id="info-modal" class="modal-backdrop hidden">
   <div class="modal medium" role="dialog" aria-modal="true" aria-labelledby="info-modal-title">
     <div class="modal-head">
       <h3 id="info-modal-title" data-i18n="about.label">About</h3>
       <button class="modal-close" data-close="info-modal" data-i18n-aria-label="common.close" aria-label="Close">✕</button>
     </div>
-    <div class="modal-body">
-      <p data-i18n="about.intro">Global GEOGLOWS forecast animation · select reaches · FLDPLN flood extent
-                                 for the segments between them.</p>
-      <h4 data-i18n="about.coverageHeading">Model notes</h4>
-      <p data-i18n-html="about.model">FLDPLN is a steady-state, DEM-only screening model driven by synthetic rating curves;
-                                      extents saturate at the library's maximum stage. <strong>Not for emergency use.</strong>
-                                      Terrain: FABDEM (© DLR / Airbus, CC BY-NC-SA 4.0). Hydrography &amp; forecast: GEOGLOWS.</p>
-      <h4 data-i18n="about.dataHeading">Data</h4>
-      <ul class="credits">
-        <li data-i18n-html="about.credit.geoglows">Streams hydrographs and flood maps from the
-          <a href="https://geoglows.org/" target="_blank" rel="noopener">GEOGLOWS River Forecast System</a> v2 and v3
-        </li>
-      </ul>
-      <h4 data-i18n="about.layersHeading">Map layers</h4>
-      <ul class="credits">
-        <li data-i18n-html="about.credit.basemaps">Basemaps from <a href="https://livingatlas.arcgis.com/" target="_blank" rel="noopener">ArcGIS Living Atlas</a> and
-          <a href="https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer" target="_blank" rel="noopener">USGS The National Map</a></li>
-        <li data-i18n-html="about.credit.riverfld"><a href="https://floods.ssec.wisc.edu/products/RIVER-FLDglobal-composite" target="_blank" rel="noopener">RIVER-FLD global flood composite</a> — near-real-time river flooding (CIMSS/SSEC, UW–Madison)
-        </li>
-        <li data-i18n-html="about.credit.goes"><a href="https://www.arcgis.com/home/item.html?id=37a875ff3611496883b7ccca97f0f5f4" target="_blank" rel="noopener">GOES / Himawari colorized IR</a> — near-real-time satellite imagery (NOAA, via Esri)
-        </li>
-        <li data-i18n-html="about.credit.viirs"><a href="https://www.arcgis.com/home/item.html?id=c873f4c13aa54b25b01270df9358dc64" target="_blank" rel="noopener">VIIRS true color</a> — daily corrected reflectance (NASA Earthdata, via Esri)</li>
-      </ul>
-      <h4 data-i18n="about.codeHeading">Open source software</h4>
-      <ul class="credits">
-        <li data-i18n-html="about.credit.maplibre"><a href="https://maplibre.org/" target="_blank" rel="noopener">MapLibre GL JS</a></li>
-        <li data-i18n-html="about.credit.calcite"><a href="https://github.com/Esri/calcite-ui-icons" target="_blank" rel="noopener">Calcite UI Icons</a></li>
-        <li data-i18n-html="about.credit.heroicons"><a href="https://github.com/tailwindlabs/heroicons" target="_blank" rel="noopener">Heroicons</a></li>
-        <li data-i18n-html="about.credit.chartjs"><a href="https://www.chartjs.org/" target="_blank" rel="noopener">Chart.js</a> and plugins (date-fns adapter, matrix, zoom)</li>
-        <li data-i18n-html="about.credit.zarrita"><a href="https://github.com/manzt/zarrita.js" target="_blank" rel="noopener">zarrita.js</a> and <a href="https://github.com/manzt/numcodecs.js" target="_blank" rel="noopener">numcodecs</a> (Zarr
-                                                                                                                                              access)
-        </li>
-        <li data-i18n-html="about.credit.pmtiles"><a href="https://github.com/protomaps/PMTiles" target="_blank" rel="noopener">PMTiles</a></li>
-      </ul>
+    <div class="modal-body doc-body" id="about-body"></div>
+  </div>
+</div>
+
+<!-- how-to-use modal · the text is not in here and not in i18n.js: it is one document per language
+     under src/modals/instructions/, fetched the first time this is opened. See
+     src/modals/instructions/instructions.js. -->
+<div id="instructions-modal" class="modal-backdrop hidden">
+  <div class="modal medium" role="dialog" aria-modal="true" aria-labelledby="instructions-modal-title">
+    <div class="modal-head">
+      <h3 id="instructions-modal-title" data-i18n="instructions.heading">How to use this site</h3>
+      <button class="modal-close" data-close="instructions-modal" data-i18n-aria-label="common.close" aria-label="Close">✕</button>
     </div>
+    <div class="modal-body doc-body" id="instructions-body"></div>
   </div>
 </div>
 
@@ -326,6 +309,10 @@
       <label class="setting-row">
         <input type="checkbox" id="set-shaded-warning-levels"/>
         <span data-i18n="settings.shadedWarningLevels">Shade warning levels on the forecast chart</span>
+      </label>
+      <label class="setting-row">
+        <input type="checkbox" id="set-saved-highlight"/>
+        <span data-i18n="settings.savedHighlight">Outline my saved rivers on the map</span>
       </label>
 
       <!-- Downloads the user keeps on the device. Every one is explicit and optional: they are

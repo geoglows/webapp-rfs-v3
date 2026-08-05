@@ -13,23 +13,13 @@
     --outlet: #f472b6;
     --corridor: #fbbf24;
     --library: #38bdf8;
-    /* saved rivers, matching SAVED_COLOR in map/Streams.js — the filled heart and the pink outline
-       the map draws around a saved reach have to be the same colour to read as the same state */
     --saved: #ff4fa3;
     --on-accent: #04121b;
     --shadow-color: 0, 0, 0;
     --radius: 8px;
-
-    /* Chart palette. Charts are <canvas>, so no selector reaches inside them — the plotting code
-       reads these three variables with getComputedStyle() at render time and hands the values to
-       Chart.js. They are the whole styling contract: define them and the charts follow, including
-       across a theme flip. See refreshChartTheme() in plots/shared.js.
-       --rfs-chart-grid needs alpha and --text-dim does not have any, so it is the same colour
-       written out at low opacity rather than a var() references. */
     --rfs-chart-axis: var(--text-dim);
     --rfs-chart-text: var(--text);
     --rfs-chart-grid: rgba(148, 163, 184, .12);
-
     font-family: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
 }
 
@@ -49,16 +39,9 @@
     --outlet: #db2777;
     --corridor: #d97706;
     --library: #0284c7;
-    /* darker than the dark theme's: the map colour is unchanged, but hot pink on a white panel is
-       barely a colour at all */
     --saved: #db2777;
     --on-accent: #ffffff;
     --shadow-color: 100, 116, 139;
-
-    /* Deliberately var(--text), not var(--text-dim) as in dark: this preserves the colours the
-       charts already rendered, where light-theme axis labels are full strength and dark-theme ones
-       are dimmed. The two themes disagree, which is almost certainly unintended — switch this to
-       var(--text-dim) to make them consistent, at the cost of slightly fainter light-mode axes. */
     --rfs-chart-axis: var(--text);
     --rfs-chart-text: var(--text);
     --rfs-chart-grid: rgba(15, 23, 42, .14);
@@ -127,7 +110,7 @@ body {
 .panel header h1 {
     font-size: 21px;
     font-weight: 700;
-    letter-spacing: .5px;
+    letter-spacing: 1px;
     line-height: 1.25;
     color: var(--accent);
     font-family: "JetBrains Mono", ui-monospace, monospace;
@@ -138,16 +121,12 @@ body {
     gap: 6px;
 }
 
-/* The wordmark links out (VITE_LOGO_HREF, default this app's root). The anchor is only a hit area —
-   it carries no ink of its own, so it must not add a line box around the image. */
 .app-logo-link {
     display: block;
     flex: 0 0 auto;
     line-height: 0;
 }
 
-/* Wordmark in the controls header — GEOGLOWS from /public by default, VITE_LOGO_SRC otherwise. A
-   light chip keeps the dark-navy logo legible on the dark header surface. */
 .app-logo {
     height: 30px;
     width: auto;
@@ -222,13 +201,21 @@ section h2 {
     border-bottom: none;
 }
 
+/* One rhythm for everything a section stacks — heading, labelled field, row of buttons, the flood
+   controls. Owned by the section rather than by each block type: when the blocks carried their own
+   margins they disagreed on both the size and the direction, so what sat between two of them
+   depended on which two they were. Anything that needs to read as one unit rather than as another
+   step in the stack (the depth legend) overrides this with its own id. */
+.panel section > * + * {
+    margin-top: 12px;
+}
+
 .panel h2 {
     font-size: 12px;
     font-weight: 600;
     color: var(--text-dim);
     text-transform: uppercase;
-    letter-spacing: .8px;
-    margin-bottom: 9px;
+    letter-spacing: 1px;
     font-family: "JetBrains Mono", ui-monospace, monospace;
 }
 
@@ -331,7 +318,6 @@ button.mode.active {
     background: var(--warn);
     border-radius: 6px;
     padding: 9px 11px;
-    margin-bottom: 10px;
     font-weight: 600;
 }
 
@@ -405,16 +391,9 @@ button.mode.active {
     margin-bottom: 6px;
 }
 
-/* space the stacked hydrology fields (forecast date, then stream style) in the narrow panel */
-.hydro-field + .hydro-field {
-    margin-top: 12px;
-}
-
-/* hydrology-prediction action buttons, below the forecast date picker */
 .hydro-actions {
     display: flex;
     gap: 8px;
-    margin-top: 10px;
 }
 
 .hidden {
@@ -588,13 +567,10 @@ button.mode.active {
     color: var(--on-accent);
 }
 
-/* The flood-mapping buttons, kept together above the style dropdown they govern. They stay
-   outside #flood-controls because the mode toggle has to be usable while the mode is off. */
 .flood-actions {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
-    margin-bottom: 10px;
 }
 
 .flood-actions .btn {
@@ -605,6 +581,13 @@ button.mode.active {
    mapping is running, and a greyed-out copy of them is just noise in a narrow panel. */
 #flood-controls.mode-off {
     display: none;
+}
+
+/* The controls carry the section's rhythm inward, so turning flood mapping on extends the same
+   stack rather than starting a differently-spaced one below it. The depth legend opts out below —
+   its caption, bar and readout are one object and stay tight against each other. */
+#flood-controls > * + * {
+    margin-top: 12px;
 }
 
 /* river attributes modal */
@@ -697,7 +680,7 @@ button.mode.active {
 }
 
 .modal-body p {
-    font-size: 14.5px;
+    font-size: 14px;
     color: var(--text-dim);
     line-height: 1.6;
     margin-bottom: 10px;
@@ -725,6 +708,42 @@ button.mode.active {
     font-size: 14.5px;
     color: var(--text-dim);
     line-height: 1.8;
+}
+
+/* The prose modals — About and how-to-use. Their bodies are loaded markup rather than markup
+   written in index.html (see src/modals/docModal.js), so they can only use plain elements: these are
+   the styles those get. The global reset zeroes list padding, which would put the markers under
+   the text, so the indent is set here rather than inherited from anywhere. */
+.doc-body ul, .doc-body ol {
+    margin: -2px 0 12px;
+    padding-left: 20px;
+}
+
+.doc-body li {
+    font-size: 14px;
+    color: var(--text-dim);
+    line-height: 1.7;
+    margin-bottom: 6px;
+}
+
+.doc-body li strong, .doc-body em {
+    color: var(--text);
+}
+
+.doc-body em {
+    font-style: normal;
+    font-weight: 600;
+}
+
+/* Sections are long enough that the eye needs the break between them that a run of paragraphs
+   inside one does not get. The first heading keeps .modal-body's tighter top margin — there is
+   nothing above it to be separated from. */
+.doc-body h4 {
+    margin-top: 22px;
+}
+
+.doc-body h4:first-child {
+    margin-top: 6px;
 }
 
 .setting-row {
@@ -774,7 +793,7 @@ button.mode.active {
     gap: 8px;
     padding: 7px 0;
     border-bottom: 1px solid var(--border);
-    font-size: 14.5px;
+    font-size: 14px;
 }
 
 .data-row:last-child {
@@ -1068,12 +1087,9 @@ button.mode.active {
     color: var(--text-dim);
 }
 
-/* The depth legend sits at the foot of #flood-controls now, not in a padded section of its own,
-   so it has to bring its own gap from the status line above it. */
-#flood-controls .legend-label {
-    margin-top: 12px;
-}
-
+/* The bar and the readout under it are pulled in tight against the legend's caption, against the
+   12px the section otherwise puts between blocks: the three are one object, and spacing them like
+   three separate ones reads as three separate ones. Both need an id to outrank that rule. */
 #legend-depth {
     height: 10px;
     border-radius: 5px;
@@ -1083,8 +1099,8 @@ button.mode.active {
 
 #readout {
     min-height: 1.2em;
+    margin-top: 5px;
 }
-
 
 /* bottom player */
 /* centered over the map (the area right of the 380px sidebar) */
@@ -1302,7 +1318,7 @@ body.dock-open .panel header {
 
 body.dock-open .panel header .header-actions {
     margin-left: auto;
-    /* wide layout: show the actions in reversed order (translate · info · theme · settings) */
+    /* wide layout: show the actions in reversed order (info · help · theme · translate · settings) */
     flex-direction: row-reverse;
 }
 
@@ -1436,18 +1452,21 @@ body.dock-open #hydrology-section {
     gap: 12px;
 }
 
+/* The flex gap is the rhythm in this layout, so the stacked layout's margins come off — leaving
+   both would space the row by the sum of the two. */
+body.dock-open #hydrology-section > * + * {
+    margin-top: 0;
+}
+
 body.dock-open #hydrology-section h2 {
     flex-basis: 100%;
-    margin-bottom: 0;
 }
 
 body.dock-open #hydrology-section .hydro-field {
     flex: 1 1 220px;
-    margin-top: 0;
 }
 
 body.dock-open #hydrology-section .hydro-actions {
-    margin-top: 0;
     align-self: flex-end;
 }
 

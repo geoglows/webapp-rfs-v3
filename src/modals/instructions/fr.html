@@ -1,0 +1,104 @@
+<h4>Avertissements</h4>
+<p><strong>Il s'agit d'un produit de dépistage destiné aux hydrologues qualifiés.</strong>
+   Utilisez-le pour voir approximativement où va un débit d'une ampleur donnée et quels endroits
+   méritent un examen plus poussé. Ne l'utilisez pas pour décider d'évacuations, d'itinéraires ou de
+   quoi que ce soit touchant à la sécurité des personnes : cela exige un modèle local, calé et
+   hydrauliquement propagé, ainsi que le jugement de l'autorité responsable du territoire.</p>
+<p>Le terrain provient de FABDEM (© DLR / Airbus, CC BY-NC-SA 4.0). L'hydrographie et les prévisions
+   proviennent de GEOGLOWS.</p>
+
+<h4>La carte</h4>
+<p>Cliquez sur une rivière pour l'examiner. Le panneau des graphiques s'ouvre à côté de la carte avec
+   la prévision de ce tronçon, et la carte se rapproche si vous étiez trop éloigné pour voir le
+   cours d'eau. <strong>Échap</strong> ferme le panneau ou la boîte de dialogue ouverte.</p>
+<p>Les sélecteurs en haut à droite choisissent le <strong>fond de carte</strong> (un seul à la fois)
+   et les <strong>couches</strong> dessinées par-dessus (chacune s'active ou se désactive
+   indépendamment). Le lecteur en bas fait défiler les couleurs des rivières au fil de la prévision ;
+   la <strong>barre d'espace</strong> le lance et le met en pause.</p>
+
+<h4>Prévisions hydrologiques</h4>
+<p>La <strong>date d'initialisation de la prévision</strong> détermine quelle exécution du modèle vous
+   consultez. Tous les graphiques, toutes les couleurs de rivières et toutes les cartes d'inondation
+   issues de la prévision proviennent de cette exécution.</p>
+<p>Le <strong>style des rivières</strong> définit ce que signifient les couleurs :</p>
+<ul>
+  <li><strong>Standard</strong> — aucun ombrage lié à la prévision ; les rivières sont dessinées
+      uniquement selon leur taille.</li>
+  <li><strong>Débits maximaux prévus</strong> — la période de retour la plus élevée que chaque
+      tronçon devrait atteindre à un moment de la prévision. La lecture la plus rapide de
+      l'emplacement des problèmes.</li>
+  <li><strong>Série temporelle sur 15 jours</strong> — la période de retour à un instant donné,
+      animée par le lecteur en bas de l'écran.</li>
+  <li><strong>Temps jusqu'au pic</strong> — le délai avant que chaque tronçon n'atteigne son maximum.
+      Utile pour l'anticipation plutôt que pour la gravité.</li>
+  <li><strong>Débit inférieur au Q95</strong> — les tronçons dont la prévision passe sous leur débit
+      d'étiage du 95<sup>e</sup> centile, c'est-à-dire anormalement secs.</li>
+</ul>
+<p>Les boutons sous le sélecteur de style ouvrent les <strong>graphiques de débit</strong>, la liste
+   des <strong>rivières mondiales notables</strong>, <strong>vos rivières enregistrées</strong> et la
+   <strong>recherche par identifiant de rivière</strong>. Le bouton retour arrière retire la mise en
+   évidence du tronçon sélectionné, et le bouton horloge masque le lecteur temporel lorsque vous
+   n'en avez pas besoin.</p>
+
+<h4>Graphiques</h4>
+<p>Le panneau des graphiques comporte trois onglets. <strong>Prévision</strong> présente l'hydrogramme
+   d'ensemble pour la date d'initialisation choisie. <strong>Rétrospective</strong> présente le long
+   enregistrement simulé de ce tronçon — des décennies de débits journaliers, qui permettent de
+   replacer une prévision dans son contexte. <strong>Détails</strong> énumère les attributs que le
+   réseau hydrographique conserve pour ce tronçon.</p>
+<p>Cliquez sur le cœur pour enregistrer une rivière sous le nom de votre choix. Les tronçons
+   enregistrés sont soulignés sur la carte et rassemblés dans <em>Mes rivières enregistrées</em>,
+   stockées uniquement sur cet appareil.</p>
+
+<h4>Cartographie des inondations</h4>
+<p>La cartographie des inondations transforme un débit en étendue inondée le long d'une portion de
+   rivière. C'est un mode distinct, car un clic sur une rivière y sélectionne ce tronçon au lieu d'en
+   tracer les graphiques.</p>
+<ol>
+  <li>Zoomez sur la rivière qui vous intéresse. La bibliothèque d'inondations n'est pas consultée à
+      faible zoom : il y en aurait trop sous la vue, et un tronçon serait trop petit pour être
+      visé.</li>
+  <li>Appuyez sur <strong>Activer le mode de cartographie des inondations</strong>.</li>
+  <li>Cliquez sur un tronçon, puis sur un second en aval. Tout ce qui se trouve sur la rivière entre
+      les deux est inclus. Continuez à cliquer pour étendre le corridor ; recliquez sur un tronçon
+      que vous avez choisi pour le retirer. Les tronçons que la bibliothèque ne couvre pas sont
+      signalés et ne peuvent pas être sélectionnés.</li>
+  <li>Choisissez un <strong>style d'inondation</strong> et fixez le débit. L'étendue se redessine à
+      mesure que vous déplacez la commande.</li>
+</ol>
+<p>Les styles d'inondation ne diffèrent que par la provenance du débit :</p>
+<ul>
+  <li><strong>Curseur de courbe de tarage synthétique</strong> — l'option par défaut. Le curseur
+      parcourt la courbe de tarage synthétique de chaque tronçon, depuis son point le plus bas vers
+      le haut, de sorte que chaque tronçon est inondé à son propre débit pour la position choisie et
+      non à un nombre commun. Le bas de la courbe est résolu point par point, là où un tronçon passe
+      d'un filet d'eau à un écoulement dans son lit ; plus haut, les arrêts s'espacent, car un seul
+      pas y représente de toute façon un débit important.</li>
+  <li><strong>Indexé par période de retour</strong> — pas encore implémenté. L'option figure dans le
+      sélecteur, mais la choisir ne dessine rien et le signale.</li>
+  <li><strong>Débit spécifié manuellement</strong> — un seul nombre, en m³/s, appliqué à chaque
+      tronçon sélectionné.</li>
+  <li><strong>Série temporelle de la prévision</strong> — l'hydrogramme prévu propre à chaque
+      tronçon, animé pas à pas avec son propre lecteur.</li>
+  <li><strong>Maximum de la prévision</strong> — chaque tronçon au débit le plus élevé qu'atteint sa
+      prévision.</li>
+</ul>
+<p>Cliquez sur un pixel inondé pour en lire la profondeur. <strong>Enregistrer le GeoTIFF</strong>
+   écrit l'étendue affichée dans un fichier géoréférencé, et <strong>Effacer la sélection</strong>
+   vide le corridor.</p>
+
+<h4>À propos du modèle d'inondation</h4>
+<p>Les étendues proviennent de <strong>FLDPLN</strong>, un modèle de dépistage en régime permanent,
+   fondé uniquement sur le modèle numérique de terrain et alimenté par des courbes de tarage
+   synthétiques. Il inonde la plaine alluviale jusqu'au niveau qu'implique un débit donné ; il ne
+   propage pas l'eau dans le temps et ne connaît ni les digues, ni les buses, ni les ponts, ni les
+   réseaux de drainage, ni les sols déjà saturés. Les étendues saturent au stade maximal de la
+   bibliothèque : un débit supérieur à ce point produit donc la même emprise qu'un débit situé à ce
+   point.</p>
+
+<h4>Paramètres et données téléchargées</h4>
+<p>Certains jeux de données sont copiés sur votre appareil pour que les fonctions qui les lisent
+   soient rapides. La liste des identifiants de rivières est téléchargée peu après le démarrage de
+   l'application, ce qui rend la recherche par identifiant instantanée. Chaque téléchargement figure
+   dans les <em>Paramètres</em>, peut être relancé à tout moment et peut être supprimé sans risque :
+   rien de tout cela n'est nécessaire au fonctionnement de l'application.</p>

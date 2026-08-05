@@ -15,6 +15,8 @@ import {closeAllDocks} from "./docks/dock.js";
 import {createPanelControls} from "./ui/panelControls";
 import {createDataSettings} from "./ui/dataSettings";
 import {createRiverSearch} from "./ui/riverSearch";
+import {createInstructions} from "./modals/instructions/instructions";
+import {createAbout} from "./modals/about/about";
 
 const $ = (id) => document.getElementById(id);
 
@@ -163,9 +165,18 @@ hydrateIcons()
 initSettings();
 onSetting("legend", (on) => $("legend-overlay").classList.toggle("hidden", !on));
 onSetting("shadedWarningLevels", () => chartsDock.rerenderCharts());
+// Fires now, before the map has loaded, so Streams holds the answer and builds the layer with it.
+onSetting("savedHighlight", (on) => streams.setSavedHighlightVisible(on));
+// The two prose modals. Each is its own document per language, fetched the first time it is asked
+// for; both are built before the language picker so its callback can hand them a language change.
+const instructions = createInstructions();
+const about = createAbout();
+
 initLanguagePicker(() => {
   panelControls.updateSliderVisibility();
   chartsDock.rerenderCharts();
+  instructions.onLanguageChange();
+  about.onLanguageChange();
 });
 
 // What this device last chose, or the deployment's configured default for one that never has. A
@@ -188,10 +199,12 @@ const closeModal = (id) => $(id).classList.add("hidden");
 // where it is — so it is gone to the same way.
 createRiverSearch({onFound: goToRiver});
 
-$("btn-info").addEventListener("click", () => openModal("info-modal"));
 $("btn-settings").addEventListener("click", () => openModal("settings-modal"));
+// Not openModal(): both of these have to fetch their text, so opening them is their own business.
+$("btn-info").addEventListener("click", () => about.open());
+$("btn-instructions").addEventListener("click", () => instructions.open());
 document.querySelectorAll("[data-close]").forEach((el) => el.addEventListener("click", () => closeModal(el.dataset.close)));
-for (const id of ["info-modal", "settings-modal", "search-modal"]) {
+for (const id of ["info-modal", "instructions-modal", "settings-modal", "search-modal"]) {
   $(id).addEventListener("click", (e) => {
     if (e.target === $(id)) closeModal(id);
   });

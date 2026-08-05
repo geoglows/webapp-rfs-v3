@@ -1,400 +1,43 @@
-const en = {
-  "app.title": "River Forecast System v3",
-  "common.close": "Close",
-  // header
-  "settings.label": "Settings",
-  "theme.toggle": "Toggle light / dark theme",
-  "about.label": "About",
-  "lang.title": "Language",
-  "lang.aria": "Change language",
-  // hydrology predictions
-  "hydro.heading": "Hydrology predictions",
-  "hydro.forecastDate": "Forecast Initialization Date",
-  "hydro.charts": "View discharge charts",
-  "hydro.bookmarks.title": "Notable global rivers",
-  "hydro.bookmarks.aria": "Browse notable global rivers",
-  "hydro.saved.title": "My saved rivers",
-  "hydro.saved.aria": "Browse my saved rivers",
-  "hydro.searchRiver": "Search River ID",
-  "hydro.clearRiver": "Clear the selected river",
-  // stream style picker
-  "stream.style": "Stream style",
-  "stream.style.standard": "Standard",
-  "stream.style.timeseries": "15 Day Timeseries",
-  "stream.style.max-flow": "Forecasted Max Flows",
-  "stream.style.time-to-peak": "Time to Peak",
-  "stream.style.below-q95": "Below Q95 flow",
-  "stream.hideSlider": "Hide timeseries slider",
-  "stream.showSlider": "Show timeseries slider",
-  // flood mapping
-  "flood.heading": "Flood Mapping",
-  "flood.enable": "Enable flood mapping mode",
-  "flood.disable": "Flood mapping mode: ON",
-  "flood.inlet": "＋ Inlet",
-  "flood.outlet": "✦ Outlet",
-  "flood.saveGeotiff": "Save GeoTIFF",
-  "flood.clear": "Clear selection",
-  "flood.style": "Flood style",
-  "flood.style.manual": "Manually Specified Flow",
-  "flood.style.returnperiod": "Return Period Indexed",
-  "flood.style.forecast": "Forecast Timeseries",
-  "flood.style.forecastmax": "Forecast Maximum",
-  "flood.fcPlay": "Play / pause the forecast animation",
-  "flood.dischargeLevel": "Discharge level",
-  "flood.uniformLabel": "Discharge for every selected reach (m³/s)",
-  "flood.status": "Flood updates live as you move the slider.",
-  // depth legend
-  "legend.floodDepth": "flood depth",
-  "legend.readout": "click a flooded pixel for depth",
-  // player + map overlays
-  "player.play": "Play / pause (space)",
-  "player.speed": "Speed",
-  "basemap.label": "Basemap",
-  "layers.label": "Map layers",
-  "layers.streams": "Streams",
-  "layers.floodExtents": "Flood extents",
-  "layers.riverfld": "River flooding (SSEC)",
-  "layers.goes": "Satellite IR (GOES)",
-  "layers.viirs": "True color (VIIRS)",
-  "legend.returnPeriod": "Forecast return period",
-  // about modal
-  "about.intro": "Global GEOGLOWS forecast animation · select reaches · FLDPLN flood extent for them.",
-  "about.coverageHeading": "Model notes",
-  "about.model": "FLDPLN is a steady-state, DEM-only screening model driven by synthetic rating curves; extents saturate at the library's maximum stage. <strong>Not for emergency use.</strong> Terrain: FABDEM (© DLR / Airbus, CC BY-NC-SA 4.0). Hydrography & forecast: GEOGLOWS.",
-  "about.dataHeading": "Data",
-  "about.layersHeading": "Map layers",
-  "about.codeHeading": "Open source software",
-  "about.credit.maplibre": '<a href="https://maplibre.org/" target="_blank" rel="noopener">MapLibre GL JS</a>',
-  "about.credit.calcite": '<a href="https://github.com/Esri/calcite-ui-icons" target="_blank" rel="noopener">Calcite UI Icons</a>',
-  "about.credit.heroicons": '<a href="https://github.com/tailwindlabs/heroicons" target="_blank" rel="noopener">Heroicons</a>',
-  "about.credit.chartjs": '<a href="https://www.chartjs.org/" target="_blank" rel="noopener">Chart.js</a> and plugins (date-fns adapter, matrix, zoom)',
-  "about.credit.zarrita": '<a href="https://github.com/manzt/zarrita.js" target="_blank" rel="noopener">zarrita.js</a> and <a href="https://github.com/manzt/numcodecs.js" target="_blank" rel="noopener">numcodecs</a> (Zarr access)',
-  "about.credit.pmtiles": '<a href="https://github.com/protomaps/PMTiles" target="_blank" rel="noopener">PMTiles</a>',
-  "about.credit.basemaps": 'Basemaps from <a href="https://livingatlas.arcgis.com/" target="_blank" rel="noopener">ArcGIS Living Atlas</a> and <a href="https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer" target="_blank" rel="noopener">USGS The National Map</a>',
-  "about.credit.geoglows": 'Streams hydrographs and flood maps from the <a href="https://geoglows.org/" target="_blank" rel="noopener">GEOGLOWS River Forecast System</a> v2 and v3',
-  "about.credit.riverfld": '<a href="https://floods.ssec.wisc.edu/products/RIVER-FLDglobal-composite" target="_blank" rel="noopener">RIVER-FLD global flood composite</a> — near-real-time river flooding (CIMSS/SSEC, UW–Madison; VIIRS via George Mason University)',
-  "about.credit.goes": '<a href="https://www.arcgis.com/home/item.html?id=37a875ff3611496883b7ccca97f0f5f4" target="_blank" rel="noopener">GOES / Himawari colorized IR</a> — near-real-time satellite imagery (NOAA, via Esri Living Atlas)',
-  "about.credit.viirs": '<a href="https://www.arcgis.com/home/item.html?id=c873f4c13aa54b25b01270df9358dc64" target="_blank" rel="noopener">VIIRS true color</a> — daily corrected reflectance (NASA Earthdata / GIBS, via Esri)',
-  // settings modal
-  "settings.display": "Display",
-  "settings.showLegend": "Show forecast return-period legend",
-  "settings.shadedWarningLevels": "Shade warning levels on the forecast chart",
-  "settings.data": "Downloaded Data",
-  "settings.data.hint": "This site keeps local copies of some datasets for better performance. These can be redownloaded at any time and are safe to delete.",
-  "settings.data.riverIds": "River IDs",
-  "settings.data.riverIds.hint": "The river network's ID list, which lets rivers be found by ID. Fetched on its own shortly after the app loads, so searching by ID is ready before anyone asks for it.",
-  "settings.data.download": "Download",
-  "settings.data.remove": "Delete",
-  "settings.data.downloadAll": "Download everything",
-  "settings.data.deleteAll": "Delete everything",
-  "settings.data.deleteAllConfirm": "Click again to delete everything",
-  "settings.data.empty": "Nothing downloaded.",
-  "settings.data.starting": "Starting\u2026",
-  "settings.data.downloading": "Downloading",
-  "settings.data.sorting": "Building lookup",
-  "settings.data.verifying": "Verifying",
-  "settings.data.storing": "Saving",
-  "settings.data.cancelled": "Cancelled.",
-  "settings.data.failed": "Failed",
-  // river ID search
-  "search.heading": "Find a river by ID",
-  "search.label": "River ID",
-  "search.placeholder": "e.g. 760021611",
-  "search.submit": "Search",
-  "search.invalid": "Enter a river ID — digits only.",
-  "search.searching": "Searching…",
-  "search.notFound": "No river with ID {id} is in the network.",
-  "search.failed": "Search failed",
-  "common.cancel": "Cancel",
-  // river + charts modals
-  "river.heading": "River",
-  "charts.heading": "Discharge charts",
-  "charts.empty.title": "No river selected yet.",
-  "charts.empty.hint": "Click a river on the map to inspect it, or manually enter a river ID, then reopen this panel to see hydrographs.",
-  "charts.tab.forecast": "Forecast",
-  "charts.tab.retro": "Retrospective",
-  "charts.tab.details": "Details",
-  "charts.loading": "Loading model results…",
-  "charts.failed": "Failed to load model results",
-  // saved rivers dock
-  "bookmarks.heading": "Notable Global Rivers Reference",
-  "bookmarks.hint": "Pick a river to fly the map to it and load its charts.",
-  "bookmarks.col.id": "River ID",
-  "bookmarks.col.name": "River Name",
-  "bookmarks.col.lat": "Lat",
-  "bookmarks.col.lon": "Lon",
-  "bookmarks.col.actions": "Actions",
-  "bookmarks.select": "View charts",
-  // rivers the user saved themselves
-  "saved.heading": "My Saved Rivers",
-  "saved.empty": "No saved rivers yet. Open a river and click the heart to save it.",
-  "saved.remove": "Remove",
-  "river.save": "Save this river",
-  "river.unsave": "Remove from my saved rivers",
-  "saveRiver.heading": "Save river",
-  "saveRiver.label": "Name for this river",
-  "saveRiver.placeholder": "e.g. Gauge upstream of town",
-  "saveRiver.submit": "Save",
-};
-const es = {
-  "app.title": "Sistema de Pronóstico de Ríos v3",
-  "common.close": "Cerrar",
-  "settings.label": "Configuración",
-  "theme.toggle": "Cambiar tema claro / oscuro",
-  "about.label": "Acerca de",
-  "lang.title": "Idioma",
-  "lang.aria": "Cambiar idioma",
-  "hydro.heading": "Predicciones hidrológicas",
-  "hydro.forecastDate": "Fecha de inicialización del pronóstico",
-  "hydro.charts": "Ver gráficos de caudal",
-  "hydro.bookmarks.title": "Ríos globales notables",
-  "hydro.bookmarks.aria": "Explorar ríos globales notables",
-  "hydro.saved.title": "Mis ríos guardados",
-  "hydro.saved.aria": "Explorar mis ríos guardados",
-  "hydro.searchRiver": "Buscar ID de río",
-  "hydro.clearRiver": "Quitar el río seleccionado",
-  "stream.style": "Estilo de ríos",
-  "stream.style.standard": "Estándar",
-  "stream.style.timeseries": "Serie temporal de 15 días",
-  "stream.style.max-flow": "Caudales máximos pronosticados",
-  "stream.style.time-to-peak": "Tiempo hasta el pico",
-  "stream.style.below-q95": "Caudal por debajo de Q95",
-  "stream.hideSlider": "Ocultar control deslizante temporal",
-  "stream.showSlider": "Mostrar control deslizante temporal",
-  "flood.heading": "Mapeo de inundaciones",
-  "flood.enable": "Activar modo de mapeo de inundaciones",
-  "flood.disable": "Modo de mapeo de inundaciones: ACTIVADO",
-  "flood.inlet": "＋ Entrada",
-  "flood.outlet": "✦ Salida",
-  "flood.saveGeotiff": "Guardar GeoTIFF",
-  "flood.clear": "Borrar selección",
-  "flood.style": "Estilo de inundación",
-  "flood.style.manual": "Caudal especificado manualmente",
-  "flood.style.returnperiod": "Indexado por período de retorno",
-  "flood.style.forecast": "Serie temporal del pronóstico",
-  "flood.style.forecastmax": "Máximo del pronóstico",
-  "flood.fcPlay": "Reproducir / pausar la animación del pronóstico",
-  "flood.dischargeLevel": "Nivel de caudal",
-  "flood.uniformLabel": "Caudal para cada tramo seleccionado (m³/s)",
-  "flood.status": "La inundación se actualiza en vivo mientras mueves el control deslizante.",
-  "legend.floodDepth": "profundidad de inundación",
-  "legend.readout": "haz clic en un píxel inundado para ver la profundidad",
-  "player.play": "Reproducir / pausar (espacio)",
-  "player.speed": "Velocidad",
-  "basemap.label": "Mapa base",
-  "layers.label": "Capas del mapa",
-  "layers.streams": "Ríos",
-  "layers.floodExtents": "Extensión de inundación",
-  "layers.riverfld": "Inundación fluvial (SSEC)",
-  "layers.goes": "Satélite IR (GOES)",
-  "layers.viirs": "Color natural (VIIRS)",
-  "legend.returnPeriod": "Período de retorno del pronóstico",
-  "about.intro": "Animación del pronóstico global GEOGLOWS · selecciona tramos · extensión de inundación FLDPLN para ellos.",
-  "about.coverageHeading": "Notas del modelo",
-  "about.model": "FLDPLN es un modelo de detección de estado estacionario, basado solo en el MDE, impulsado por curvas de gasto sintéticas; las extensiones se saturan en la etapa máxima de la biblioteca. <strong>No apto para uso en emergencias.</strong> Terreno: FABDEM (© DLR / Airbus, CC BY-NC-SA 4.0). Hidrografía y pronóstico: GEOGLOWS.",
-  "about.dataHeading": "Datos",
-  "about.layersHeading": "Capas del mapa",
-  "about.codeHeading": "Software de código abierto",
-  "about.credit.maplibre": '<a href="https://maplibre.org/" target="_blank" rel="noopener">MapLibre GL JS</a>',
-  "about.credit.calcite": '<a href="https://github.com/Esri/calcite-ui-icons" target="_blank" rel="noopener">Calcite UI Icons</a>',
-  "about.credit.heroicons": '<a href="https://github.com/tailwindlabs/heroicons" target="_blank" rel="noopener">Heroicons</a>',
-  "about.credit.chartjs": '<a href="https://www.chartjs.org/" target="_blank" rel="noopener">Chart.js</a> y complementos (adaptador date-fns, matrix, zoom)',
-  "about.credit.zarrita": '<a href="https://github.com/manzt/zarrita.js" target="_blank" rel="noopener">zarrita.js</a> y <a href="https://github.com/manzt/numcodecs.js" target="_blank" rel="noopener">numcodecs</a> (acceso a Zarr)',
-  "about.credit.pmtiles": '<a href="https://github.com/protomaps/PMTiles" target="_blank" rel="noopener">PMTiles</a>',
-  "about.credit.basemaps": 'Mapas base de <a href="https://livingatlas.arcgis.com/" target="_blank" rel="noopener">ArcGIS Living Atlas</a> y <a href="https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer" target="_blank" rel="noopener">USGS The National Map</a>',
-  "about.credit.geoglows": 'Hidrogramas de ríos y mapas de inundación del <a href="https://geoglows.org/" target="_blank" rel="noopener">GEOGLOWS River Forecast System</a> v2 y v3',
-  "about.credit.riverfld": '<a href="https://floods.ssec.wisc.edu/products/RIVER-FLDglobal-composite" target="_blank" rel="noopener">Compuesto global de inundaciones RIVER-FLD</a> — inundación fluvial casi en tiempo real (CIMSS/SSEC, UW–Madison; VIIRS vía George Mason University)',
-  "about.credit.goes": '<a href="https://www.arcgis.com/home/item.html?id=37a875ff3611496883b7ccca97f0f5f4" target="_blank" rel="noopener">IR coloreado GOES / Himawari</a> — imágenes satelitales casi en tiempo real (NOAA, vía Esri Living Atlas)',
-  "about.credit.viirs": '<a href="https://www.arcgis.com/home/item.html?id=c873f4c13aa54b25b01270df9358dc64" target="_blank" rel="noopener">Color natural VIIRS</a> — reflectancia corregida diaria (NASA Earthdata / GIBS, vía Esri)',
-  "settings.display": "Visualización",
-  "settings.showLegend": "Mostrar leyenda del período de retorno del pronóstico",
-  "settings.shadedWarningLevels": "Sombrear los niveles de alerta en el gráfico de pronóstico",
-  "settings.data": "Datos descargados",
-  "settings.data.hint": "Este sitio guarda copias locales de algunos conjuntos de datos para mejorar el rendimiento. Se pueden volver a descargar en cualquier momento y se pueden borrar sin problema.",
-  "settings.data.riverIds": "IDs de r\u00edos",
-  "settings.data.riverIds.hint": "La lista de IDs de la red fluvial, que permite buscar r\u00edos por ID. Se descarga sola poco despu\u00e9s de cargar la aplicaci\u00f3n, para que buscar por ID est\u00e9 listo antes de que haga falta.",
-  "settings.data.download": "Descargar",
-  "settings.data.remove": "Borrar",
-  "settings.data.downloadAll": "Descargar todo",
-  "settings.data.deleteAll": "Borrar todo",
-  "settings.data.deleteAllConfirm": "Pulse de nuevo para borrar todo",
-  "settings.data.empty": "No hay nada descargado.",
-  "settings.data.starting": "Iniciando\u2026",
-  "settings.data.downloading": "Descargando",
-  "settings.data.sorting": "Construyendo el \u00edndice",
-  "settings.data.verifying": "Verificando",
-  "settings.data.storing": "Guardando",
-  "settings.data.cancelled": "Cancelada.",
-  "settings.data.failed": "Error",
-  // river ID search
-  "search.heading": "Buscar un río por ID",
-  "search.label": "ID de río",
-  "search.placeholder": "p. ej. 760021611",
-  "search.submit": "Buscar",
-  "search.invalid": "Introduzca un ID de río — solo dígitos.",
-  "search.searching": "Buscando…",
-  "search.notFound": "Ningún río con el ID {id} está en la red.",
-  "search.failed": "Error en la búsqueda",
-  "common.cancel": "Cancelar",
-  "river.heading": "Río",
-  "charts.heading": "Gráficos de caudal",
-  "charts.empty.title": "Aún no se ha seleccionado ningún río.",
-  "charts.empty.hint": "Haz clic en un río del mapa para inspeccionarlo, o introduce manualmente un ID de río, y vuelve a abrir este panel para ver los hidrogramas.",
-  "charts.tab.forecast": "Pronóstico",
-  "charts.tab.retro": "Retrospectivo",
-  "charts.tab.details": "Detalles",
-  "charts.loading": "Cargando los resultados del modelo…",
-  "charts.failed": "No se pudieron cargar los resultados del modelo",
-  "bookmarks.heading": "Referencia de ríos globales notables",
-  "bookmarks.hint": "Elige un río para llevar el mapa hasta él y cargar sus gráficos.",
-  "bookmarks.col.id": "ID del río",
-  "bookmarks.col.name": "Nombre del río",
-  "bookmarks.col.lat": "Lat",
-  "bookmarks.col.lon": "Lon",
-  "bookmarks.col.actions": "Acciones",
-  "bookmarks.select": "Ver gráficos",
-  "saved.heading": "Mis ríos guardados",
-  "saved.empty": "Aún no hay ríos guardados. Abre un río y pulsa el corazón para guardarlo.",
-  "saved.remove": "Quitar",
-  "river.save": "Guardar este río",
-  "river.unsave": "Quitar de mis ríos guardados",
-  "saveRiver.heading": "Guardar el río",
-  "saveRiver.label": "Nombre para este río",
-  "saveRiver.placeholder": "p. ej. Estación aguas arriba del pueblo",
-  "saveRiver.submit": "Guardar",
-};
-const fr = {
-  "app.title": "Système de Prévision des Rivières v3",
-  "common.close": "Fermer",
-  "settings.label": "Paramètres",
-  "theme.toggle": "Basculer le thème clair / sombre",
-  "about.label": "À propos",
-  "lang.title": "Langue",
-  "lang.aria": "Changer de langue",
-  "hydro.heading": "Prévisions hydrologiques",
-  "hydro.forecastDate": "Date d'initialisation de la prévision",
-  "hydro.charts": "Voir les graphiques de débit",
-  "hydro.bookmarks.title": "Rivières notables du monde",
-  "hydro.bookmarks.aria": "Parcourir les rivières notables du monde",
-  "hydro.saved.title": "Mes rivières enregistrées",
-  "hydro.saved.aria": "Parcourir mes rivières enregistrées",
-  "hydro.searchRiver": "Rechercher un ID de rivière",
-  "hydro.clearRiver": "Effacer la rivière sélectionnée",
-  "stream.style": "Style des rivières",
-  "stream.style.standard": "Standard",
-  "stream.style.timeseries": "Série temporelle sur 15 jours",
-  "stream.style.max-flow": "Débits maximaux prévus",
-  "stream.style.time-to-peak": "Temps jusqu'au pic",
-  "stream.style.below-q95": "Débit sous le Q95",
-  "stream.hideSlider": "Masquer le curseur temporel",
-  "stream.showSlider": "Afficher le curseur temporel",
-  "flood.heading": "Cartographie des inondations",
-  "flood.enable": "Activer le mode de cartographie des inondations",
-  "flood.disable": "Mode de cartographie des inondations : ACTIVÉ",
-  "flood.inlet": "＋ Entrée",
-  "flood.outlet": "✦ Sortie",
-  "flood.saveGeotiff": "Enregistrer le GeoTIFF",
-  "flood.clear": "Effacer la sélection",
-  "flood.style": "Style d'inondation",
-  "flood.style.manual": "Débit spécifié manuellement",
-  "flood.style.returnperiod": "Indexé par période de retour",
-  "flood.style.forecast": "Série temporelle de prévision",
-  "flood.style.forecastmax": "Maximum de la prévision",
-  "flood.fcPlay": "Lire / mettre en pause l'animation de prévision",
-  "flood.dischargeLevel": "Niveau de débit",
-  "flood.uniformLabel": "Débit pour chaque tronçon sélectionné (m³/s)",
-  "flood.status": "L'inondation se met à jour en direct lorsque vous déplacez le curseur.",
-  "legend.floodDepth": "profondeur d'inondation",
-  "legend.readout": "cliquez sur un pixel inondé pour la profondeur",
-  "player.play": "Lecture / pause (espace)",
-  "player.speed": "Vitesse",
-  "basemap.label": "Fond de carte",
-  "layers.label": "Couches de carte",
-  "layers.streams": "Rivières",
-  "layers.floodExtents": "Étendue d'inondation",
-  "layers.riverfld": "Inondation fluviale (SSEC)",
-  "layers.goes": "Satellite IR (GOES)",
-  "layers.viirs": "Couleurs naturelles (VIIRS)",
-  "legend.returnPeriod": "Période de retour de la prévision",
-  "about.intro": "Animation de la prévision mondiale GEOGLOWS · sélectionnez des tronçons · étendue d'inondation FLDPLN pour ceux-ci.",
-  "about.coverageHeading": "Notes sur le modèle",
-  "about.model": "FLDPLN est un modèle de dépistage en régime permanent, basé uniquement sur le MNT, alimenté par des courbes de tarage synthétiques ; les étendues saturent au stade maximal de la bibliothèque. <strong>Ne pas utiliser en cas d'urgence.</strong> Terrain : FABDEM (© DLR / Airbus, CC BY-NC-SA 4.0). Hydrographie et prévision : GEOGLOWS.",
-  "about.dataHeading": "Données",
-  "about.layersHeading": "Couches de carte",
-  "about.codeHeading": "Logiciels open source",
-  "about.credit.maplibre": '<a href="https://maplibre.org/" target="_blank" rel="noopener">MapLibre GL JS</a>',
-  "about.credit.calcite": '<a href="https://github.com/Esri/calcite-ui-icons" target="_blank" rel="noopener">Calcite UI Icons</a>',
-  "about.credit.heroicons": '<a href="https://github.com/tailwindlabs/heroicons" target="_blank" rel="noopener">Heroicons</a>',
-  "about.credit.chartjs": '<a href="https://www.chartjs.org/" target="_blank" rel="noopener">Chart.js</a> et extensions (adaptateur date-fns, matrix, zoom)',
-  "about.credit.zarrita": '<a href="https://github.com/manzt/zarrita.js" target="_blank" rel="noopener">zarrita.js</a> et <a href="https://github.com/manzt/numcodecs.js" target="_blank" rel="noopener">numcodecs</a> (accès Zarr)',
-  "about.credit.pmtiles": '<a href="https://github.com/protomaps/PMTiles" target="_blank" rel="noopener">PMTiles</a>',
-  "about.credit.basemaps": 'Fonds de carte de <a href="https://livingatlas.arcgis.com/" target="_blank" rel="noopener">ArcGIS Living Atlas</a> et <a href="https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer" target="_blank" rel="noopener">USGS The National Map</a>',
-  "about.credit.geoglows": 'Hydrogrammes de rivières et cartes d\'inondation du <a href="https://geoglows.org/" target="_blank" rel="noopener">GEOGLOWS River Forecast System</a> v2 et v3',
-  "about.credit.riverfld": '<a href="https://floods.ssec.wisc.edu/products/RIVER-FLDglobal-composite" target="_blank" rel="noopener">Composite mondial d\'inondation RIVER-FLD</a> — inondation fluviale en quasi-temps réel (CIMSS/SSEC, UW–Madison ; VIIRS via George Mason University)',
-  "about.credit.goes": '<a href="https://www.arcgis.com/home/item.html?id=37a875ff3611496883b7ccca97f0f5f4" target="_blank" rel="noopener">IR colorisé GOES / Himawari</a> — imagerie satellitaire en quasi-temps réel (NOAA, via Esri Living Atlas)',
-  "about.credit.viirs": '<a href="https://www.arcgis.com/home/item.html?id=c873f4c13aa54b25b01270df9358dc64" target="_blank" rel="noopener">Couleurs naturelles VIIRS</a> — réflectance corrigée quotidienne (NASA Earthdata / GIBS, via Esri)',
-  "settings.display": "Affichage",
-  "settings.showLegend": "Afficher la légende de la période de retour de la prévision",
-  "settings.shadedWarningLevels": "Ombrer les niveaux d'alerte sur le graphique de prévision",
-  "settings.data": "Données téléchargées",
-  "settings.data.hint": "Ce site conserve des copies locales de certains jeux de donn\u00e9es pour de meilleures performances. Elles peuvent \u00eatre ret\u00e9l\u00e9charg\u00e9es \u00e0 tout moment et leur suppression est sans risque.",
-  "settings.data.riverIds": "ID de rivi\u00e8res",
-  "settings.data.riverIds.hint": "La liste des ID du r\u00e9seau hydrographique, qui permet de rechercher les rivi\u00e8res par ID. T\u00e9l\u00e9charg\u00e9e d'elle-m\u00eame peu apr\u00e8s le chargement de l'application, pour que la recherche par ID soit pr\u00eate d'avance.",
-  "settings.data.download": "T\u00e9l\u00e9charger",
-  "settings.data.remove": "Supprimer",
-  "settings.data.downloadAll": "Tout t\u00e9l\u00e9charger",
-  "settings.data.deleteAll": "Tout supprimer",
-  "settings.data.deleteAllConfirm": "Cliquez \u00e0 nouveau pour tout supprimer",
-  "settings.data.empty": "Rien de t\u00e9l\u00e9charg\u00e9.",
-  "settings.data.starting": "D\u00e9marrage\u2026",
-  "settings.data.downloading": "T\u00e9l\u00e9chargement",
-  "settings.data.sorting": "Construction de l\u2019index",
-  "settings.data.verifying": "V\u00e9rification",
-  "settings.data.storing": "Enregistrement",
-  "settings.data.cancelled": "Annul\u00e9e.",
-  "settings.data.failed": "\u00c9chec",
-  // river ID search
-  "search.heading": "Trouver une rivière par ID",
-  "search.label": "ID de rivière",
-  "search.placeholder": "p. ex. 760021611",
-  "search.submit": "Rechercher",
-  "search.invalid": "Saisissez un ID de rivière — chiffres uniquement.",
-  "search.searching": "Recherche…",
-  "search.notFound": "Aucune rivière avec l\'ID {id} dans le réseau.",
-  "search.failed": "Échec de la recherche",
-  "common.cancel": "Annuler",
-  "river.heading": "Rivière",
-  "charts.heading": "Graphiques de débit",
-  "charts.empty.title": "Aucune rivière sélectionnée pour l'instant.",
-  "charts.empty.hint": "Cliquez sur une rivière de la carte pour l'inspecter, ou saisissez manuellement un ID de rivière, puis rouvrez ce panneau pour voir les hydrogrammes.",
-  "charts.tab.forecast": "Prévision",
-  "charts.tab.retro": "Rétrospectif",
-  "charts.tab.details": "Détails",
-  "charts.loading": "Chargement des résultats du modèle…",
-  "charts.failed": "Échec du chargement des résultats du modèle",
-  "bookmarks.heading": "Référence des rivières notables du monde",
-  "bookmarks.hint": "Choisissez une rivière pour amener la carte jusqu'à elle et charger ses graphiques.",
-  "bookmarks.col.id": "ID de rivière",
-  "bookmarks.col.name": "Nom de la rivière",
-  "bookmarks.col.lat": "Lat",
-  "bookmarks.col.lon": "Lon",
-  "bookmarks.col.actions": "Actions",
-  "bookmarks.select": "Voir les graphiques",
-  "saved.heading": "Mes rivières enregistrées",
-  "saved.empty": "Aucune rivière enregistrée. Ouvrez une rivière et cliquez sur le cœur pour l'enregistrer.",
-  "saved.remove": "Retirer",
-  "river.save": "Enregistrer cette rivière",
-  "river.unsave": "Retirer de mes rivières enregistrées",
-  "saveRiver.heading": "Enregistrer la rivière",
-  "saveRiver.label": "Nom de cette rivière",
-  "saveRiver.placeholder": "p. ex. Station en amont du village",
-  "saveRiver.submit": "Enregistrer",
-};
-const DICTS = {en, es, fr};
+import en from "./locales/en.js";
+
+/**
+ * The UI strings, one dictionary per language under ./locales/.
+ *
+ * English is imported: it is the fallback t() reaches for on any missing key, so it has to be in
+ * hand synchronously, and it is the language index.html is already written in. Every other language
+ * is a JSON file fetched only if somebody selects it — globbed lazily, so each is its own chunk and
+ * a deployment's untouched languages cost their users nothing. Adding a language is a JSON file in
+ * ./locales/ plus a button in #lang-menu; nothing imports one by name.
+ */
+const LOADERS = import.meta.glob("./locales/*.json", {import: "default"});
+const DICTS = {en};
+
 let currentLang = "en";
+// Bumped per setLanguage() call, so a dictionary that arrives after a newer choice was made is
+// dropped rather than repainting the UI into a language the user has already moved on from.
+let switchId = 0;
 
 function t(key, lang = currentLang) {
   return DICTS[lang]?.[key] ?? en[key] ?? key;
+}
+
+/**
+ * Fetch a language's dictionary if it isn't already in hand. Resolves to the code that can actually
+ * be shown — the one asked for, or "en" when there is no such language or its file will not load.
+ * A failure is not fatal by design: every key falls back to English, so the app keeps working in a
+ * language nobody chose rather than not at all.
+ */
+async function loadDict(lang) {
+  if (DICTS[lang]) return lang;
+  const load = LOADERS[`./locales/${lang}.json`];
+  if (!load) return "en";
+  try {
+    DICTS[lang] = await load();
+    return lang;
+  } catch (e) {
+    console.warn(`Translations for "${lang}" could not be loaded, staying in English: ${e.message}`);
+    return "en";
+  }
 }
 
 // The phases a cached dataset's build reports, in the order it reports them.
@@ -438,10 +81,24 @@ function applyTranslations(lang, root = document) {
   });
 }
 
-function setLanguage(lang) {
-  currentLang = DICTS[lang] ? lang : "en";
-  document.documentElement.lang = currentLang;
-  applyTranslations(currentLang);
+/**
+ * Switch the app to a language, fetching its dictionary first if this is the first time it has been
+ * asked for. Resolves once the UI has been retranslated, to the code actually in effect — callers
+ * with text that walking [data-i18n] cannot reach (canvas charts, loaded documents) should await it
+ * and then read getLanguage().
+ *
+ * Awaiting is optional. Until it resolves the UI stays in whatever language it was already showing,
+ * which for a cold start is the English written into index.html.
+ */
+async function setLanguage(lang) {
+  const id = ++switchId;
+  const code = await loadDict(lang);
+  // A later choice already won. It has applied its own translations, or is about to.
+  if (id !== switchId) return currentLang;
+  currentLang = code;
+  document.documentElement.lang = code;
+  applyTranslations(code);
+  return code;
 }
 
 export {

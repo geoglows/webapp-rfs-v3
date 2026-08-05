@@ -11,8 +11,14 @@ const median = (v) => {
   const m = s.length >> 1;
   return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
 };
-const LADDER_IDX = [2, 7, 11, 14, 17, 21, 24, 27, 29];
-const LADDER_LABELS = ["q3", "q8", "q12", "q15", "q18", "q22", "q25", "q28", "q30"];
+// Which of the synthetic rating curve's NP points the discharge slider can stop on, and what each
+// is called. The bottom three are every point there is: the curve's first steps are where a reach
+// goes from a trickle to in-bank flow, so that is the part worth resolving one point at a time.
+// Above them the curve is sampled coarsely, because up there a step is a large discharge either way.
+// Kept in step with the fallback copy of the labels in floodController.js, which is what the panel
+// shows until the worker has sent a spec.
+const LADDER_IDX = [0, 1, 2, 7, 11, 14, 17, 21, 24, 27, 29];
+const LADDER_LABELS = ["q1", "q2", "q3", "q8", "q12", "q15", "q18", "q22", "q25", "q28", "q30"];
 
 /**
  * The flood extent for one selection of river slices, rendered on a canvas sized to the corridor
@@ -89,8 +95,8 @@ class FloodMapper {
 
   /**
    * Per-reach baseflow and a ladder of rating-curve discharges, taken as medians over the reach's
-   * visited stream pixels. This is what the "return period" flood style interpolates along when
-   * there is no forecast to drive the extent.
+   * visited stream pixels. This is what the "Synthetic Rating Curve Slider" flood style interpolates
+   * along when there is no forecast to drive the extent.
    */
   synthesizeFlows() {
     const byRiver = /* @__PURE__ */ new Map();

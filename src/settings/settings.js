@@ -1,5 +1,5 @@
 import {heroIcon} from "../icons/icons.js"
-import {getLanguage, setLanguage} from "../i18n/i18n.js";
+import {setLanguage} from "../i18n/i18n.js";
 import {wireMenu} from "../map/menu.js";
 
 const $ = (id) => document.getElementById(id);
@@ -27,6 +27,23 @@ const MAX_FLOOD_REACHES = envNumber(import.meta.env.VITE_MAX_FLOOD_REACHES, 50);
 // would otherwise have the whole world to mark.
 const MIN_FLOOD_MAPS_ZOOM = envNumber(import.meta.env.VITE_MIN_FLOOD_MAPS_ZOOM, 7);
 
+/**
+ * The outline the map draws around every river the user has saved (map/Streams.js).
+ *
+ * `highlight` false drops the layer entirely — saving still works and the saved list still fills,
+ * there is simply nothing drawn on the map. A deployment that styles its streams by forecast may
+ * not want a second colour competing with that.
+ *
+ * `color` is left empty by default so the stylesheet keeps its own light/dark pair for the heart
+ * and the outline; setting it pins both themes to that one colour, which is the deployer's call.
+ * `borderWidth` is how far the outline shows past the streams line on each side, in pixels.
+ */
+const SAVED_RIVERS = {
+  highlight: envToBool(import.meta.env.VITE_SAVED_RIVERS_HIGHLIGHT),
+  color: import.meta.env.VITE_SAVED_RIVERS_COLOR || "",
+  borderWidth: envNumber(import.meta.env.VITE_SAVED_RIVERS_BORDER_WIDTH, 3)
+};
+
 // The languages the app supports, declared once: the picker's buttons in index.html.
 const LANGUAGES = [...document.querySelectorAll("#lang-menu [data-lang]")].map((el) => el.dataset.lang);
 
@@ -44,6 +61,10 @@ const PREFERENCES = [
 const SETTINGS = [
   {key: "legend", el: "set-legend", fallback: envToBool(import.meta.env.VITE_SETTINGS_LEGEND)},
   {key: "shadedWarningLevels", el: "set-shaded-warning-levels", fallback: envToBool(import.meta.env.VITE_SETTINGS_SHADED_WARNING_LEVELS)},
+  // The deployment picks the starting state (VITE_SAVED_RIVERS_HIGHLIGHT, via SAVED_RIVERS below);
+  // from there it is the user's, per device. The colour and width of the outline stay deployment
+  // config — they are branding, not a preference anyone would want to sit and adjust.
+  {key: "savedHighlight", el: "set-saved-highlight", fallback: SAVED_RIVERS.highlight},
 ];
 
 const STORAGE_PREFIX = "rfs-setting-";
@@ -72,29 +93,42 @@ function applyTheme(theme) {
 
 /**
  * The header's language dropdown. onLanguageChange(code) fires after the UI has retranslated, for
- * text that walking [data-i18n] elements cannot reach (canvas charts, state-dependent titles).
+ * text that walking [data-i18n] elements cannot reach (canvas charts, loaded documents).
+ *
+ * Every language but English is fetched the first time it is picked, so switching is asynchronous:
+ * the menu answers the click immediately and the text follows when the dictionary lands. The code
+ * handed to onLanguageChange is the one that ended up in effect, which is not the one clicked if
+ * its translations could not be loaded.
  */
 function initLanguagePicker(onLanguageChange) {
   const menu = $("lang-menu");
   const options = [...menu.querySelectorAll(".layer-opt[data-lang]")];
-  // What this device last chose, or the deployment's configured default for one that never has.
-  setLanguage(prefs.get("language"));
-  // setLanguage() is the authority on what that resolved to — an unsupported code (a typo in
-  // .env, a stale stored value) lands on English, and the menu has to agree with the app.
-  const active = getLanguage();
+  // What this device last chose, or the deployment's configured default for one that never has. A
+  // stored code the menu no longer offers (a typo in .env, a language since dropped) is neither.
+  const stored = prefs.get("language");
+  const active = LANGUAGES.includes(stored) ? stored : "en";
+  // Not awaited: index.html is written in English, so the app is readable from the first frame and
+  // simply retranslates a moment later. Started here rather than on first use so that a returning
+  // user's language is on its way while the map is still loading.
+  void setLanguage(active);
   // Same dropdown behaviour as the basemap and layer pickers, but anchored: this is the one that
   // opens inside `.panel`, whose overflow clip would otherwise cut it off at the column's edge.
   const closeMenu = wireMenu($("btn-language"), menu, {anchored: true});
+  const markActive = (lang) => options.forEach((o) => o.classList.toggle("active", o.dataset.lang === lang));
+  markActive(active);
   for (const opt of options) {
     const code = opt.dataset.lang;
-    opt.classList.toggle("active", code === active);
-    opt.addEventListener("click", () => {
-      setLanguage(code);
-      onLanguageChange?.(code);
+    opt.addEventListener("click", async () => {
+      // Marked and stored before the fetch: the click is answered now, not when the network says so.
+      markActive(code);
       prefs.set("language", code);
-      options.forEach((o) => o.classList.remove("active"));
-      opt.classList.add("active");
       closeMenu();
+      // What is actually in effect afterwards. On a failed load that is English, and the menu is
+      // corrected to say so; on a click that a later click overtook, it is the later one's — so
+      // both settle on the same answer rather than racing each other back and forth.
+      const applied = await setLanguage(code);
+      markActive(applied);
+      onLanguageChange?.(applied);
     });
   }
 }
@@ -107,6 +141,10 @@ function onSetting(key, fn) {
 
 /** Read every setting and wire its checkbox. Call once, before anything subscribes. */
 function initSettings() {
+  // A configured saved-river colour outranks the stylesheet's light/dark pair of --saved, so the
+  // heart and the outline the map draws stay the same colour — which is the whole point of the
+  // variable. Left alone when nothing is configured, so each theme keeps the pink picked for it.
+  if (SAVED_RIVERS.color) document.documentElement.style.setProperty("--saved", SAVED_RIVERS.color);
   for (const setting of SETTINGS) {
     values.set(setting.key, initialValue(setting));
     const el = document.getElementById(setting.el);
@@ -144,5 +182,6 @@ export {
   MAP_ZOOM,
   MAX_FLOOD_REACHES,
   MIN_FLOOD_MAPS_ZOOM,
-  onSetting
+  onSetting,
+  SAVED_RIVERS
 };

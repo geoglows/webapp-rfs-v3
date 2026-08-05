@@ -1,13 +1,17 @@
 import {urls} from "rfsjs/v3";
 import {inFilter, NO_MATCH} from "./flood-maps/selection";
+import {SAVED_RIVERS} from "../settings/settings.js";
 
 const RET_COLORS = ["#3182bd", "#fee08b", "#fdae61", "#f46d43", "#d73027", "#a50026", "#7a0177"];
 // Uniform stream color for the "Standard" styleset (matches the normal-flow return-period blue).
 const STANDARD_COLOR = "#3182bd";
 // Width of the smallest reaches, and the single width every reach takes in flood mapping mode.
 const WIDTH_BASE = 4;
-const SAVED_COLOR = "#ff4fa3";
-const SAVED_BORDER = 3;
+// The saved-river outline, all three of them configurable per deployment (VITE_SAVED_RIVERS_* — see
+// SAVED_RIVERS in settings/settings.js). The colour falls back to the stylesheet's dark-theme
+// --saved so an unconfigured deployment looks exactly as it did before there was a setting.
+const SAVED_COLOR = SAVED_RIVERS.color || "#ff4fa3";
+const SAVED_BORDER = SAVED_RIVERS.borderWidth;
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 const fetchOk = async url => {
@@ -32,6 +36,9 @@ class Streams {
   idFi = new Map();
   // riverId -> riverIndex (cube row; -1 = no forecast)
   savedIds = [];
+  // Whether the saved-river outline is drawn. The deployment's default until the Settings
+  // subscription reports what this device actually chose, which happens before the map loads.
+  savedHighlightVisible = SAVED_RIVERS.highlight;
   appliedStep = -1;
   applyScheduled = false;
   // player DOM
@@ -94,7 +101,14 @@ class Streams {
       source: "geoglows",
       "source-layer": "streams",
       filter: NO_MATCH,
-      layout: {"line-cap": "round", "line-join": "round"},
+      // The layer is always built, shown or not: the Settings toggle flips it many times over a
+      // session, and hiding a layer is far cheaper than adding and removing one. Its starting
+      // state is whatever the setting already resolved to — see setSavedHighlightVisible().
+      layout: {
+        "line-cap": "round",
+        "line-join": "round",
+        visibility: this.savedHighlightVisible ? "visible" : "none"
+      },
       paint: {
         "line-color": SAVED_COLOR,
         "line-width": this.savedWidthExpr(this.animatedWidth()),
@@ -107,6 +121,20 @@ class Streams {
   /** The active streams width plus a border on each side — see addSavedHighlightLayer(). */
   savedWidthExpr(animated) {
     return this.streamWidthExpr(animated, 2 * SAVED_BORDER);
+  }
+
+  /**
+   * Show or hide the saved-river outline. Driven by the Settings checkbox, which starts from
+   * VITE_SAVED_RIVERS_HIGHLIGHT and is then the user's to change.
+   *
+   * Called before the map has loaded as well as after — the setting is read at startup, long
+   * before there is a layer to set anything on — so the answer is kept here for
+   * addSavedHighlightLayer() to build the layer with.
+   */
+  setSavedHighlightVisible(on) {
+    this.savedHighlightVisible = on;
+    if (!this.map.getLayer("saved-highlight")) return;
+    this.map.setLayoutProperty("saved-highlight", "visibility", on ? "visible" : "none");
   }
 
   /** The reaches to outline as saved. Pass an empty array to clear. */

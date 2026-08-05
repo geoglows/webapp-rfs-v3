@@ -9,14 +9,21 @@ import {onStreamsVisibility, streamsVisible} from "../layers";
 
 const $ = (id) => document.getElementById(id);
 
-const LADDER_LABELS = ["q3", "q8", "q12", "q15", "q18", "q22", "q25", "q28", "q30"];
+// What the ladder slider's stops are called before the worker has sent a spec carrying the real
+// list. Must match LADDER_LABELS in mapper.js, which is where they are actually derived.
+const LADDER_LABELS = ["q1", "q2", "q3", "q8", "q12", "q15", "q18", "q22", "q25", "q28", "q30"];
 
-// Per-style control panel. "forecastmax" has none — it needs no input beyond the selection.
+// Per-style control panel. "forecastmax" needs no input beyond the selection; "returnperiod" is in
+// the picker but not built yet, so it has nothing to show either.
 const FLOOD_STYLE_CTL = {
   manual: "qctl-uniform",
-  returnperiod: "qctl-ladder",
+  ratingcurve: "qctl-ladder",
   forecast: "qctl-forecast"
 };
+
+// In the flood style picker, but with nothing behind it yet — selecting it says so rather than
+// quietly drawing nothing. See flowsForFloodStyle().
+const UNBUILT_STYLES = new Set(["returnperiod"]);
 
 /**
  * Flood mapping: the worker protocol, the reach selection, the discharge styles that drive the
@@ -41,10 +48,11 @@ function createFloodController({map, streams, getForecastDate, isMapLoaded}) {
   let mappingMode = false;
   let selection = null;
   let current = {selected: [], floodable: []};
-  // Which discharge drives the flood extent. "manual" = one number for every reach, "returnperiod"
-  // = the per-reach rating-curve ladder, "forecast"/"forecastmax" = the reaches' downloaded
-  // forecast hydrographs (animated over the horizon, or held at each reach's peak).
-  let floodStyle = "returnperiod";
+  // Which discharge drives the flood extent. "ratingcurve" = the per-reach synthetic rating curve
+  // ladder, "manual" = one number for every reach, "forecast"/"forecastmax" = the reaches'
+  // downloaded forecast hydrographs (animated over the horizon, or held at each reach's peak).
+  // "returnperiod" is offered but not built — see UNBUILT_STYLES.
+  let floodStyle = "ratingcurve";
   // Downloaded forecast for the current (date, selection): see loadForecastFlows().
   let forecastFlows = null;
   let forecastFlowsKey = "";
@@ -98,6 +106,8 @@ function createFloodController({map, streams, getForecastDate, isMapLoaded}) {
       }
       floodView = {bounds: msg.bounds, width: msg.width, height: msg.height};
       flowsSpec = msg.flows;
+      // The spec names the ladder's stops, so this is the first point the slider can be sized from.
+      syncLadderRange();
       if (isMapLoaded()) floodOverlay.rebuild(floodView);
       const st = msg.stats;
       console.log(`Corridor slices: ${st.slices} river-slice(s) from ${st.tiles} tile(s), ${st.relations.toLocaleString()} relations.`);
@@ -164,6 +174,9 @@ function createFloodController({map, streams, getForecastDate, isMapLoaded}) {
   function refreshControls() {
     $("btn-clear").disabled = !mappingMode || current.selected.length === 0;
     if (!mappingMode) $("flood-status").textContent = "Turn on flood mapping mode, then click reaches.";
+    // Outranks the reach-count messages below: with nothing behind the style, how many reaches are
+    // selected is not why nothing is being drawn, and saying so would send people looking at that.
+    else if (UNBUILT_STYLES.has(floodStyle)) $("flood-status").textContent = t("flood.style.returnperiod.pending");
     else if (!workerReady) $("flood-status").textContent = "Loading flood index…";
     else if (current.floodable.length === 0) {
       $("flood-status").textContent = current.selected.length
@@ -178,16 +191,38 @@ function createFloodController({map, streams, getForecastDate, isMapLoaded}) {
 
   const usesForecast = () => floodStyle === "forecast" || floodStyle === "forecastmax";
 
+  /** The stop the ladder slider is nearest, named. Falls back to the built-in list pre-spec. */
+  function ladderLabel() {
+    const labels = flowsSpec?.ladderLabels ?? LADDER_LABELS;
+    const i = Math.min(Math.max(Math.round(Number($("ladder").value)), 0), labels.length - 1);
+    return labels[i];
+  }
+
   function syncLadderLabel() {
-    const i = Math.min(Math.round(Number($("ladder").value)), LADDER_LABELS.length - 1);
-    $("ladder-val").textContent = flowsSpec?.ladderLabels?.[i] ?? LADDER_LABELS[i];
+    $("ladder-val").textContent = ladderLabel();
+  }
+
+  /**
+   * Point the slider at the stops the spec actually carries. The markup ships a range matching the
+   * built-in labels, but the worker is the authority on how many points the ladder has — so a spec
+   * with a different count moves the top of the range rather than leaving part of it unreachable
+   * (or letting the slider run off the end of the list).
+   */
+  function syncLadderRange() {
+    const max = (flowsSpec?.ladderLabels ?? LADDER_LABELS).length - 1;
+    const el = $("ladder");
+    if (Number(el.max) === max) return;
+    el.max = String(max);
+    if (Number(el.value) > max) el.value = String(max);
+    syncLadderLabel();
   }
 
   // Per-reach discharge for the active flood style, or null when the style's data isn't ready yet
   // (the forecast styles need their download to land first).
   function flowsForFloodStyle() {
+    if (UNBUILT_STYLES.has(floodStyle)) return null;
     if (floodStyle === "manual") return uniformFlows(flowsSpec, Number($("uniform").value));
-    if (floodStyle === "returnperiod") return flowsAtLadderPosition(flowsSpec, Number($("ladder").value));
+    if (floodStyle === "ratingcurve") return flowsAtLadderPosition(flowsSpec, Number($("ladder").value));
     if (!forecastFlows) return null;
     // forecasts is Map(riverId -> {riverIndex, median, peak, memberCount}) — the per-reach median
     // series and its peak, so both forecast styles read off the same entry.
@@ -220,6 +255,14 @@ function createFloodController({map, streams, getForecastDate, isMapLoaded}) {
   function setFloodStyle(style) {
     floodStyle = style;
     for (const [name, id] of Object.entries(FLOOD_STYLE_CTL)) $(id).classList.toggle("hidden", name !== style);
+    // Nothing behind this one yet: drop whatever the last style drew, rather than leaving its extent
+    // on the map looking like this style's output, and say why in the status line.
+    if (UNBUILT_STYLES.has(style)) {
+      fcPause();
+      clearFloodOverlay();
+      refreshControls();
+      return;
+    }
     if (!usesForecast()) {
       fcPause();
       computeFlood();
@@ -348,8 +391,7 @@ function createFloodController({map, streams, getForecastDate, isMapLoaded}) {
     if (floodStyle === "manual") return `${Number($("uniform").value)}cms`;
     if (floodStyle === "forecastmax") return `fcmax_${getForecastDate()}`;
     if (floodStyle === "forecast") return `fc_${getForecastDate()}_t${String(fcStep).padStart(2, "0")}`;
-    const i = Math.min(Math.round(Number($("ladder").value)), LADDER_LABELS.length - 1);
-    return (flowsSpec?.ladderLabels?.[i] ?? LADDER_LABELS[i]).replace(/[^\w.-]+/g, "");
+    return ladderLabel().replace(/[^\w.-]+/g, "");
   }
 
   // The encoder is only ever reached from the Save button, so it loads on demand rather than

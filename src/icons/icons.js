@@ -1,5 +1,6 @@
 import {t} from "../i18n/i18n";
 import informationCircle from "heroicons/24/outline/information-circle.svg?raw";
+import questionMarkCircle from "heroicons/24/outline/question-mark-circle.svg?raw";
 import cog6Tooth from "heroicons/24/outline/cog-6-tooth.svg?raw";
 import language from "heroicons/24/outline/language.svg?raw";
 import sun from "heroicons/24/outline/sun.svg?raw";
@@ -17,15 +18,13 @@ import xMark from "heroicons/24/outline/x-mark.svg?raw";
 
 const ICONS = {
   "information-circle": informationCircle,
+  "question-mark-circle": questionMarkCircle,
   "cog-6-tooth": cog6Tooth,
   language,
   sun,
   moon,
   "chart-bar-solid": chartBarSolid,
   "bookmark-solid": bookmarkSolid,
-  // The pair the save-this-river heart flips between: outline = not saved, solid = saved. The solid
-  // one is also the saved-rivers dock's button, which is what tells it apart from the bookmark icon
-  // the read-only default list uses.
   heart,
   "heart-solid": heartSolid,
   "magnifying-glass-solid": magnifyingGlassSolid,
