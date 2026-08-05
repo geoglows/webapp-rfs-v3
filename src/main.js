@@ -3,13 +3,14 @@ import {applyTheme, DEFAULT_THEME, initLanguagePicker, initSettings, onSetting} 
 
 import {map} from "./map/map";
 import {applyBasemap, defaultBasemap} from "./map/basemaps";
-import {addRasterLayer, applyLayerVisibility} from "./map/layers";
+import {addRasterLayer, applyStreamsVisibility} from "./map/layers";
 import {Streams} from "./map/Streams.js";
 import {createFloodController} from "./map/flood-maps/floodController";
 import {build, status} from "./data/riverIndex";
 import {hydrateIcons} from "./icons/icons";
 import {createChartsDock} from "./docks/charts.js";
-import {createBookmarksDock} from "./docks/bookmarks.js";
+import {createBookmarksDock, createSavedRiversDock} from "./docks/bookmarks.js";
+import {onSavedRiversChange, savedRiverIds} from "./data/savedRivers.js";
 import {closeAllDocks} from "./docks/dock.js";
 import {createPanelControls} from "./ui/panelControls";
 import {createDataSettings} from "./ui/dataSettings";
@@ -49,11 +50,18 @@ function goToRiver(river) {
   if (river.lat != null && river.lon != null) {
     map.flyTo({center: [river.lon, river.lat], zoom: Math.max(map.getZoom(), 10)});
   }
-  chartsDock.openForRiver(river);
+  chartsDock.openForRiver(river, river);
 }
 
-// A saved river arrives whole: id, position on the zarr riverId axis, and outlet coordinate.
+// A saved river arrives whole: id, position on the zarr riverId axis, and outlet coordinate. The
+// two lists are the same table over different rows — the app's defaults, and the user's own.
 createBookmarksDock({map, onSelectRiver: goToRiver});
+createSavedRiversDock({map, onSelectRiver: goToRiver});
+
+// The pink outline on saved reaches. Set now for what was saved in an earlier session and again on
+// every change; the map re-applies it as tiles arrive, so nothing here waits for the map to load.
+streams.setSavedRivers(savedRiverIds());
+onSavedRiversChange((saved) => streams.setSavedRivers(saved.map((e) => e.riverId)));
 
 // The Settings data list. Constructed here rather than with the rest of the modal chrome because
 // the background prefetch below has to be able to tell it to re-read — a download the panel didn't
@@ -106,7 +114,7 @@ async function prefetchRiverIndex() {
 // ═══════════════════════════════════════════════════════════════════════════
 map.on("load", async () => {
   streams.addStreamsLayer();
-  applyLayerVisibility(map, "streams");
+  applyStreamsVisibility(map);
   addRasterLayer(map);
   flood.onMapLoad();
   void applyBasemap(map, defaultBasemap());  // Allow the basemaps to continue to load async
@@ -121,10 +129,16 @@ map.on("load", async () => {
     const feats = map.queryRenderedFeatures(box, {layers: ["streams"]});
     const hit = feats.find((f) => f.properties?.riverId != null);
     if (hit) {
+      if (flood.isMappingMode()) {
+        // In mapping mode the click is a reach selection, not a navigation — leave the view alone.
+        flood.selectReach(Number(hit.properties.riverId));
+        return;
+      }
       // Clicking a reach while zoomed out fluidly zooms in to it so the stream fills the view.
       if (map.getZoom() < 10) map.easeTo({center: e.lngLat, zoom: 10});
-      if (flood.isMappingMode()) flood.selectReach(Number(hit.properties.riverId));
-      else chartsDock.openForRiver(hit.properties);
+      // The click point comes along as the reach's location: saving it from here then costs no
+      // lookup at all, since the tile already carried the index and this is where it is.
+      chartsDock.openForRiver(hit.properties, {lat: e.lngLat.lat, lon: e.lngLat.lng});
       return;
     }
     if (flood.isMappingMode()) flood.queryDepth(e.lngLat);

@@ -5,6 +5,7 @@ import {flowsAtLadderPosition, uniformFlows} from "./hydro";
 import {legendGradient} from "./colormap";
 import {getConfig} from "rfsjs/v3";
 import {t} from "../../i18n/i18n";
+import {onStreamsVisibility, streamsVisible} from "../layers";
 
 const $ = (id) => document.getElementById(id);
 
@@ -36,7 +37,6 @@ function createFloodController({map, streams, getForecastDate, isMapLoaded}) {
   let flowsSpec = null;
   let frameInFlight = false;
   let pendingFlood = false;
-  let floodEnabled = false;
   let lastFloodedCells = 0;
   let mappingMode = false;
   let selection = null;
@@ -147,7 +147,8 @@ function createFloodController({map, streams, getForecastDate, isMapLoaded}) {
   function onSelectionChange(s) {
     current = s;
     refreshControls();
-    if (floodEnabled && workerReady && current.floodable.length > 0) {
+    // Selecting a reach IS the request now — there is no separate "create" step to press.
+    if (mappingMode && workerReady && current.floodable.length > 0) {
       requestSelect();
       // The forecast is per-reach, so a changed selection needs a (cached-where-possible) refetch.
       if (usesForecast()) loadForecastFlows();
@@ -161,17 +162,13 @@ function createFloodController({map, streams, getForecastDate, isMapLoaded}) {
   }
 
   function refreshControls() {
-    const btn = $("btn-create-flood");
-    const hasFloodable = workerReady && current.floodable.length > 0;
-    btn.disabled = !hasFloodable;
-    btn.textContent = floodEnabled ? "Flood mapping on — live" : "Create flood map";
-    if (!workerReady) $("flood-status").textContent = "Loading flood index…";
+    $("btn-clear").disabled = !mappingMode || current.selected.length === 0;
+    if (!mappingMode) $("flood-status").textContent = "Turn on flood mapping mode, then click reaches.";
+    else if (!workerReady) $("flood-status").textContent = "Loading flood index…";
     else if (current.floodable.length === 0) {
       $("flood-status").textContent = current.selected.length
         ? "Selected reaches have no flood-library coverage in the loaded tiles yet."
         : "Click reaches on the map to select them.";
-    } else if (!floodEnabled) {
-      $("flood-status").textContent = `${current.floodable.length} reach(es) ready — press “Create flood map”.`;
     } else {
       $("flood-status").textContent = `${current.floodable.length} reach(es) flooding live — move the slider.`;
     }
@@ -205,7 +202,7 @@ function createFloodController({map, streams, getForecastDate, isMapLoaded}) {
   }
 
   function computeFlood() {
-    if (!floodEnabled || !flowsSpec || !floodView || !workerReady || current.floodable.length === 0) return;
+    if (!mappingMode || !flowsSpec || !floodView || !workerReady || current.floodable.length === 0) return;
     if (frameInFlight) {
       pendingFlood = true;
       return;
@@ -344,7 +341,7 @@ function createFloodController({map, streams, getForecastDate, isMapLoaded}) {
   // ---- GeoTIFF export ----
 
   function updateSaveButton() {
-    $("btn-save-geotiff").disabled = !(floodEnabled && lastFloodedCells > 0);
+    $("btn-save-geotiff").disabled = !(mappingMode && lastFloodedCells > 0);
   }
 
   function currentQLabel() {
@@ -382,31 +379,61 @@ function createFloodController({map, streams, getForecastDate, isMapLoaded}) {
 
   // ---- mode ----
 
+  /**
+   * Flood mapping mode. What it changes is what a click on a reach does — inspect it in the charts
+   * dock, or add it to the flood selection (see the map click handler in main.js). Everything else
+   * follows from that: the selection highlights, the data-tile footprints, and the flood raster
+   * that selecting a reach now produces directly.
+   */
   function setMappingMode(on) {
     mappingMode = on;
     // First entry into flood mode is what stands the worker up; see ensureWorker().
     if (on) {
       ensureWorker();
       streams.setInspectHighlight(null);
+      // Drop the hydrology styler back to plain lines, so the coloured/variable-width network is
+      // not competing with the selection highlights drawn over it. Routed through the select's own
+      // change event rather than the styler, so the control and panelControls' state agree; the
+      // control stays enabled, so any style can be picked back up from here.
+      const styleSel = $("stream-style");
+      if (styleSel && styleSel.value !== "standard") {
+        styleSel.value = "standard";
+        styleSel.dispatchEvent(new Event("change"));
+      }
     }
     const btn = $("btn-flood-mode");
     btn.classList.toggle("active", on);
     btn.textContent = t(on ? "flood.disable" : "flood.enable");
     $("flood-controls").classList.toggle("mode-off", !on);
-    // Flood mode owns the stream rendering: the hydrology styler is locked and every reach drops to
-    // one uniform width, so the selection highlights aren't competing with a variable-width network.
-    streams.setFloodMode(on);
-    $("stream-style").disabled = on;
     // Data-tile footprints follow the mode, and start/stop tracking the viewport with it.
     floodMapsTiles.setActive(on);
-    for (const id of ["flood-maps-coverage", "sel-selected", "sel-floodable"]) {
-      if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", on ? "visible" : "none");
+    syncSelectionLayers();
+    refreshControls();
+    // A selection survives the mode being switched off, so coming back on has to re-raise it —
+    // nothing else will, since no click happened. On the very first entry the worker isn't up yet
+    // and there is nothing selected; the coverage message drives the first render instead.
+    if (!on) clearFloodOverlay();
+    else if (workerReady && current.floodable.length > 0) {
+      requestSelect();
+      if (usesForecast()) loadForecastFlows();
+    }
+  }
+
+  // The selection/coverage highlights are streams too, so they carry both gates: flood mode draws
+  // them at all, and the streams toggle (layers.js) decides whether any stream is on screen.
+  function syncSelectionLayers() {
+    const show = mappingMode && streamsVisible();
+    for (const id of ["flood-maps-unmappable", "sel-selected", "sel-floodable", "sel-clicked"]) {
+      if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", show ? "visible" : "none");
     }
   }
 
   // ---- wiring ----
 
   $("btn-flood-mode").addEventListener("click", () => setMappingMode(!mappingMode));
+  // Streams are shown/hidden from the layer picker (layers.js); the highlights drawn over them
+  // have to follow, so this tracks that toggle rather than owning a control of its own.
+  onStreamsVisibility(syncSelectionLayers);
   $("flood-style").addEventListener("change", (e) => setFloodStyle(e.target.value));
   $("btn-fc-play").addEventListener("click", () => fcPlaying ? fcPause() : fcPlay());
   $("fc-slider").addEventListener("input", () => {
@@ -425,13 +452,6 @@ function createFloodController({map, streams, getForecastDate, isMapLoaded}) {
     computeFlood();
   });
   $("uniform").addEventListener("input", computeFlood);
-  $("btn-create-flood").addEventListener("click", () => {
-    if (!workerReady || current.floodable.length === 0) return;
-    floodEnabled = true;
-    refreshControls();
-    requestSelect();
-    if (usesForecast()) loadForecastFlows();
-  });
   $("btn-save-geotiff").addEventListener("click", () => {
     if (!workerReady || lastFloodedCells === 0) return;
     worker.postMessage({type: "export", id: Date.now()});
@@ -440,6 +460,7 @@ function createFloodController({map, streams, getForecastDate, isMapLoaded}) {
   $("flood-style").value = floodStyle;
   syncLadderLabel();
   setFloodStyle(floodStyle);
+  refreshControls();
 
   /** Add the flood-related map layers and stand up the reach picker. Call once, on map load. */
   function onMapLoad() {

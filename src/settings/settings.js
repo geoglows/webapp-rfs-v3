@@ -15,6 +15,18 @@ const MAP_CENTER = [envNumber(import.meta.env.VITE_MAP_CENTER_LON, 0), envNumber
 const MAP_ZOOM = envNumber(import.meta.env.VITE_MAP_ZOOM, 1.5);
 const MAP_DEFAULT_BASEMAP = import.meta.env.VITE_MAP_DEFAULT_BASEMAP || "";
 
+// The ceiling on how many reaches one flood map may span. A hard capability limit, not a taste:
+// past it the worker's corridor grid and the canvas MapLibre drapes it on outgrow what the browser
+// will allocate. Configurable so a deployment can move it if its users are on very different
+// hardware — not so it can be tuned per preference. See MAX_FLOOD_REACHES in flood-maps/selection.js.
+const MAX_FLOOD_REACHES = envNumber(import.meta.env.VITE_MAX_FLOOD_REACHES, 50);
+
+// Below this zoom the flood library is not consulted at all: too many data tiles fall under the
+// viewport to load, and a reach is too small to aim at. Read by the viewport→coverage bridge
+// (flood-maps/tilesLayer.js) and by the highlight that marks what the library does not hold, which
+// would otherwise have the whole world to mark.
+const MIN_FLOOD_MAPS_ZOOM = envNumber(import.meta.env.VITE_MIN_FLOOD_MAPS_ZOOM, 7);
+
 // The languages the app supports, declared once: the picker's buttons in index.html.
 const LANGUAGES = [...document.querySelectorAll("#lang-menu [data-lang]")].map((el) => el.dataset.lang);
 
@@ -70,8 +82,9 @@ function initLanguagePicker(onLanguageChange) {
   // setLanguage() is the authority on what that resolved to — an unsupported code (a typo in
   // .env, a stale stored value) lands on English, and the menu has to agree with the app.
   const active = getLanguage();
-  // Same dropdown behaviour as the basemap and layer pickers.
-  const closeMenu = wireMenu($("btn-language"), menu);
+  // Same dropdown behaviour as the basemap and layer pickers, but anchored: this is the one that
+  // opens inside `.panel`, whose overflow clip would otherwise cut it off at the column's edge.
+  const closeMenu = wireMenu($("btn-language"), menu, {anchored: true});
   for (const opt of options) {
     const code = opt.dataset.lang;
     opt.classList.toggle("active", code === active);
@@ -129,5 +142,7 @@ export {
   MAP_CENTER,
   MAP_DEFAULT_BASEMAP,
   MAP_ZOOM,
+  MAX_FLOOD_REACHES,
+  MIN_FLOOD_MAPS_ZOOM,
   onSetting
 };

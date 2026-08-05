@@ -1,4 +1,5 @@
 import {t} from "../i18n/i18n.js";
+import {listSavedRivers, onSavedRiversChange, removeSavedRiver} from "../data/savedRivers.js";
 import {closeDock, isDockOpen, openDock} from "./dock.js";
 
 // todo the bookmarks should be databased.
@@ -23,24 +24,31 @@ const defaultBookmarks = [
   {riverId: 140049491, riverIndex: 710249, lat: 4.3350, lon: 6.0729, name: "Niger, Nigeria"}
 ]
 
-function createBookmarksDock({map, onSelectRiver}) {
-  const degrees = (d) => (d == null ? "" : d.toFixed(4))
+const degrees = (d) => (d == null ? "" : d.toFixed(4));
+// A saved river need not have been given a name, and one saved before its coordinate could be read
+// has no lat/lon either. Both are shown as blank cells rather than as "null" or a dropped row.
+const escapeHtml = (s) => String(s).replace(/[&<>"]/g, (c) => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
 
-  const body = document.getElementById("bookmarks-body")
-  const button = document.getElementById("btn-bookmarks")
-  const exit = document.getElementById("bookmarks-close")
-
-  function render() {
-    const rows = defaultBookmarks.map(({riverId, name, lat, lon}) => `
+/**
+ * The rivers table both docks show: id · name · coordinate · the button that flies to it.
+ *
+ * `removable` adds the second action, which is the only difference between the read-only default
+ * list and the user's own — the two are meant to read as the same list, and sharing the renderer is
+ * what keeps them that way as either one changes.
+ */
+function riverTable(rows, {removable = false} = {}) {
+  const cells = rows.map(({riverId, name, lat, lon}) => `
       <tr>
         <td class="k">${riverId}</td>
-        <td class="v">${name}</td>
+        <td class="v">${escapeHtml(name ?? "")}</td>
         <td class="n">${degrees(lat)}</td>
         <td class="n">${degrees(lon)}</td>
-        <td class="a"><button class="btn ghost row-btn" data-river-id="${riverId}">${t("bookmarks.select")}</button></td>
+        <td class="a">
+          <button class="btn ghost row-btn" data-select-river="${riverId}">${t("bookmarks.select")}</button>
+          ${removable ? `<button class="btn ghost row-btn act-remove" data-remove-river="${riverId}">${t("saved.remove")}</button>` : ""}
+        </td>
       </tr>`).join("");
-    body.innerHTML = `
-      <p class="hint">${t("bookmarks.hint")}</p>
+  return `
       <table class="attr-table bookmarks-table">
         <thead>
           <tr>
@@ -51,9 +59,17 @@ function createBookmarksDock({map, onSelectRiver}) {
             <td>${t("bookmarks.col.actions")}</td>
           </tr>
         </thead>
-        <tbody>${rows}</tbody>
+        <tbody>${cells}</tbody>
       </table>`;
-  }
+}
+
+/** The read-only list of notable rivers the app ships with. */
+function createBookmarksDock({map, onSelectRiver}) {
+  const body = document.getElementById("bookmarks-body");
+  const button = document.getElementById("btn-bookmarks");
+  const exit = document.getElementById("bookmarks-close");
+
+  const render = () => (body.innerHTML = riverTable(defaultBookmarks));
 
   function open() {
     render();
@@ -64,7 +80,7 @@ function createBookmarksDock({map, onSelectRiver}) {
 
   // Delegated so the rows can be re-rendered freely without rewiring anything.
   body?.addEventListener("click", (e) => {
-    const id = e.target?.dataset?.riverId;
+    const id = e.target?.dataset?.selectRiver;
     if (!id) return;
     const entry = defaultBookmarks.find((b) => String(b.riverId) === id);
     if (entry) onSelectRiver(entry);
@@ -75,4 +91,55 @@ function createBookmarksDock({map, onSelectRiver}) {
   return {open, close};
 }
 
-export {createBookmarksDock};
+/**
+ * The rivers the user saved themselves — the same table as the defaults, plus the ability to drop a
+ * row, and empty until somebody hearts a river.
+ *
+ * Kept live rather than rendered once: hearting or un-hearting a river from the charts dock changes
+ * this list while it may be on screen, so it re-renders on every change to it instead of only when
+ * it is opened.
+ */
+function createSavedRiversDock({map, onSelectRiver}) {
+  const body = document.getElementById("saved-body");
+  const button = document.getElementById("btn-saved");
+  const exit = document.getElementById("saved-close");
+
+  function render() {
+    const rows = listSavedRivers();
+    body.innerHTML = rows.length
+      ? riverTable(rows, {removable: true})
+      : `<div class="attr-empty">${t("saved.empty")}</div>`;
+  }
+
+  function open() {
+    render();
+    openDock(map, "saved");
+  }
+
+  const close = () => closeDock(map, "saved");
+
+  body?.addEventListener("click", (e) => {
+    const remove = e.target?.dataset?.removeRiver;
+    if (remove) {
+      // The re-render is the change watcher's job, not this handler's — un-hearting the same river
+      // from the charts dock has to repaint this list too, so there is one path for both.
+      removeSavedRiver(Number(remove));
+      return;
+    }
+    const id = e.target?.dataset?.selectRiver;
+    if (!id) return;
+    const entry = listSavedRivers().find((b) => String(b.riverId) === id);
+    if (entry) onSelectRiver(entry);
+  });
+  button?.addEventListener("click", () => (isDockOpen("saved") ? close() : open()));
+  exit?.addEventListener("click", close);
+
+  // Only worth the DOM work while it is the dock on screen; opening it renders anyway.
+  onSavedRiversChange(() => {
+    if (isDockOpen("saved")) render();
+  });
+
+  return {open, close};
+}
+
+export {createBookmarksDock, createSavedRiversDock};

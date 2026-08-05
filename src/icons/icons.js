@@ -6,9 +6,12 @@ import sun from "heroicons/24/outline/sun.svg?raw";
 import moon from "heroicons/24/outline/moon.svg?raw";
 import chartBarSolid from "heroicons/24/solid/chart-bar.svg?raw";
 import bookmarkSolid from "heroicons/24/solid/bookmark.svg?raw";
+import heart from "heroicons/24/outline/heart.svg?raw";
+import heartSolid from "heroicons/24/solid/heart.svg?raw";
 import magnifyingGlassSolid from "heroicons/24/solid/magnifying-glass.svg?raw";
 import clockSolid from "heroicons/24/solid/clock.svg?raw";
 import arrowDownTray from "heroicons/24/outline/arrow-down-tray.svg?raw";
+import backspace from "heroicons/24/outline/backspace.svg?raw";
 import trash from "heroicons/24/outline/trash.svg?raw";
 import xMark from "heroicons/24/outline/x-mark.svg?raw";
 
@@ -20,9 +23,15 @@ const ICONS = {
   moon,
   "chart-bar-solid": chartBarSolid,
   "bookmark-solid": bookmarkSolid,
+  // The pair the save-this-river heart flips between: outline = not saved, solid = saved. The solid
+  // one is also the saved-rivers dock's button, which is what tells it apart from the bookmark icon
+  // the read-only default list uses.
+  heart,
+  "heart-solid": heartSolid,
   "magnifying-glass-solid": magnifyingGlassSolid,
   "clock-solid": clockSolid,
   "arrow-down-tray": arrowDownTray,
+  backspace,
   trash,
   "x-mark": xMark
 };

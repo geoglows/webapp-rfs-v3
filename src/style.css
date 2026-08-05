@@ -13,6 +13,9 @@
     --outlet: #f472b6;
     --corridor: #fbbf24;
     --library: #38bdf8;
+    /* saved rivers, matching SAVED_COLOR in map/Streams.js — the filled heart and the pink outline
+       the map draws around a saved reach have to be the same colour to read as the same state */
+    --saved: #ff4fa3;
     --on-accent: #04121b;
     --shadow-color: 0, 0, 0;
     --radius: 8px;
@@ -46,6 +49,9 @@
     --outlet: #db2777;
     --corridor: #d97706;
     --library: #0284c7;
+    /* darker than the dark theme's: the map colour is unchanged, but hot pink on a white panel is
+       barely a colour at all */
+    --saved: #db2777;
     --on-accent: #ffffff;
     --shadow-color: 100, 116, 139;
 
@@ -191,13 +197,18 @@ section h2 {
     text-align: center;
 }
 
-/* language dropdown anchored under its header button */
+/* Language dropdown, anchored under its header button.
+   Unlike the map's dropdowns this one opens inside .panel, which is overflow:hidden — so it is
+   placed in viewport coordinates by placeMenu() in map/menu.js, which sets position/left/top
+   inline on open. What is left here is the stacking order and a sane resting place for the first
+   frame; the menu is display:none until it has been placed. */
 #lang-control {
     position: relative;
 }
 
 #lang-menu {
     z-index: 20;
+    top: calc(100% + 8px);
     left: 0;
     right: auto;
 }
@@ -311,37 +322,6 @@ button.mode.active {
     color: var(--text-dim);
     line-height: 1.5;
     margin-top: 7px;
-}
-
-.readout {
-    font-size: 14.5px;
-    line-height: 1.7;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 9px 11px;
-    margin: 4px 0 10px;
-}
-
-.readout .inlet {
-    color: var(--inlet);
-    font-weight: 600;
-}
-
-.readout .outlet {
-    color: var(--outlet);
-    font-weight: 600;
-}
-
-.readout .corridor {
-    color: var(--corridor);
-    font-weight: 600;
-}
-
-.readout .count {
-    color: var(--text);
-    font-weight: 700;
-    font-variant-numeric: tabular-nums;
 }
 
 .warning {
@@ -608,10 +588,23 @@ button.mode.active {
     color: var(--on-accent);
 }
 
+/* The flood-mapping buttons, kept together above the style dropdown they govern. They stay
+   outside #flood-controls because the mode toggle has to be usable while the mode is off. */
+.flood-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.flood-actions .btn {
+    flex: 1 1 auto;
+}
+
+/* Off means gone, not dimmed: the sliders, legend and readout have nothing to act on until flood
+   mapping is running, and a greyed-out copy of them is just noise in a narrow panel. */
 #flood-controls.mode-off {
-    opacity: .4;
-    pointer-events: none;
-    filter: saturate(.4);
+    display: none;
 }
 
 /* river attributes modal */
@@ -1075,6 +1068,12 @@ button.mode.active {
     color: var(--text-dim);
 }
 
+/* The depth legend sits at the foot of #flood-controls now, not in a padded section of its own,
+   so it has to bring its own gap from the status line above it. */
+#flood-controls .legend-label {
+    margin-top: 12px;
+}
+
 #legend-depth {
     height: 10px;
     border-radius: 5px;
@@ -1319,12 +1318,14 @@ body.dock-open #scroll > section:not(#hydrology-section) {
 }
 
 #charts-dock,
-#bookmarks-dock {
+#bookmarks-dock,
+#saved-dock {
     display: none;
 }
 
 body.charts-open #charts-dock,
-body.bookmarks-open #bookmarks-dock {
+body.bookmarks-open #bookmarks-dock,
+body.saved-open #saved-dock {
     display: flex;
     flex: 1 1 auto;
     min-height: 0;
@@ -1333,8 +1334,65 @@ body.bookmarks-open #bookmarks-dock {
 
 /* docked header sits flush against the panel edge, not floating like a modal */
 #charts-dock .modal-head,
-#bookmarks-dock .modal-head {
+#bookmarks-dock .modal-head,
+#saved-dock .modal-head {
     border-radius: 0;
+}
+
+/* the charts dock's heading, its save-this-river heart, and the name given to the reach, in that
+   order and left of the close ✕ */
+.dock-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+
+.dock-title h3 {
+    flex: 0 0 auto;
+}
+
+/* The one part of the row that can be any length, so it is the one that gives: it takes the
+   leftover width and truncates, rather than pushing the ✕ off the panel edge. Empty for a reach
+   with no name, and the flex gap would still indent the heart — hence :empty. */
+.dock-river-name {
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 14px;
+    color: var(--text);
+}
+
+.dock-river-name:empty {
+    display: none;
+}
+
+/* Smaller than a panel icon button: this one sits inline with a 15px heading rather than in a row
+   of its own. */
+.heart-btn {
+    width: 28px;
+    height: 28px;
+}
+
+.heart-btn svg {
+    width: 18px;
+    height: 18px;
+}
+
+/* .icon-btn sets display:grid, which outranks the UA rule for [hidden] — so the dock opened with no
+   reach behind it would show a heart that saves nothing without this. */
+.heart-btn[hidden] {
+    display: none;
+}
+
+/* Saved, in the same pink the map outlines saved reaches with — the filled heart and the outline on
+   the river are one state, so they are one colour. */
+.heart-btn.saved,
+.heart-btn.saved:hover:not(:disabled) {
+    color: var(--saved);
+    border-color: var(--saved);
 }
 
 /* saved rivers table: id · name · the button that jumps to that reach's charts */
@@ -1362,6 +1420,11 @@ body.bookmarks-open #bookmarks-dock {
     padding: 4px 12px;
     font-size: 13px;
     margin: 0;
+}
+
+/* the saved list's second action; the first is the same "view charts" the defaults have */
+.bookmarks-table .row-btn + .row-btn {
+    margin-left: 6px;
 }
 
 /* wide layout: lay the hydrology controls out in a row so they use the extra

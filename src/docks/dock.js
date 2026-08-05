@@ -1,12 +1,13 @@
 /**
- * Shared plumbing for the panels that dock into the left column — the charts dock and the saved
- * rivers dock. At most one is open at a time: they occupy the same space beneath the hydrology
- * controls and both widen the panel to half the viewport (see the charts dock block in style.css).
+ * Shared plumbing for the panels that dock into the left column — the charts dock, the default
+ * bookmarks list, and the rivers the user saved. At most one is open at a time: they occupy the
+ * same space beneath the hydrology controls and all widen the panel to half the viewport (see the
+ * charts dock block in style.css).
  *
  * Each dock `name` has a `#<name>-dock` element in index.html, shown by the `<name>-open` class on
  * <body>; `dock-open` marks "some dock is open" and drives the shared layout rules.
  */
-const DOCKS = ["charts", "bookmarks"];
+const DOCKS = ["charts", "bookmarks", "saved"];
 const cleanups = new Map();
 
 const onDockClosed = (name, fn) => cleanups.set(name, fn)

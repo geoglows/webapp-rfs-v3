@@ -1,4 +1,5 @@
 import {urls} from "rfsjs/v3";
+import {MIN_FLOOD_MAPS_ZOOM} from "../../settings/settings.js";
 
 /**
  * The FLDPLN data-tile footprints, and the viewport → coverage bridge built on them.
@@ -30,7 +31,7 @@ class FloodMapsTilesLayer {
     if (map.getSource("flood-maps-tiles")) return;
     map.addSource("flood-maps-tiles", {type: "vector", url: `pmtiles://${urls.floodMapsTileBoundaries()}`});
     // Keep the footprints under the selection highlights, which were added back at map load.
-    const beforeId = map.getLayer("flood-maps-coverage") ? "flood-maps-coverage" : undefined;
+    const beforeId = map.getLayer("flood-maps-unmappable") ? "flood-maps-unmappable" : undefined;
     // Invisible fill = the viewport hit-test target. A line layer would miss a viewport sitting
     // entirely inside one tile with no edge on screen; a fill at opacity 0 still renders, so
     // queryRenderedFeatures returns it wherever the viewport lands.
@@ -75,7 +76,7 @@ class FloodMapsTilesLayer {
   sync() {
     const map = this.map;
     if (!this.active || !this.isReady() || !map.getLayer("flood-maps-tiles-hit")) return;
-    if (map.getZoom() < 7) return;
+    if (map.getZoom() < MIN_FLOOD_MAPS_ZOOM) return;
     const names = [...new Set(
       map.queryRenderedFeatures({layers: ["flood-maps-tiles-hit"]}).map((f) => f.properties.name)
     )].sort();

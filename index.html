@@ -48,9 +48,15 @@
         <button id="btn-charts" class="icon-btn" data-icon-name="chart-bar-solid" data-i18n-title="hydro.charts" data-i18n-aria-label="hydro.charts"
                 title="View discharge charts" aria-label="View discharge charts"></button>
         <button id="btn-bookmarks" class="icon-btn" data-icon-name="bookmark-solid" data-i18n-title="hydro.bookmarks.title" data-i18n-aria-label="hydro.bookmarks.aria"
-                title="Bookmarked rivers" aria-label="Browse bookmarked rivers"></button>
+                title="Notable global rivers" aria-label="Browse notable global rivers"></button>
+        <button id="btn-saved" class="icon-btn" data-icon-name="heart-solid" data-i18n-title="hydro.saved.title" data-i18n-aria-label="hydro.saved.aria"
+                title="My saved rivers" aria-label="Browse my saved rivers"></button>
         <button id="btn-search-river" class="icon-btn" data-icon-name="magnifying-glass-solid" data-i18n-title="hydro.searchRiver" data-i18n-aria-label="hydro.searchRiver"
                 title="Search River ID" aria-label="Search River ID"></button>
+        <!-- Lives out here rather than in the charts dock head: the green highlight outlives the
+             dock, so the way to clear it has to be reachable whether or not a dock is open. -->
+        <button id="btn-clear-river" class="icon-btn" data-icon-name="backspace" data-i18n-title="hydro.clearRiver" data-i18n-aria-label="hydro.clearRiver"
+                title="Clear the selected river" aria-label="Clear the selected river" disabled></button>
         <button id="btn-toggle-slider" class="icon-btn" data-icon-name="clock-solid" data-i18n-title="stream.hideSlider" data-i18n-aria-label="stream.hideSlider"
                 title="Hide timeseries slider" aria-label="Hide timeseries slider"></button>
       </div>
@@ -59,7 +65,11 @@
     <!-- ── Flood mapping ── -->
     <section>
       <h2 data-i18n="flood.heading">Flood Mapping</h2>
-      <button id="btn-flood-mode" class="btn toggle" data-i18n="flood.enable">Enable flood mapping mode</button>
+      <div class="flood-actions">
+        <button id="btn-flood-mode" class="btn toggle" data-i18n="flood.enable">Enable flood mapping mode</button>
+        <button id="btn-clear" class="btn ghost" disabled data-i18n="flood.clear">Clear selection</button>
+        <button id="btn-save-geotiff" class="btn ghost" disabled data-i18n="flood.saveGeotiff">⬇ Save GeoTIFF</button>
+      </div>
       <div class="hydro-field">
         <label class="field-label" for="flood-style" data-i18n="flood.style">Flood style</label>
         <select id="flood-style" class="select">
@@ -69,57 +79,61 @@
           <option value="forecastmax" data-i18n="flood.style.forecastmax">Forecast Maximum</option>
         </select>
       </div>
+      <!-- Everything the mode drives: the discharge control for the chosen flood style, the depth
+           legend, and the pixel readout. Hidden outright until flood mapping is turned on, so the
+           panel isn't advertising sliders that do nothing. -->
       <div id="flood-controls" class="mode-off">
-        <div id="selection-info" class="readout" data-i18n="flood.noReaches">No reaches selected.</div>
+        <!-- Only ever shows a refused click; the selection itself is logged (flood-maps/selection.js). -->
         <div id="warning" class="warning hidden"></div>
-        <button id="btn-create-flood" class="btn primary" disabled data-i18n="flood.create">Create flood map</button>
-        <button id="btn-clear" class="btn ghost" data-i18n="flood.clear">Clear selection</button>
-      </div>
 
-      <div id="qctl-ladder" class="ctl">
-        <label for="ladder"><span data-i18n="flood.dischargeLevel">Discharge level</span> <em id="ladder-val"></em></label>
-        <input id="ladder" type="range" min="0" max="8" step="0.05" value="4"/>
-      </div>
-      <div id="qctl-uniform" class="ctl hidden">
-        <label for="uniform" data-i18n="flood.uniformLabel">Discharge for every selected reach (m³/s)</label>
-        <input id="uniform" type="number" min="0" step="10" value="400"/>
-      </div>
-      <!-- forecast player: drives the extent animation from the selected reaches' downloaded
-           forecast hydrographs. Shown only for the "Forecast Timeseries" flood style. -->
-      <div id="qctl-forecast" class="ctl hidden">
-        <div class="fc-player">
-          <button id="btn-fc-play" data-i18n-title="flood.fcPlay" title="Play / pause the forecast animation" disabled>▶</button>
-          <div class="timewrap">
-            <div class="timerow">
-              <span id="fc-time-label">—</span>
-              <span id="fc-step-label">–/–</span>
+        <div id="qctl-ladder" class="ctl">
+          <label for="ladder"><span data-i18n="flood.dischargeLevel">Discharge level</span> <em id="ladder-val"></em></label>
+          <input id="ladder" type="range" min="0" max="8" step="0.05" value="4"/>
+        </div>
+        <div id="qctl-uniform" class="ctl hidden">
+          <label for="uniform" data-i18n="flood.uniformLabel">Discharge for every selected reach (m³/s)</label>
+          <input id="uniform" type="number" min="0" step="10" value="400"/>
+        </div>
+        <!-- forecast player: drives the extent animation from the selected reaches' downloaded
+             forecast hydrographs. Shown only for the "Forecast Timeseries" flood style. -->
+        <div id="qctl-forecast" class="ctl hidden">
+          <div class="fc-player">
+            <button id="btn-fc-play" data-i18n-title="flood.fcPlay" title="Play / pause the forecast animation" disabled>▶</button>
+            <div class="timewrap">
+              <div class="timerow">
+                <span id="fc-time-label">—</span>
+                <span id="fc-step-label">–/–</span>
+              </div>
+              <input id="fc-slider" type="range" min="0" max="0" step="1" value="0" disabled/>
             </div>
-            <input id="fc-slider" type="range" min="0" max="0" step="1" value="0" disabled/>
-          </div>
-          <div class="speedwrap">
-            <label for="fc-speed" data-i18n="player.speed">Speed</label>
-            <select id="fc-speed">
-              <option value="1">1×</option>
-              <option value="2">2×</option>
-              <option value="4" selected>4×</option>
-              <option value="8">8×</option>
-            </select>
+            <div class="speedwrap">
+              <label for="fc-speed" data-i18n="player.speed">Speed</label>
+              <select id="fc-speed">
+                <option value="1">1×</option>
+                <option value="2">2×</option>
+                <option value="4" selected>4×</option>
+                <option value="8">8×</option>
+              </select>
+            </div>
           </div>
         </div>
-      </div>
-      <div id="flood-status" class="hint" data-i18n="flood.status">Flood updates live as you move the slider.</div>
-    </section>
+        <div id="flood-status" class="hint" data-i18n="flood.status">Flood updates live as you move the slider.</div>
 
-    <section>
-      <div class="legend-label"><span>0 m</span><span data-i18n="legend.floodDepth">flood depth</span><span>≥8 m</span></div>
-      <div id="legend-depth"></div>
-      <div id="readout" class="hint" data-i18n="legend.readout">click a flooded pixel for depth</div>
-      <button id="btn-save-geotiff" class="btn ghost" disabled data-i18n="flood.saveGeotiff">⬇ Save GeoTIFF</button>
+        <div class="legend-label"><span>0 m</span><span data-i18n="legend.floodDepth">flood depth</span><span>≥8 m</span></div>
+        <div id="legend-depth"></div>
+        <div id="readout" class="hint" data-i18n="legend.readout">click a flooded pixel for depth</div>
+      </div>
     </section>
   </div>
   <div id="charts-dock">
     <div class="modal-head">
-      <h3 id="charts-modal-title" data-i18n="charts.heading">Discharge charts</h3>
+      <!-- The heart travels with the reach's id, not with the panel: it saves what the title names.
+           The name sits on the far side of it, so the row reads id · heart · what you called it. -->
+      <div class="dock-title">
+        <h3 id="charts-modal-title" data-i18n="charts.heading">Discharge charts</h3>
+        <button id="charts-save" class="icon-btn heart-btn" type="button" aria-pressed="false" hidden></button>
+        <span id="charts-river-name" class="dock-river-name"></span>
+      </div>
       <button class="modal-close" id="charts-close" data-i18n-aria-label="common.close" aria-label="Close">✕</button>
     </div>
     <div class="charts-tabs mode-row" role="tablist">
@@ -144,10 +158,17 @@
   </div>
   <div id="bookmarks-dock">
     <div class="modal-head">
-      <h3 data-i18n="bookmarks.heading">Saved Rivers</h3>
+      <h3 data-i18n="bookmarks.heading">Notable Global Rivers Reference</h3>
       <button class="modal-close" id="bookmarks-close" data-i18n-aria-label="common.close" aria-label="Close">✕</button>
     </div>
     <div class="modal-body" id="bookmarks-body"></div>
+  </div>
+  <div id="saved-dock">
+    <div class="modal-head">
+      <h3 data-i18n="saved.heading">My Saved Rivers</h3>
+      <button class="modal-close" id="saved-close" data-i18n-aria-label="common.close" aria-label="Close">✕</button>
+    </div>
+    <div class="modal-body" id="saved-body"></div>
   </div>
 </div>
 
@@ -261,6 +282,29 @@
         </div>
       </form>
       <div id="search-status" class="hint" role="status" aria-live="polite"></div>
+    </div>
+  </div>
+</div>
+
+<!-- name-this-river prompt · the second half of clicking the heart on the charts dock. Its own
+     close/cancel wiring rather than the generic [data-close] handling, because dismissing it has to
+     answer the caller waiting on it (see ui/saveRiverName.js). -->
+<div id="save-river-modal" class="modal-backdrop hidden">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="save-river-title">
+    <div class="modal-head">
+      <h3 id="save-river-title">Save river</h3>
+      <button class="modal-close" id="save-river-close" data-i18n-aria-label="common.close" aria-label="Close">✕</button>
+    </div>
+    <div class="modal-body">
+      <form id="save-river-form" autocomplete="off">
+        <label class="field-label" for="save-river-name" data-i18n="saveRiver.label">Name for this river</label>
+        <div class="search-row">
+          <input id="save-river-name" class="select" type="text" maxlength="60"
+                 data-i18n-placeholder="saveRiver.placeholder" placeholder="e.g. Gauge upstream of town"/>
+          <button type="submit" class="btn primary" data-i18n="saveRiver.submit">Save</button>
+          <button type="button" id="save-river-cancel" class="btn ghost" data-i18n="common.cancel">Cancel</button>
+        </div>
+      </form>
     </div>
   </div>
 </div>

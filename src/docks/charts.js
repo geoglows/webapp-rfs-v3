@@ -1,5 +1,9 @@
 import {dataProgress, getLanguage, t} from "../i18n/i18n.js";
 import {resolve} from "../data/riverIndex.js";
+import {locate} from "../data/riverLocation.js";
+import {getSavedRiver, onSavedRiversChange, removeSavedRiver, saveRiver} from "../data/savedRivers.js";
+import {heroIcon} from "../icons/icons.js";
+import {askRiverName} from "../ui/saveRiverName.js";
 import {getSetting} from "../settings/settings.js";
 import {closeDock, isDockOpen, onDockClosed, openDock} from "./dock.js";
 
@@ -28,6 +32,16 @@ function createChartsDock({map, streams, getForecastDate}) {
   let selectedRiverId = null;
   let selectedRiverProps = null;
   let selectedRiverIndex = null;
+  // Where the reach is, kept apart from its tile properties: for a map click this is the click
+  // point, which belongs to the save and not in the attributes table.
+  let selectedLocation = null;
+  // The name the reach arrived with — the Notable Global Rivers list gives one, a map click does
+  // not. Held apart from the props so un-saving can drop it: a river that is no longer saved shows
+  // no name, and the one it came in with would otherwise take the saved name's place in the title.
+  let selectedName = "";
+  // Whether the reach on screen was saved as of the last render, which is the only way to tell an
+  // un-save apart from a reach that was simply never saved.
+  let wasSaved = false;
   const rendered = {forecast: false, retro: false, details: false};
   let plotsLoaded = false;
   // Bumped every time the dock is pointed at a reach, so a fetch that lands late can tell that what
@@ -160,23 +174,145 @@ function createChartsDock({map, streams, getForecastDate}) {
 
   const close = () => closeDock(map, "charts");
 
+  // ── the save-this-river heart ───────────────────────────────────────────────
+  const savedEntry = () => (selectedRiverId == null ? null : getSavedRiver(selectedRiverId));
+
+  /**
+   * The dock's heading and the heart beside it, both of which say whether this reach is saved.
+   *
+   * The name shown is the user's own if they gave one, and the reach's built-in name otherwise —
+   * naming a saved river is how you make the charts title read as something other than a number, so
+   * what they typed has to win over what it arrived with.
+   */
+  function renderHead() {
+    const saved = savedEntry();
+    // Un-saved just now: the name goes with the bookmark. Reverting to whichever name the reach
+    // walked in with would leave the title looking untouched by the un-save, and this is the one
+    // place both ways of un-saving pass through — the heart here, and Remove in the saved dock.
+    if (wasSaved && !saved) selectedName = "";
+    wasSaved = !!saved;
+    // The heading is the reach's identity and nothing else; the name is its own element on the far
+    // side of the heart, so the row reads "River 12345 ♥ what you called it".
+    $("charts-modal-title").textContent = selectedRiverId != null
+      ? `${t("river.heading")} ${selectedRiverId}`
+      : t("charts.heading");
+    const nameEl = $("charts-river-name");
+    if (nameEl) nameEl.textContent = saved?.name || selectedName;
+
+    const btn = $("charts-save");
+    if (!btn) return;
+    // Nothing to save when the dock was opened from the header button with no reach behind it.
+    btn.hidden = selectedRiverId == null;
+    btn.replaceChildren(heroIcon(saved ? "heart-solid" : "heart"));
+    btn.classList.toggle("saved", !!saved);
+    btn.setAttribute("aria-pressed", String(!!saved));
+    // Set as data-i18n-* as well as directly, so a language change retranslates a label whose key
+    // depends on state — applyTranslations() walks these attributes and can't know the state.
+    const key = saved ? "river.unsave" : "river.save";
+    btn.dataset.i18nTitle = key;
+    btn.dataset.i18nAriaLabel = key;
+    btn.title = t(key);
+    btn.setAttribute("aria-label", t(key));
+    // Nothing to clear with no reach selected — the panel's button is the state readout for that.
+    const clear = $("btn-clear-river");
+    if (clear) clear.disabled = selectedRiverId == null && selectedRiverIndex == null;
+  }
+
+  /**
+   * Drop the reach the app is pointed at: the green highlight on the map, the charts drawn for it,
+   * and everything remembered about it.
+   *
+   * Leaves the dock open. It goes back to the placeholder it shows before anything has been
+   * clicked, which is the honest state — there is no reach, rather than a reach whose charts have
+   * been hidden. The selection bump matters as much as the fields: a fetch still in flight for the
+   * cleared reach would otherwise land and draw itself into the empty panel.
+   */
+  function clearSelection() {
+    selectionId++;
+    selectedRiverId = null;
+    selectedRiverProps = null;
+    selectedRiverIndex = null;
+    selectedLocation = null;
+    selectedName = "";
+    wasSaved = false;
+    streams.setInspectHighlight(null);
+    // Chart.js instances outlive their container, so dropping the markup is not enough — the same
+    // teardown the dock does when it closes (see onDockClosed above).
+    if (plotsLoaded) void import("rfsjs/v3/plots").then((m) => m.clearPlots());
+    renderHead();
+    for (const name of CHARTS_TABS) rendered[name] = false;
+    // Only the tab on screen is repainted; the others render on the way in, as they always do.
+    const active = CHARTS_TABS.find((name) => $(`charts-tab-${name}`)?.classList.contains("active"));
+    if (!active) return;
+    renderTab(active);
+    rendered[active] = true;
+  }
+
+  /**
+   * Heart clicked: drop the river if it was saved, otherwise capture it whole and ask for a name.
+   *
+   * Whole means id, index and coordinate — the three things a saved river is read back by, none of
+   * which the list should ever have to go and find later. Two of them are usually already in hand
+   * (the tile carried the index, the click carried the point); the fallbacks are for the reach that
+   * arrived as a bare id, and they run before the prompt so the name is the last thing asked for
+   * rather than the thing left waiting on a download.
+   */
+  async function toggleSaved() {
+    if (selectedRiverId == null) return;
+    const riverId = selectedRiverId;
+    if (savedEntry()) {
+      // The re-render this triggers is what clears the name — see renderHead().
+      removeSavedRiver(riverId);
+      return;
+    }
+    const forSelection = selectionId;
+    let riverIndex = selectedRiverIndex;
+    // Already resolved by the forecast tab in every ordinary case, so this is a read of what it
+    // remembered. A reach whose index can't be found is still worth saving under its id.
+    if (riverIndex == null) riverIndex = await targetIndex().catch(() => null);
+    let {lat, lon} = selectedLocation ?? {};
+    if ((lat == null || lon == null) && riverIndex != null) {
+      const at = await locate(riverIndex).catch((e) => {
+        console.warn(`could not locate river ${riverId}: ${e.message}`);
+        return null;
+      });
+      lat = at?.lat;
+      lon = at?.lon;
+    }
+    // The dock moved on to another reach while that was in flight — saving now would save the wrong
+    // river under the heart the user is looking at.
+    if (forSelection !== selectionId) return;
+    const name = await askRiverName({riverId, name: selectedName});
+    // Dismissed. The heart is a two-step action and backing out of the second step saves nothing.
+    if (name == null) return;
+    saveRiver({riverId, riverIndex, lat, lon, name});
+  }
+
   /**
    * Open the dock for a reach — a clicked feature, a saved river, a search result — or with no
    * argument to reuse the last one. Whatever index the caller carries is the index of that reach on
    * the axis the readers hit; a caller with only an id leaves it null and targetIndex() looks it up.
+   *
+   * `location` is where the reach is, if the caller knows: the click point for a map click, the
+   * stored outlet for a saved river. Passed separately from `props` because a map click's point is
+   * not one of the tile's attributes and has no business in the details table.
    */
-  function openForRiver(props) {
+  function openForRiver(props, location = null) {
     selectionId++;
     if (props) {
       selectedRiverProps = props;
       if (props.riverId != null) selectedRiverId = Number(props.riverId);
       selectedRiverIndex = props.riverIndex != null ? Number(props.riverIndex) : null;
+      selectedLocation = location?.lat != null && location?.lon != null
+        ? {lat: Number(location.lat), lon: Number(location.lon)}
+        : null;
+      selectedName = typeof props.name === "string" ? props.name : "";
+      // This reach's own saved state, not the last one's — otherwise moving from a saved river to
+      // an unsaved one reads to renderHead() as an un-save and drops the new reach's name.
+      wasSaved = savedEntry() != null;
     }
     streams.setInspectHighlight(selectedRiverId);
-    // Reaches opened from the saved-rivers dock carry a name; ones clicked on the map don't.
-    const named = selectedRiverProps?.name ? ` · ${selectedRiverProps.name}` : "";
-    $("charts-modal-title").textContent =
-      selectedRiverId != null ? `${t("river.heading")} ${selectedRiverId}${named}` : t("charts.heading");
+    renderHead();
     for (const name of CHARTS_TABS) rendered[name] = false;
     activateTab("forecast");
     openDock(map, "charts");
@@ -197,6 +333,10 @@ function createChartsDock({map, streams, getForecastDate}) {
    * rather than the network.
    */
   function rerenderCharts() {
+    // The heading carries a reach's id and name, so applyTranslations() — which runs first on a
+    // language change and only knows the element's data-i18n default — has just replaced it with
+    // "Discharge charts". Put the reach back before anything else.
+    renderHead();
     if (!plotsLoaded) return;
     const active = CHARTS_TABS.find((name) => $(`charts-tab-${name}`)?.classList.contains("active"));
     if (!active || active === "details") return;
@@ -206,8 +346,13 @@ function createChartsDock({map, streams, getForecastDate}) {
   for (const name of CHARTS_TABS) $(`charts-tab-${name}`).addEventListener("click", () => activateTab(name));
   $("btn-charts").addEventListener("click", () => (isDockOpen("charts") ? close() : openForRiver()));
   $("charts-close").addEventListener("click", close);
+  $("charts-save")?.addEventListener("click", () => void toggleSaved());
+  $("btn-clear-river")?.addEventListener("click", clearSelection);
+  // Follows the list rather than the click, so removing this reach from the saved-rivers dock fills
+  // the heart back in here too.
+  onSavedRiversChange(renderHead);
 
-  return {openForRiver, close, restyleCharts, rerenderCharts};
+  return {openForRiver, clearSelection, close, restyleCharts, rerenderCharts};
 }
 
 export {createChartsDock};

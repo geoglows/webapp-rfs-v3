@@ -6,6 +6,8 @@ const RET_COLORS = ["#3182bd", "#fee08b", "#fdae61", "#f46d43", "#d73027", "#a50
 const STANDARD_COLOR = "#3182bd";
 // Width of the smallest reaches, and the single width every reach takes in flood mapping mode.
 const WIDTH_BASE = 4;
+const SAVED_COLOR = "#ff4fa3";
+const SAVED_BORDER = 3;
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 const fetchOk = async url => {
@@ -26,11 +28,10 @@ class Streams {
   timer = null;
   fps = 4;
   styleset = "max-flow";
-  // Flood mapping mode flattens the network to one uniform width (see streamWidthExpr).
-  floodMode = false;
   currentDate = null;
   idFi = new Map();
   // riverId -> riverIndex (cube row; -1 = no forecast)
+  savedIds = [];
   appliedStep = -1;
   applyScheduled = false;
   // player DOM
@@ -71,7 +72,52 @@ class Streams {
     this.map.on("sourcedata", (e) => {
       if (this.cube && e.sourceId === "geoglows" && e.tile) this.scheduleApply();
     });
+    this.addSavedHighlightLayer();
     this.addInspectHighlightLayer();
+  }
+
+  /**
+   * The pink outline around every river the user has saved.
+   *
+   * Added *beneath* `streams` and drawn wider than it, so the streams line covers the middle and
+   * what is left showing is a border down both sides. Above it instead would hide the reach's own
+   * colour, which is the forecast — the thing the map is for.
+   *
+   * A declarative filter on riverId, like the other highlights: the saved set is set once and the
+   * outline paints itself onto tiles as they arrive, with nothing to re-run on pan or zoom.
+   */
+  addSavedHighlightLayer() {
+    if (this.map.getLayer("saved-highlight")) return;
+    this.map.addLayer({
+      id: "saved-highlight",
+      type: "line",
+      source: "geoglows",
+      "source-layer": "streams",
+      filter: NO_MATCH,
+      layout: {"line-cap": "round", "line-join": "round"},
+      paint: {
+        "line-color": SAVED_COLOR,
+        "line-width": this.savedWidthExpr(this.animatedWidth()),
+        "line-opacity": 1
+      }
+    }, "streams");
+    this.setSavedRivers(this.savedIds);
+  }
+
+  /** The active streams width plus a border on each side — see addSavedHighlightLayer(). */
+  savedWidthExpr(animated) {
+    return this.streamWidthExpr(animated, 2 * SAVED_BORDER);
+  }
+
+  /** The reaches to outline as saved. Pass an empty array to clear. */
+  setSavedRivers(ids) {
+    this.savedIds = ids ?? [];
+    if (!this.map.getLayer("saved-highlight")) return;
+    if (!this.map.isStyleLoaded()) {
+      this.map.once("idle", () => this.setSavedRivers(this.savedIds));
+      return;
+    }
+    this.map.setFilter("saved-highlight", inFilter(this.savedIds));
   }
 
   /**
@@ -112,31 +158,32 @@ class Streams {
 
   /** Zoom-scaled line-width expression. When `animated`, thickness comes from the per-reach `thk`
    * feature-state (falling back to strahlerOrder); otherwise it comes straight from strahlerOrder
-   * so a non-animated styleset ignores any stale animation state. In flood mapping mode the
-   * per-river tiers are dropped entirely and every reach draws at the base width, so the selection
-   * highlights and flood raster read on top of an even network. Per-zoom scale runs z3 global,
-   * z7 regional, z12 local, and keeps growing past z12 for an easy-to-click hit box. */
-  streamWidthExpr(animated) {
-    let RAMP = WIDTH_BASE;
-    if (!this.floodMode) {
-      const thkSource = animated
-        ? ["coalesce", ["feature-state", "thk"], ["get", "strahlerOrder"]]
-        : ["get", "strahlerOrder"];
-      const THK = ["max", 1, ["min", 6, thkSource]];
-      RAMP = ["step", THK, WIDTH_BASE, 3, 9, 5, 10];
-    }
+   * so a non-animated styleset ignores any stale animation state. Per-zoom scale runs z3 global,
+   * z7 regional, z12 local, and keeps growing past z12 for an easy-to-click hit box.
+   *
+   * `pad` widens every stop by a constant — for the saved-river casing, which has to track this
+   * width exactly. It is folded into the stops rather than added around the whole expression
+   * because MapLibre only accepts ["zoom"] as the input to a top-level step/interpolate: wrapping
+   * this in ["+", …, pad] is a style error, not a wider line. */
+  streamWidthExpr(animated, pad = 0) {
+    const thkSource = animated
+      ? ["coalesce", ["feature-state", "thk"], ["get", "strahlerOrder"]]
+      : ["get", "strahlerOrder"];
+    const THK = ["max", 1, ["min", 6, thkSource]];
+    const RAMP = ["step", THK, WIDTH_BASE, 3, 9, 5, 10];
+    const at = (scale) => (pad ? ["+", ["*", scale, RAMP], pad] : ["*", scale, RAMP]);
     return [
       "interpolate",
       ["linear"],
       ["zoom"],
       3,
-      ["*", 0.25, RAMP],
+      at(0.25),
       7,
-      ["*", 0.5, RAMP],
+      at(0.5),
       12,
-      ["*", 1, RAMP],
+      at(1),
       16,
-      ["*", 2.2, RAMP]
+      at(2.2)
     ];
   }
 
@@ -162,19 +209,29 @@ class Streams {
     return {ret: b >> 3, thk: (b & 7) + 1};
   }
 
+  /** Whether the active styleset drives line thickness from per-reach feature-state. */
+  animatedWidth() {
+    return this.styleset === "timeseries" || this.styleset === "max-flow";
+  }
+
   /** Set the streams line-color/line-width paint for the active styleset. */
   applyPaint() {
     if (!this.map.getLayer("streams")) return;
     const s = this.styleset;
-    let color, retWidth = false;
-    if (s === "timeseries" || s === "max-flow") {
-      color = this.streamColorExpr();
-      retWidth = true;
-    } else if (s === "time-to-peak") color = this.ttpColorExpr();
+    const retWidth = this.animatedWidth();
+    let color;
+    if (retWidth) color = this.streamColorExpr();
+    else if (s === "time-to-peak") color = this.ttpColorExpr();
     else if (s === "below-q95") color = this.q95ColorExpr();
     else color = STANDARD_COLOR;
     this.map.setPaintProperty("streams", "line-color", color);
     this.map.setPaintProperty("streams", "line-width", this.streamWidthExpr(retWidth));
+    // The saved outline is sized off the streams line it sits under, so it follows every width
+    // change — a styleset that stops driving thickness from feature-state would otherwise leave the
+    // border thick where the reach beneath it went thin.
+    if (this.map.getLayer("saved-highlight")) {
+      this.map.setPaintProperty("saved-highlight", "line-width", this.savedWidthExpr(retWidth));
+    }
   }
 
   /** Switch styleset: repaint and (re)load its data. `standard` needs no data (uniform blue);
@@ -189,14 +246,6 @@ class Streams {
       return;
     }
     this.loadData();
-  }
-
-  /** Flood mapping mode: flatten the network to one uniform width. Colors are left alone — only
-   * the width tiers go away, so the reach highlights stand out against an even network. */
-  setFloodMode(on) {
-    if (this.floodMode === on) return;
-    this.floodMode = on;
-    this.applyPaint();
   }
 
   /** Set the forecast-initialization date and (re)load the active styleset for it. */
