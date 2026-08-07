@@ -1,5 +1,5 @@
 {
-  "name": "rfsv3",
+  "name": "rfs-hydroviewer",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -8,7 +8,6 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "data": "http-server ./data -p 8090 --cors -c3600",
     "build:flood-maps-tiles": "node references/maps/build_flood_maps_tile_boundaries.mjs"
   },
   "dependencies": {
@@ -23,11 +22,13 @@
     "maplibre-gl": "^6.0.0",
     "numcodecs": "^0.3.2",
     "pmtiles": "^4.0.1",
-    "rfsjs": "file:../rfsjs"
+    "rfsjs": "git+https://github.com/river-forecast-system/client-rfs-js.git#v0.2.1"
   },
   "devDependencies": {
-    "http-server": "^14.1.1",
-    "vite": "^8.1.5",
+    "vite": "^8.1.6",
     "vitest": "^4.1.10"
+  },
+  "allowScripts": {
+    "github:river-forecast-system/client-rfs-js#9e3852e8a13e38ba86f22fc18ba7773baa4a2271": true
   }
 }

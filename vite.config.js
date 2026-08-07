@@ -4,6 +4,8 @@ import {join, normalize, resolve, sep} from "node:path";
 
 const PACKAGE_ROOT = resolve("../rfsjs");
 
+// ./data is a symlink to the local data root, so resolve() gives the link path and the reads below
+// follow it. Nothing configures where the data lives; the link is the configuration.
 function serveDataDir(dir) {
   const root = resolve(dir);
   const TYPES = {
