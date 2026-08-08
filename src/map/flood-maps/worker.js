@@ -1,5 +1,5 @@
-import {FloodMapsIndex} from "rfsjs/v3/floodmaps";
-import {configure} from "rfsjs/v3";
+import {FloodMapsIndex} from "riverforecastsystem/v3/floodmaps";
+import {configure} from "riverforecastsystem/v3";
 import {FloodMapper} from "./mapper.js";
 
 /**

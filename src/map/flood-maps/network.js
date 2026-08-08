@@ -1,11 +1,11 @@
-import {loadRiverNetwork} from "rfsjs/v3/hydrography";
+import {loadRiverNetwork} from "riverforecastsystem/v3/hydrography";
 
 let loading = null;
 
 /**
  * The river topology behind corridor selection, fetched once and shared.
  *
- * The graph and the traversals over it belong to the package (rfsjs/v3/hydrography); what lives
+ * The graph and the traversals over it belong to the package (riverforecastsystem/v3/hydrography); what lives
  * here is only this app's policy about a graph it cannot get: resolve to null rather than throw.
  * Without it the picker falls back to selecting just what was clicked, which is the behaviour that
  * shipped before corridors and is still perfectly usable. Failing the whole flood mode over an

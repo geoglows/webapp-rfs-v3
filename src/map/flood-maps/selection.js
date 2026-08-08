@@ -11,7 +11,7 @@ class Selection {
    *
    * Two sets, and the difference matters for both the highlights and the toggling: `clicked` is
    * what the user actually picked, `corridor` is what that means on the river (RiverNetwork's
-   * between(), from rfsjs/v3/hydrography). Only `clicked` is toggled — clicking a reach the
+   * between(), from riverforecastsystem/v3/hydrography). Only `clicked` is toggled — clicking a reach the
    * corridor merely passes through pins it, so it survives dropping the click that pulled it in.
    *
    * hasCoverage(riverId): whether a reach has flood-library data in the loaded (viewport) tiles.

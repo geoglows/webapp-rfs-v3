@@ -1,4 +1,4 @@
-import {fetchMetadataAt} from "rfsjs/v3/hydrography";
+import {fetchMetadataAt} from "riverforecastsystem/v3/hydrography";
 
 /**
  * Where a reach is, by riverIndex: `{lat, lon}` read straight off the hydrography metadata store.

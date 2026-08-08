@@ -1,4 +1,4 @@
-import {getConfig, urls} from "rfsjs/v3";
+import {getConfig, urls} from "riverforecastsystem/v3";
 import {deleteRecord, isUsable, isUsableMeta, readMeta, readRecord} from "./riverIndexDb.js";
 
 /**

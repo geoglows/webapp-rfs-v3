@@ -1,4 +1,4 @@
-import {urls} from "rfsjs/v3";
+import {urls} from "riverforecastsystem/v3";
 import {MIN_FLOOD_MAPS_ZOOM} from "../../settings/settings.js";
 
 /**

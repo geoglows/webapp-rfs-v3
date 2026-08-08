@@ -58,7 +58,7 @@ function createChartsDock({map, streams, getForecastDate}) {
     };
     const forSelection = selectionId;
     try {
-      const plots = await import("rfsjs/v3/plots");
+      const plots = await import("riverforecastsystem/v3/plots");
       plotsLoaded = true;
       const data = await fetchData(setStatus);
       // The dock may have closed while the download was in flight.
@@ -104,7 +104,7 @@ function createChartsDock({map, streams, getForecastDate}) {
       let riverIndex = await targetIndex(setStatus);
       riverIndex = 0 // todo override for demo phase
       setStatus(t("charts.loading"));
-      const {retrospective} = await import("rfsjs/v3/discharge");
+      const {retrospective} = await import("riverforecastsystem/v3/discharge");
       return {...await retrospective({riverIndex: riverIndex}), riverId: selectedRiverId};
     },
     render: (plots, host, ts) => plots.plotAllRetro(host, ts, {lang: getLanguage()})
@@ -119,7 +119,7 @@ function createChartsDock({map, streams, getForecastDate}) {
       let riverIndex = await targetIndex(setStatus);
       riverIndex = 0 // todo override for demo phase
       setStatus(t("charts.loading"));
-      const {forecast, returnPeriods} = await import("rfsjs/v3/discharge");
+      const {forecast, returnPeriods} = await import("riverforecastsystem/v3/discharge");
       const [fc, rp] = await Promise.all([
         forecast({date: getForecastDate(), riverIndex: riverIndex}),
         returnPeriods({riverIndex: riverIndex, resolution: "hourly"}).catch(() => null)
@@ -169,7 +169,7 @@ function createChartsDock({map, streams, getForecastDate}) {
   // Tear down the live charts whenever the dock leaves the screen — whether it was closed outright
   // or displaced by another dock (see ui/dock.js). Never pulls the chart bundle in just to do it.
   onDockClosed("charts", () => {
-    if (plotsLoaded) void import("rfsjs/v3/plots").then((m) => m.clearPlots());
+    if (plotsLoaded) void import("riverforecastsystem/v3/plots").then((m) => m.clearPlots());
   });
 
   const close = () => closeDock(map, "charts");
@@ -238,7 +238,7 @@ function createChartsDock({map, streams, getForecastDate}) {
     streams.setInspectHighlight(null);
     // Chart.js instances outlive their container, so dropping the markup is not enough — the same
     // teardown the dock does when it closes (see onDockClosed above).
-    if (plotsLoaded) void import("rfsjs/v3/plots").then((m) => m.clearPlots());
+    if (plotsLoaded) void import("riverforecastsystem/v3/plots").then((m) => m.clearPlots());
     renderHead();
     for (const name of CHARTS_TABS) rendered[name] = false;
     // Only the tab on screen is repainted; the others render on the way in, as they always do.
@@ -320,7 +320,7 @@ function createChartsDock({map, streams, getForecastDate}) {
 
   /** Repaint live charts after a theme change; no-op if the chart bundle was never loaded. */
   function restyleCharts() {
-    if (plotsLoaded) void import("rfsjs/v3/plots").then((m) => m.restyleCharts());
+    if (plotsLoaded) void import("riverforecastsystem/v3/plots").then((m) => m.restyleCharts());
   }
 
   /**

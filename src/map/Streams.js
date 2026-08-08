@@ -1,4 +1,4 @@
-import {urls} from "rfsjs/v3";
+import {urls} from "riverforecastsystem/v3";
 import {inFilter, NO_MATCH} from "./flood-maps/selection";
 import {SAVED_RIVERS} from "../settings/settings.js";
 

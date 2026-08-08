@@ -1,11 +1,6 @@
 const GAP = 8;
 const EDGE = 8;
 
-/**
- * The box a menu has to stay inside: the nearest ancestor that clips its overflow, which is the
- * thing that would cut the menu off. html/body are `overflow: hidden` too, so the walk always
- * terminates and the last resort is the viewport itself.
- */
 function clippingRect(el) {
   for (let p = el.parentElement; p; p = p.parentElement) {
     const style = getComputedStyle(p);
@@ -14,24 +9,6 @@ function clippingRect(el) {
   return {left: 0, right: window.innerWidth};
 }
 
-/**
- * Pin a menu to its button in viewport coordinates.
- *
- * For the map's own dropdowns this is unnecessary — they float over the map with room on every
- * side. The header's language picker is the one that needs it: it lives inside `.panel`, which is
- * `overflow: hidden` so that `#scroll` can scroll beneath the pinned title, and that clips any
- * absolutely-positioned child reaching past the panel's edge.
- *
- * Fixed positioning is measured against the viewport rather than the panel, so it escapes the clip
- * (no ancestor sets transform/filter/contain, which would otherwise make one of them the containing
- * block). The trade is that it has to be computed on open rather than declared once, because a
- * fixed element does not follow its anchor.
- *
- * Dropped below the button and left-aligned to it, flipping to right-aligned when that would run
- * past the clipping edge. Both alignments are needed: the header's action row sits at the panel's
- * left edge in the narrow layout and at its right edge once a dock widens the panel, so which side
- * has room depends on which layout is on screen.
- */
 function placeMenu(btn, menu) {
   const anchor = btn.getBoundingClientRect();
   // Measured while visible — the caller un-hides before placing, and `.hidden` is display:none.

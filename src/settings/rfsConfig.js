@@ -1,4 +1,4 @@
-import {configure} from "rfsjs/v3"
+import {configure} from "riverforecastsystem/v3"
 
 const base = import.meta.env.VITE_RFS_V3_BASE;
 if (base) {

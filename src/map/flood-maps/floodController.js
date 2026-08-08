@@ -3,7 +3,7 @@ import {FloodMapsTilesLayer} from "./tilesLayer";
 import {FloodOverlay} from "./overlay";
 import {flowsAtLadderPosition, uniformFlows} from "./hydro";
 import {legendGradient} from "./colormap";
-import {getConfig} from "rfsjs/v3";
+import {getConfig} from "riverforecastsystem/v3";
 import {t} from "../../i18n/i18n";
 import {onStreamsVisibility, streamsVisible} from "../layers";
 
@@ -301,7 +301,7 @@ function createFloodController({map, streams, getForecastDate, isMapLoaded}) {
     $("flood-status").textContent = `Downloading forecast for ${ids.length} reach(es)…`;
     let stale = false;
     try {
-      const {forecastsBulk} = await import("rfsjs/v3/discharge");
+      const {forecastsBulk} = await import("riverforecastsystem/v3/discharge");
       const fc = await forecastsBulk({
         date,
         riverIds: ids,

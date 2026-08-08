@@ -1,5 +1,5 @@
-import {fetchMetadataArray} from "rfsjs/v3/hydrography";
-import {configure, urls} from "rfsjs/v3";
+import {fetchMetadataArray} from "riverforecastsystem/v3/hydrography";
+import {configure, urls} from "riverforecastsystem/v3";
 import {isUsableMeta, readMeta, SCHEMA_VERSION, writeRecord} from "./riverIndexDb.js";
 
 /**

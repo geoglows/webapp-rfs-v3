@@ -22,13 +22,9 @@
     "maplibre-gl": "^6.0.0",
     "numcodecs": "^0.3.2",
     "pmtiles": "^4.0.1",
-    "rfsjs": "git+https://github.com/river-forecast-system/client-rfs-js.git#v0.2.1"
+    "riverforecastsystem": "^0.3.0"
   },
   "devDependencies": {
-    "vite": "^8.1.6",
-    "vitest": "^4.1.10"
-  },
-  "allowScripts": {
-    "github:river-forecast-system/client-rfs-js#9e3852e8a13e38ba86f22fc18ba7773baa4a2271": true
+    "vite": "^8.2.1"
   }
 }
