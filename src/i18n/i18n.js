@@ -63,12 +63,53 @@ function getLanguage() {
   return currentLang;
 }
 
+const SLOT = /\{(\d+)}/g;
+
+// The children an element had before it was ever filled, per element. Kept because filling is what
+// removes them: a language change refills from the same original elements rather than from whatever
+// the previous language's word order left behind.
+const slotsOf = new WeakMap();
+
+const markup = (html) => {
+  const tpl = document.createElement("template");
+  tpl.innerHTML = html;
+  return tpl.content;
+};
+
+/**
+ * A sentence that is more than plain text, written into the element that asked for it.
+ *
+ * Inline emphasis (<strong>, <em>) is written into the sentence itself, since there is nothing in it
+ * to keep in one place. Anything carrying markup a translation should not have to copy — a link and
+ * its URL — stays in index.html as a child of the element, and the sentence refers to it as `{0}`,
+ * `{1}` … in whatever position its word order needs. The children are moved rather than rebuilt, so
+ * a link whose own text is translated is still the node the [data-i18n] pass reaches afterwards.
+ */
+function fill(el, text) {
+  let slots = slotsOf.get(el);
+  if (!slots) {
+    slots = [...el.children];
+    slotsOf.set(el, slots);
+  }
+  el.replaceChildren();
+  let at = 0;
+  for (const match of text.matchAll(SLOT)) {
+    if (match.index > at) el.append(markup(text.slice(at, match.index)));
+    const slot = slots[Number(match[1])];
+    if (slot) el.append(slot);
+    at = match.index + match[0].length;
+  }
+  if (at < text.length) el.append(markup(text.slice(at)));
+}
+
 function applyTranslations(lang, root = document) {
   root.querySelectorAll("[data-i18n]").forEach((el) => {
     el.textContent = t(el.dataset.i18n, lang);
   });
+  // After the plain pass: a [data-i18n] element that is one of these slots has its own text by now,
+  // and filling only moves it, so both are in the language just applied.
   root.querySelectorAll("[data-i18n-html]").forEach((el) => {
-    el.innerHTML = t(el.dataset.i18nHtml, lang);
+    fill(el, t(el.dataset.i18nHtml, lang));
   });
   root.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
     el.setAttribute("placeholder", t(el.dataset.i18nPlaceholder, lang));

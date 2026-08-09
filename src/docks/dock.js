@@ -24,7 +24,7 @@ const syncDockButton = (name) =>
 // resize at the end is all that's needed. The timeout is a fallback for when transitionend doesn't
 // fire (panel already at its target width, reduced motion, …).
 function reflowMap(map, durationMs = 340) {
-  const panel = document.getElementById("left-panel");
+  const panel = document.getElementById("panel");
   let done = false;
   const finish = () => {
     if (done) return;

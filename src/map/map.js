@@ -22,6 +22,13 @@ const map = new MaplibreMap({
   zoom: MAP_ZOOM,
   hash: "map",
   maxZoom: 13,
+  // Flat, always. Nothing here reads better tilted — the streams, the flood extents and the raster
+  // overlays are all draped on the ground — and a pitched view makes a reach harder to aim at. The
+  // ceiling is what actually holds it flat, including against a pitch arriving in the URL hash; the
+  // two gesture options stop a right-drag or a two-finger drag from trying in the first place.
+  maxPitch: 0,
+  pitchWithRotate: false,
+  touchPitch: false,
   localIdeographFontFamily: "sans-serif",
   // esri environment basemap asks for some broken fonts which we need to correct
   transformRequest: (url) => {

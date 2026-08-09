@@ -15,8 +15,6 @@ import {closeAllDocks} from "./docks/dock.js";
 import {createPanelControls} from "./ui/panelControls";
 import {createDataSettings} from "./ui/dataSettings";
 import {createRiverSearch} from "./ui/riverSearch";
-import {createInstructions} from "./modals/instructions/instructions";
-import {createAbout} from "./modals/about/about";
 
 const $ = (id) => document.getElementById(id);
 
@@ -167,16 +165,11 @@ onSetting("legend", (on) => $("legend-overlay").classList.toggle("hidden", !on))
 onSetting("shadedWarningLevels", () => chartsDock.rerenderCharts());
 // Fires now, before the map has loaded, so Streams holds the answer and builds the layer with it.
 onSetting("savedHighlight", (on) => streams.setSavedHighlightVisible(on));
-// The two prose modals. Each is its own document per language, fetched the first time it is asked
-// for; both are built before the language picker so its callback can hand them a language change.
-const instructions = createInstructions();
-const about = createAbout();
-
+// The text that walking [data-i18n] cannot reach: the slider button, whose label depends on its
+// state, and the charts, whose axis titles are drawn into a canvas.
 initLanguagePicker(() => {
   panelControls.updateSliderVisibility();
   chartsDock.rerenderCharts();
-  instructions.onLanguageChange();
-  about.onLanguageChange();
 });
 
 // What this device last chose, or the deployment's configured default for one that never has. A
@@ -200,9 +193,8 @@ const closeModal = (id) => $(id).classList.add("hidden");
 createRiverSearch({onFound: goToRiver});
 
 $("btn-settings").addEventListener("click", () => openModal("settings-modal"));
-// Not openModal(): both of these have to fetch their text, so opening them is their own business.
-$("btn-info").addEventListener("click", () => about.open());
-$("btn-instructions").addEventListener("click", () => instructions.open());
+$("btn-info").addEventListener("click", () => openModal("info-modal"));
+$("btn-instructions").addEventListener("click", () => openModal("instructions-modal"));
 document.querySelectorAll("[data-close]").forEach((el) => el.addEventListener("click", () => closeModal(el.dataset.close)));
 for (const id of ["info-modal", "instructions-modal", "settings-modal", "search-modal"]) {
   $(id).addEventListener("click", (e) => {
@@ -212,6 +204,6 @@ for (const id of ["info-modal", "instructions-modal", "settings-modal", "search-
 
 document.addEventListener("keydown", (e) => {
   if (e.key !== "Escape") return;
-  document.querySelectorAll(".modal-backdrop").forEach((m) => m.classList.add("hidden"));
+  document.querySelectorAll(".backdrop").forEach((m) => m.classList.add("hidden"));
   closeAllDocks(map);
 });

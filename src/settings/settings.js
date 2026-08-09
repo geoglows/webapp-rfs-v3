@@ -14,30 +14,8 @@ const envNumber = (value, fallback) => (value != null && value !== "" && Number.
 const MAP_CENTER = [envNumber(import.meta.env.VITE_MAP_CENTER_LON, 0), envNumber(import.meta.env.VITE_MAP_CENTER_LAT, 20)];
 const MAP_ZOOM = envNumber(import.meta.env.VITE_MAP_ZOOM, 1.5);
 const MAP_DEFAULT_BASEMAP = import.meta.env.VITE_MAP_DEFAULT_BASEMAP || "";
-
-// The ceiling on how many reaches one flood map may span. A hard capability limit, not a taste:
-// past it the worker's corridor grid and the canvas MapLibre drapes it on outgrow what the browser
-// will allocate. Configurable so a deployment can move it if its users are on very different
-// hardware — not so it can be tuned per preference. See MAX_FLOOD_REACHES in flood-maps/selection.js.
 const MAX_FLOOD_REACHES = envNumber(import.meta.env.VITE_MAX_FLOOD_REACHES, 50);
-
-// Below this zoom the flood library is not consulted at all: too many data tiles fall under the
-// viewport to load, and a reach is too small to aim at. Read by the viewport→coverage bridge
-// (flood-maps/tilesLayer.js) and by the highlight that marks what the library does not hold, which
-// would otherwise have the whole world to mark.
 const MIN_FLOOD_MAPS_ZOOM = envNumber(import.meta.env.VITE_MIN_FLOOD_MAPS_ZOOM, 7);
-
-/**
- * The outline the map draws around every river the user has saved (map/Streams.js).
- *
- * `highlight` false drops the layer entirely — saving still works and the saved list still fills,
- * there is simply nothing drawn on the map. A deployment that styles its streams by forecast may
- * not want a second colour competing with that.
- *
- * `color` is left empty by default so the stylesheet keeps its own light/dark pair for the heart
- * and the outline; setting it pins both themes to that one colour, which is the deployer's call.
- * `borderWidth` is how far the outline shows past the streams line on each side, in pixels.
- */
 const SAVED_RIVERS = {
   highlight: envToBool(import.meta.env.VITE_SAVED_RIVERS_HIGHLIGHT),
   color: import.meta.env.VITE_SAVED_RIVERS_COLOR || "",
@@ -102,7 +80,7 @@ function applyTheme(theme) {
  */
 function initLanguagePicker(onLanguageChange) {
   const menu = $("lang-menu");
-  const options = [...menu.querySelectorAll(".layer-opt[data-lang]")];
+  const options = [...menu.querySelectorAll(".opt[data-lang]")];
   // What this device last chose, or the deployment's configured default for one that never has. A
   // stored code the menu no longer offers (a typo in .env, a language since dropped) is neither.
   const stored = prefs.get("language");

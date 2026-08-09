@@ -31,17 +31,16 @@ function createDataSettings() {
   function buildRow(entry) {
     const el = document.createElement("div");
     el.className = "data-row";
-    const name = document.createElement("span");
-    name.className = "data-name";
+    const name = document.createElement("b");
     const size = document.createElement("span");
     size.className = "data-size";
     const actions = document.createElement("span");
-    actions.className = "data-actions";
-    const download = iconButton("arrow-down-tray", "settings.data.download", "row-icon act-download");
-    const remove = iconButton("trash", "settings.data.remove", "row-icon act-remove");
+    actions.className = "row";
+    const download = iconButton("arrow-down-tray", "settings.data.download");
+    const remove = iconButton("trash", "settings.data.remove", "danger");
     actions.append(download, remove);
     const line = document.createElement("div");
-    line.className = "hint data-row-status";
+    line.className = "hint status";
     el.append(name, size, actions, line);
 
     const row = {el, name, size, download, remove, line, busy: false, held: null};

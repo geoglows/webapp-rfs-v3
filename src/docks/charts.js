@@ -12,8 +12,8 @@ const CHARTS_TABS = ["forecast", "retro", "details"];
 
 function renderAttrTable(props) {
   const keys = Object.keys(props).sort((a, b) => a === "riverId" ? -1 : b === "riverId" ? 1 : a.localeCompare(b));
-  if (!keys.length) return '<div class="attr-empty">This feature carries no attributes.</div>';
-  return `<table class="attr-table">${keys.map((k) => `<tr><td class="k">${k}</td><td class="v">${props[k]}</td></tr>`).join("")}</table>`;
+  if (!keys.length) return '<div class="hint">This feature carries no attributes.</div>';
+  return `<table class="table">${keys.map((k) => `<tr><td class="k">${k}</td><td class="v">${props[k]}</td></tr>`).join("")}</table>`;
 }
 
 // Shown by every tab when there's no reach to describe — e.g. the dock was opened from the header
