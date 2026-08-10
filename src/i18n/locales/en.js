@@ -8,7 +8,6 @@
  * name. Keys are this file: a translation that lacks one falls back here rather than breaking.
  */
 export default {
-  "app.title": "River Forecast System v3",
   "common.close": "Close",
   // header
   "settings.label": "Settings",
@@ -38,7 +37,7 @@ export default {
   "stream.showSlider": "Show timeseries slider",
   // flood mapping
   "flood.heading": "Flood Mapping",
-  "flood.enable": "Enable flood mapping mode",
+  "flood.enable": "Create Flood Maps",
   "flood.disable": "Flood mapping mode: ON",
   "flood.inlet": "＋ Inlet",
   "flood.outlet": "✦ Outlet",

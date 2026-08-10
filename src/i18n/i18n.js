@@ -114,8 +114,12 @@ function applyTranslations(lang, root = document) {
   root.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
     el.setAttribute("placeholder", t(el.dataset.i18nPlaceholder, lang));
   });
+  // A tooltip is also the accessible name, since everything carrying one is an icon with no label of
+  // its own — so one key writes both attributes and index.html says it once. The few whose spoken
+  // name should differ from the tooltip give their own data-i18n-aria-label and are left alone.
   root.querySelectorAll("[data-i18n-title]").forEach((el) => {
     el.setAttribute("title", t(el.dataset.i18nTitle, lang));
+    if (!el.dataset.i18nAriaLabel) el.setAttribute("aria-label", t(el.dataset.i18nTitle, lang));
   });
   root.querySelectorAll("[data-i18n-aria-label]").forEach((el) => {
     el.setAttribute("aria-label", t(el.dataset.i18nAriaLabel, lang));

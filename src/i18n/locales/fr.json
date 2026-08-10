@@ -1,5 +1,4 @@
 {
-  "app.title": "Système de Prévision des Rivières v3",
   "common.close": "Fermer",
   "settings.label": "Paramètres",
   "theme.toggle": "Basculer le thème clair / sombre",
@@ -25,7 +24,7 @@
   "stream.hideSlider": "Masquer le curseur temporel",
   "stream.showSlider": "Afficher le curseur temporel",
   "flood.heading": "Cartographie des inondations",
-  "flood.enable": "Activer le mode de cartographie des inondations",
+  "flood.enable": "Créer des cartes d'inondation",
   "flood.disable": "Mode de cartographie des inondations : ACTIVÉ",
   "flood.inlet": "＋ Entrée",
   "flood.outlet": "✦ Sortie",

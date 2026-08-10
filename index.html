@@ -15,10 +15,9 @@
     <a href="%VITE_LOGO_HREF%">
       <img src="%VITE_LOGO_SRC%" alt="%VITE_LOGO_ALT%" width="%VITE_LOGO_WIDTH%" height="%VITE_LOGO_HEIGHT%"/>
     </a>
-    <h1 data-i18n="app.title">%VITE_APP_TITLE%</h1>
+    <h1>%VITE_APP_TITLE%</h1>
     <div class="row">
-      <button id="btn-settings" class="btn icon" data-icon-name="cog-6-tooth" data-i18n-title="settings.label"
-              data-i18n-aria-label="settings.label" title="Settings" aria-label="Settings"></button>
+      <button id="btn-settings" class="btn icon" data-icon-name="cog-6-tooth" data-i18n-title="settings.label" title="Settings"></button>
       <div class="anchor">
         <button id="btn-language" class="btn icon" data-icon-name="language" data-i18n-title="lang.title"
                 data-i18n-aria-label="lang.aria" title="Language" aria-label="Change language"
@@ -30,17 +29,11 @@
           <button class="opt" role="menuitemradio" data-lang="fr">Français</button>
         </div>
       </div>
-      <button id="btn-theme" class="btn icon" data-i18n-title="theme.toggle" data-i18n-aria-label="theme.toggle"
-              title="Toggle light / dark theme" aria-label="Toggle light or dark theme"></button>
-      <button id="btn-instructions" class="btn icon" data-icon-name="question-mark-circle" data-i18n-title="instructions.label"
-              data-i18n-aria-label="instructions.label" title="How to use this site" aria-label="How to use this site"></button>
-      <button id="btn-info" class="btn icon" data-icon-name="information-circle" data-i18n-title="about.label"
-              data-i18n-aria-label="about.label" title="About" aria-label="About"></button>
+      <button id="btn-theme" class="btn icon" data-i18n-title="theme.toggle" title="Toggle light / dark theme"></button>
+      <button id="btn-instructions" class="btn icon" data-icon-name="question-mark-circle" data-i18n-title="instructions.label" title="How to use this site"></button>
+      <button id="btn-info" class="btn icon" data-icon-name="information-circle" data-i18n-title="about.label" title="About"></button>
     </div>
   </header>
-  <!-- Everything below the banner is content rather than chrome: the controls that scroll, and
-       the dock that grows in beneath them. Both are in here so `main` is the whole of it, and
-       #panel stays a plain div so its header element is still the page banner. -->
   <main>
     <div id="scroll">
       <section id="hydrology-section">
@@ -60,24 +53,20 @@
           </select>
         </div>
         <div class="row">
-          <button id="btn-charts" class="btn icon" data-icon-name="chart-bar-solid" data-i18n-title="hydro.charts" data-i18n-aria-label="hydro.charts"
-                  title="View discharge charts" aria-label="View discharge charts"></button>
+          <button id="btn-charts" class="btn icon" data-icon-name="chart-bar-solid" data-i18n-title="hydro.charts" title="View discharge charts"></button>
           <button id="btn-bookmarks" class="btn icon" data-icon-name="bookmark-solid" data-i18n-title="hydro.bookmarks.title" data-i18n-aria-label="hydro.bookmarks.aria"
                   title="Notable global rivers" aria-label="Browse notable global rivers"></button>
           <button id="btn-saved" class="btn icon" data-icon-name="heart-solid" data-i18n-title="hydro.saved.title" data-i18n-aria-label="hydro.saved.aria"
                   title="My saved rivers" aria-label="Browse my saved rivers"></button>
-          <button id="btn-search-river" class="btn icon" data-icon-name="magnifying-glass-solid" data-i18n-title="hydro.searchRiver" data-i18n-aria-label="hydro.searchRiver"
-                  title="Search River ID" aria-label="Search River ID"></button>
-          <button id="btn-clear-river" class="btn icon" data-icon-name="backspace" data-i18n-title="hydro.clearRiver" data-i18n-aria-label="hydro.clearRiver"
-                  title="Clear the selected river" aria-label="Clear the selected river" disabled></button>
-          <button id="btn-toggle-slider" class="btn icon" data-icon-name="clock-solid" data-i18n-title="stream.hideSlider" data-i18n-aria-label="stream.hideSlider"
-                  title="Hide timeseries slider" aria-label="Hide timeseries slider"></button>
+          <button id="btn-search-river" class="btn icon" data-icon-name="magnifying-glass-solid" data-i18n-title="hydro.searchRiver" title="Search River ID"></button>
+          <button id="btn-clear-river" class="btn icon" data-icon-name="backspace" data-i18n-title="hydro.clearRiver" title="Clear the selected river" disabled></button>
+          <button id="btn-toggle-slider" class="btn icon" data-icon-name="clock-solid" data-i18n-title="stream.hideSlider" title="Hide timeseries slider"></button>
         </div>
       </section>
       <section>
         <h2 data-i18n="flood.heading">Flood Mapping</h2>
         <div class="row wrap">
-          <button id="btn-flood-mode" class="btn toggle" data-i18n="flood.enable">Enable flood mapping mode</button>
+          <button id="btn-flood-mode" class="btn toggle" data-i18n="flood.enable">Create Flood Maps</button>
         </div>
         <div class="field">
           <label for="flood-style" data-i18n="flood.style">Flood style</label>
@@ -105,8 +94,7 @@
           </div>
           <div id="qctl-forecast" class="field hidden">
             <div class="player compact">
-              <button id="btn-fc-play" class="btn primary round" data-i18n-title="flood.fcPlay"
-                      title="Play / pause the forecast animation" disabled>▶</button>
+              <button id="btn-fc-play" class="btn primary round" data-i18n-title="flood.fcPlay" title="Play / pause the forecast animation" disabled>▶</button>
               <div class="col grow">
                 <div class="row between">
                   <span id="fc-time-label" class="time">—</span>
@@ -173,8 +161,23 @@
 </div>
 <div id="map"></div>
 
-<!-- MAP CONTROL OVERLAYS -->
-<div id="player" class="card player">
+<!-- MAP CONTROL OVERLAYS · all share .map-overlay and differ only in where they sit -->
+<div id="map-controls" class="col map-overlay">
+  <div class="anchor">
+    <button id="layer-btn" class="btn map" aria-haspopup="true" aria-expanded="false" data-i18n-title="layers.label" title="Map layers"></button>
+    <div id="layer-menu" class="card menu hidden" role="menu"></div>
+  </div>
+  <div class="anchor">
+    <button id="basemap-btn" class="btn map" aria-haspopup="true" aria-expanded="false" data-i18n-title="basemap.label" title="Basemap"></button>
+    <div id="basemap-menu" class="card menu hidden" role="menu"></div>
+  </div>
+</div>
+<div id="legend-overlay" class="card map-overlay">
+  <h2 data-i18n="legend.returnPeriod">Forecast return period</h2>
+  <div id="legend-items"></div>
+</div>
+<!-- last of the overlays so it paints over the legend where the two meet on a narrow map -->
+<div id="player" class="card player map-overlay">
   <div id="progress-bar"></div>
   <button id="btn-play" class="btn primary round" data-i18n-title="player.play" title="Play / pause (space)">▶</button>
   <div class="col grow">
@@ -193,23 +196,6 @@
       <option value="8">8×</option>
     </select>
   </div>
-</div>
-<div id="map-controls" class="col">
-  <div class="anchor">
-    <button id="layer-btn" class="btn map" aria-haspopup="true" aria-expanded="false"
-            data-i18n-title="layers.label" data-i18n-aria-label="layers.label"
-            title="Map layers" aria-label="Map layers"></button>
-    <div id="layer-menu" class="card menu hidden" role="menu"></div>
-  </div>
-  <div class="anchor">
-    <button id="basemap-btn" class="btn map" aria-haspopup="true" aria-expanded="false" data-i18n-title="basemap.label"
-            data-i18n-aria-label="basemap.label" title="Basemap" aria-label="Basemap"></button>
-    <div id="basemap-menu" class="card menu hidden" role="menu"></div>
-  </div>
-</div>
-<div id="legend-overlay" class="card">
-  <h2 data-i18n="legend.returnPeriod">Forecast return period</h2>
-  <div id="legend-items"></div>
 </div>
 
 <!-- MODALS -->
@@ -332,7 +318,7 @@
   </div>
 </div>
 <div id="search-modal" class="backdrop hidden">
-  <div class="card modal" role="dialog" aria-modal="true" aria-labelledby="search-modal-title">
+  <div class="card modal entry" role="dialog" aria-modal="true" aria-labelledby="search-modal-title">
     <div class="modal-head">
       <h3 id="search-modal-title" data-i18n="search.heading">Find a river by ID</h3>
       <button class="btn sm" data-close="search-modal" data-i18n-aria-label="common.close" aria-label="Close">✕</button>
@@ -351,7 +337,7 @@
   </div>
 </div>
 <div id="save-river-modal" class="backdrop hidden">
-  <div class="card modal" role="dialog" aria-modal="true" aria-labelledby="save-river-title">
+  <div class="card modal entry" role="dialog" aria-modal="true" aria-labelledby="save-river-title">
     <div class="modal-head">
       <h3 id="save-river-title" data-i18n="saveRiver.heading">Save river</h3>
       <button class="btn sm" id="save-river-close" data-i18n-aria-label="common.close" aria-label="Close">✕</button>

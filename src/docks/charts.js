@@ -206,11 +206,11 @@ function createChartsDock({map, streams, getForecastDate}) {
     btn.replaceChildren(heroIcon(saved ? "heart-solid" : "heart"));
     btn.classList.toggle("saved", !!saved);
     btn.setAttribute("aria-pressed", String(!!saved));
-    // Set as data-i18n-* as well as directly, so a language change retranslates a label whose key
-    // depends on state — applyTranslations() walks these attributes and can't know the state.
+    // Recorded as data-i18n-title as well as written, so a language change retranslates a label
+    // whose key depends on state — applyTranslations() walks that attribute and can't know the
+    // state. It writes the aria-label from the same key, so there is nothing to set here.
     const key = saved ? "river.unsave" : "river.save";
     btn.dataset.i18nTitle = key;
-    btn.dataset.i18nAriaLabel = key;
     btn.title = t(key);
     btn.setAttribute("aria-label", t(key));
     // Nothing to clear with no reach selected — the panel's button is the state readout for that.

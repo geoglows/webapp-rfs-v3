@@ -1,5 +1,4 @@
 {
-  "app.title": "Sistema de Pronóstico de Ríos v3",
   "common.close": "Cerrar",
   "settings.label": "Configuración",
   "theme.toggle": "Cambiar tema claro / oscuro",
@@ -25,7 +24,7 @@
   "stream.hideSlider": "Ocultar control deslizante temporal",
   "stream.showSlider": "Mostrar control deslizante temporal",
   "flood.heading": "Mapeo de inundaciones",
-  "flood.enable": "Activar modo de mapeo de inundaciones",
+  "flood.enable": "Crear mapas de inundación",
   "flood.disable": "Modo de mapeo de inundaciones: ACTIVADO",
   "flood.inlet": "＋ Entrada",
   "flood.outlet": "✦ Salida",
