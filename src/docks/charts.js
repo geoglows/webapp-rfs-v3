@@ -293,9 +293,12 @@ function createChartsDock({map, streams, getForecastDate}) {
    * argument to reuse the last one. Whatever index the caller carries is the index of that reach on
    * the axis the readers hit; a caller with only an id leaves it null and targetIndex() looks it up.
    *
-   * `location` is where the reach is, if the caller knows: the click point for a map click, the
-   * stored outlet for a saved river. Passed separately from `props` because a map click's point is
-   * not one of the tile's attributes and has no business in the details table.
+   * `location` is where the reach is, if the caller knows: the point on the line for a map click,
+   * the stored outlet for a saved river. Passed separately from `props` because a map click's point
+   * is not one of the tile's attributes and has no business in the details table.
+   *
+   * Returns the dock's own promise: the charts start fetching here and now, but the panel takes a
+   * moment to widen, and a caller moving the camera has to let it finish first (see map/framing.js).
    */
   function openForRiver(props, location = null) {
     selectionId++;
@@ -315,7 +318,7 @@ function createChartsDock({map, streams, getForecastDate}) {
     renderHead();
     for (const name of CHARTS_TABS) rendered[name] = false;
     activateTab("forecast");
-    openDock(map, "charts");
+    return openDock(map, "charts");
   }
 
   /** Repaint live charts after a theme change; no-op if the chart bundle was never loaded. */

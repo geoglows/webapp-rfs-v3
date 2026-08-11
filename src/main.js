@@ -5,6 +5,7 @@ import {map} from "./map/map";
 import {applyBasemap, defaultBasemap} from "./map/basemaps";
 import {addRasterLayer, applyStreamsVisibility} from "./map/layers";
 import {Streams} from "./map/Streams.js";
+import {focusRiver, snapToFeature, travelToRiver} from "./map/framing";
 import {createFloodController} from "./map/flood-maps/floodController";
 import {build, status} from "./data/riverIndex";
 import {hydrateIcons} from "./icons/icons";
@@ -46,12 +47,31 @@ const flood = createFloodController({
 
 const chartsDock = createChartsDock({map, streams, getForecastDate: () => currentForecastDate});
 
-function goToRiver(river) {
-  if (river.lat != null && river.lon != null) {
-    map.flyTo({center: [river.lon, river.lat], zoom: Math.max(map.getZoom(), 10)});
-  }
-  chartsDock.openForRiver(river, river);
+// Which selection the camera belongs to, so a move waiting on the panel can tell it has been
+// overtaken by a later one.
+let cameraSeq = 0;
+
+/**
+ * Point the app at a reach: open the charts for it, then move the camera to it.
+ *
+ * In that order, and never at once. The dock opening is what changes the size of the map, and a
+ * camera animation running while that happens misses — MapLibre aims an ease at a screen point it
+ * decided on before the map was resized. So the layout goes first and the camera last, with nothing
+ * left afterwards to move the reach out from under it. The wait costs nothing that is worth having:
+ * the charts' downloads are already in flight from the line above, behind the spinner, and the panel
+ * transition is the only thing being waited on.
+ *
+ * `move` is how this reach was arrived at — travelled to deliberately, or clicked on the map.
+ */
+async function showRiver(river, {location = river, target = river, move = travelToRiver} = {}) {
+  const seq = ++cameraSeq;
+  await chartsDock.openForRiver(river, location);
+  // Another reach was picked while the panel was widening — that one owns the camera now, and this
+  // move would drag the view back off it.
+  if (seq === cameraSeq) move(map, target);
 }
+
+const goToRiver = (river) => void showRiver(river);
 
 // A saved river arrives whole: id, position on the zarr riverId axis, and outlet coordinate. The
 // two lists are the same table over different rows — the app's defaults, and the user's own.
@@ -134,11 +154,13 @@ map.on("load", async () => {
         flood.selectReach(Number(hit.properties.riverId));
         return;
       }
-      // Clicking a reach while zoomed out fluidly zooms in to it so the stream fills the view.
-      if (map.getZoom() < 10) map.easeTo({center: e.lngLat, zoom: 10});
-      // The click point comes along as the reach's location: saving it from here then costs no
-      // lookup at all, since the tile already carried the index and this is where it is.
-      chartsDock.openForRiver(hit.properties, {lat: e.lngLat.lat, lon: e.lngLat.lng});
+      // The reach itself rather than where the pointer landed, which at low zoom are nowhere near
+      // each other — the query box above is ±10px, and that is a couple of hundred kilometres of
+      // tolerance when the whole world is on screen.
+      const at = snapToFeature(hit, e.lngLat) ?? {lat: e.lngLat.lat, lon: e.lngLat.lng};
+      // That point comes along as the reach's location: saving it from here then costs no lookup at
+      // all, since the tile already carried the index and this is where it is.
+      void showRiver(hit.properties, {location: at, target: at, move: focusRiver});
       return;
     }
     if (flood.isMappingMode()) flood.queryDepth(e.lngLat);
