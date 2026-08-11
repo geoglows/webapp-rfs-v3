@@ -44,7 +44,7 @@ function heroIcon(name) {
 /** A button whose face is a heroicon and whose name is a translated title/aria-label. */
 const iconButton = (icon, titleKey, className = "") => {
   const btn = document.createElement("button");
-  btn.className = `icon-btn ${className}`.trim();
+  btn.className = `btn icon ${className}`.trim();
   btn.replaceChildren(heroIcon(icon));
   btn.title = t(titleKey);
   btn.setAttribute("aria-label", t(titleKey));

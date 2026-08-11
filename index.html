@@ -5,186 +5,189 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>%VITE_APP_TITLE%</title>
   <meta name="description" content="%VITE_APP_DESCRIPTION%"/>
+  <script type="module" src="/src/main.js" async defer></script>
   <link rel="stylesheet" href="/src/style.css"/>
 </head>
 <body>
-<div id="map"></div>
-<div id="left-panel" class="panel">
+
+<div id="panel">
   <header>
-    <a id="app-logo-link" class="app-logo-link" href="%VITE_LOGO_HREF%"><img id="app-logo" class="app-logo" src="%VITE_LOGO_SRC%" alt="%VITE_LOGO_ALT%" width="%VITE_LOGO_WIDTH%" height="%VITE_LOGO_HEIGHT%"/></a>
-    <h1 data-i18n="app.title">%VITE_APP_TITLE%</h1>
-    <div class="header-actions">
-      <button id="btn-settings" class="icon-btn" data-icon-name="cog-6-tooth" data-i18n-title="settings.label" data-i18n-aria-label="settings.label" title="Settings" aria-label="Settings"></button>
-      <div id="lang-control">
-        <button id="btn-language" class="icon-btn" data-icon-name="language" data-i18n-title="lang.title" data-i18n-aria-label="lang.aria" title="Language" aria-label="Change language" aria-haspopup="true" aria-expanded="false"></button>
+    <a href="%VITE_LOGO_HREF%">
+      <img src="%VITE_LOGO_SRC%" alt="%VITE_LOGO_ALT%" width="%VITE_LOGO_WIDTH%" height="%VITE_LOGO_HEIGHT%"/>
+    </a>
+    <h1>%VITE_APP_TITLE%</h1>
+    <div class="row">
+      <button id="btn-settings" class="btn icon" data-icon-name="cog-6-tooth" data-i18n-title="settings.label" title="Settings"></button>
+      <div class="anchor">
+        <button id="btn-language" class="btn icon" data-icon-name="language" data-i18n-title="lang.title"
+                data-i18n-aria-label="lang.aria" title="Language" aria-label="Change language"
+                aria-haspopup="true" aria-expanded="false"></button>
         <!-- see initLanguagePicker() in src/settings/settings.js -->
-        <div id="lang-menu" class="map-menu hidden" role="menu">
-          <button class="layer-opt" role="menuitemradio" data-lang="en">English</button>
-          <button class="layer-opt" role="menuitemradio" data-lang="es">Español</button>
-          <button class="layer-opt" role="menuitemradio" data-lang="fr">Français</button>
+        <div id="lang-menu" class="card menu hidden" role="menu">
+          <button class="opt" role="menuitemradio" data-lang="en">English</button>
+          <button class="opt" role="menuitemradio" data-lang="es">Español</button>
+          <button class="opt" role="menuitemradio" data-lang="fr">Français</button>
         </div>
       </div>
-      <button id="btn-theme" class="icon-btn" data-i18n-title="theme.toggle" data-i18n-aria-label="theme.toggle" title="Toggle light / dark theme" aria-label="Toggle light or dark theme"></button>
-      <button id="btn-instructions" class="icon-btn" data-icon-name="question-mark-circle" data-i18n-title="instructions.label" data-i18n-aria-label="instructions.label" title="How to use this site" aria-label="How to use this site"></button>
-      <button id="btn-info" class="icon-btn" data-icon-name="information-circle" data-i18n-title="about.label" data-i18n-aria-label="about.label" title="About" aria-label="About"></button>
+      <button id="btn-theme" class="btn icon" data-i18n-title="theme.toggle" title="Toggle light / dark theme"></button>
+      <button id="btn-instructions" class="btn icon" data-icon-name="question-mark-circle" data-i18n-title="instructions.label" title="How to use this site"></button>
+      <button id="btn-info" class="btn icon" data-icon-name="information-circle" data-i18n-title="about.label" title="About"></button>
     </div>
   </header>
-  <main id="scroll">
-    <section id="hydrology-section">
-      <h2 data-i18n="hydro.heading">Hydrology predictions</h2>
-      <div class="hydro-field">
-        <label class="field-label" for="forecast-date" data-i18n="hydro.forecastDate">Forecast Initialization Date</label>
-        <input id="forecast-date" type="date" class="select"/>
-      </div>
-      <div class="hydro-field">
-        <label class="field-label" for="stream-style" data-i18n="stream.style">Stream style</label>
-        <select id="stream-style" class="select">
-          <option value="standard" data-i18n="stream.style.standard">Standard</option>
-          <option value="max-flow" selected data-i18n="stream.style.max-flow">Forecasted Max Flows</option>
-          <option value="timeseries" data-i18n="stream.style.timeseries">15 Day Forecast Timeseries</option>
-          <option value="time-to-peak" data-i18n="stream.style.time-to-peak">Time to Peak</option>
-          <option value="below-q95" data-i18n="stream.style.below-q95">Below Q95 flow</option>
-        </select>
-      </div>
-      <div class="hydro-actions">
-        <button id="btn-charts" class="icon-btn" data-icon-name="chart-bar-solid" data-i18n-title="hydro.charts" data-i18n-aria-label="hydro.charts"
-                title="View discharge charts" aria-label="View discharge charts"></button>
-        <button id="btn-bookmarks" class="icon-btn" data-icon-name="bookmark-solid" data-i18n-title="hydro.bookmarks.title" data-i18n-aria-label="hydro.bookmarks.aria"
-                title="Notable global rivers" aria-label="Browse notable global rivers"></button>
-        <button id="btn-saved" class="icon-btn" data-icon-name="heart-solid" data-i18n-title="hydro.saved.title" data-i18n-aria-label="hydro.saved.aria"
-                title="My saved rivers" aria-label="Browse my saved rivers"></button>
-        <button id="btn-search-river" class="icon-btn" data-icon-name="magnifying-glass-solid" data-i18n-title="hydro.searchRiver" data-i18n-aria-label="hydro.searchRiver"
-                title="Search River ID" aria-label="Search River ID"></button>
-        <!-- Lives out here rather than in the charts dock head: the green highlight outlives the
-             dock, so the way to clear it has to be reachable whether or not a dock is open. -->
-        <button id="btn-clear-river" class="icon-btn" data-icon-name="backspace" data-i18n-title="hydro.clearRiver" data-i18n-aria-label="hydro.clearRiver"
-                title="Clear the selected river" aria-label="Clear the selected river" disabled></button>
-        <button id="btn-toggle-slider" class="icon-btn" data-icon-name="clock-solid" data-i18n-title="stream.hideSlider" data-i18n-aria-label="stream.hideSlider"
-                title="Hide timeseries slider" aria-label="Hide timeseries slider"></button>
-      </div>
-    </section>
-
-    <!-- ── Flood mapping ── -->
-    <section>
-      <h2 data-i18n="flood.heading">Flood Mapping</h2>
-      <!-- The order is the order you use them in: turn the mode on, say what kind of flood you want,
-           then act on the selection you have made. Clear and Save GeoTIFF sit below the dropdown
-           because neither does anything until reaches are selected, which is after both. -->
-      <div class="flood-actions">
-        <button id="btn-flood-mode" class="btn toggle" data-i18n="flood.enable">Enable flood mapping mode</button>
-      </div>
-      <div class="hydro-field">
-        <label class="field-label" for="flood-style" data-i18n="flood.style">Flood style</label>
-        <select id="flood-style" class="select">
-          <option value="ratingcurve" selected data-i18n="flood.style.ratingcurve">Synthetic Rating Curve Slider</option>
-          <option value="returnperiod" data-i18n="flood.style.returnperiod">Return Period Indexed</option>
-          <option value="manual" data-i18n="flood.style.manual">Manually Specified Flow</option>
-          <option value="forecast" data-i18n="flood.style.forecast">Forecast Timeseries</option>
-          <option value="forecastmax" data-i18n="flood.style.forecastmax">Forecast Maximum</option>
-        </select>
-      </div>
-      <div class="flood-actions">
-        <button id="btn-clear" class="btn ghost" disabled data-i18n="flood.clear">Clear selection</button>
-        <button id="btn-save-geotiff" class="btn ghost" disabled data-i18n="flood.saveGeotiff">⬇ Save GeoTIFF</button>
-      </div>
-      <div id="flood-controls" class="mode-off">
-        <!-- Only ever shows a refused click; the selection itself is logged (flood-maps/selection.js). -->
-        <div id="warning" class="warning hidden"></div>
-        <div id="qctl-ladder" class="ctl">
-          <label for="ladder"><span data-i18n="flood.dischargeLevel">Discharge level</span> <em id="ladder-val"></em></label>
-          <input id="ladder" type="range" min="0" max="10" step="0.05" value="5"/>
+  <main>
+    <div id="scroll">
+      <section id="hydrology-section">
+        <h2 data-i18n="hydro.heading">Hydrology predictions</h2>
+        <div class="field">
+          <label for="forecast-date" data-i18n="hydro.forecastDate">Forecast Initialization Date</label>
+          <input id="forecast-date" type="date"/>
         </div>
-        <div id="qctl-uniform" class="ctl hidden">
-          <label for="uniform" data-i18n="flood.uniformLabel">Discharge for every selected reach (m³/s)</label>
-          <input id="uniform" type="number" min="0" step="10" value="400"/>
+        <div class="field">
+          <label for="stream-style" data-i18n="stream.style">Stream style</label>
+          <select id="stream-style">
+            <option value="standard" data-i18n="stream.style.standard">Standard</option>
+            <option value="max-flow" selected data-i18n="stream.style.max-flow">Forecasted Max Flows</option>
+            <option value="timeseries" data-i18n="stream.style.timeseries">15 Day Forecast Timeseries</option>
+            <option value="time-to-peak" data-i18n="stream.style.time-to-peak">Time to Peak</option>
+            <option value="below-q95" data-i18n="stream.style.below-q95">Below Q95 flow</option>
+          </select>
         </div>
-        <div id="qctl-forecast" class="ctl hidden">
-          <div class="fc-player">
-            <button id="btn-fc-play" data-i18n-title="flood.fcPlay" title="Play / pause the forecast animation" disabled>▶</button>
-            <div class="timewrap">
-              <div class="timerow">
-                <span id="fc-time-label">—</span>
-                <span id="fc-step-label">–/–</span>
+        <div class="row">
+          <button id="btn-charts" class="btn icon" data-icon-name="chart-bar-solid" data-i18n-title="hydro.charts" title="View discharge charts"></button>
+          <button id="btn-bookmarks" class="btn icon" data-icon-name="bookmark-solid" data-i18n-title="hydro.bookmarks.title" data-i18n-aria-label="hydro.bookmarks.aria"
+                  title="Notable global rivers" aria-label="Browse notable global rivers"></button>
+          <button id="btn-saved" class="btn icon" data-icon-name="heart-solid" data-i18n-title="hydro.saved.title" data-i18n-aria-label="hydro.saved.aria"
+                  title="My saved rivers" aria-label="Browse my saved rivers"></button>
+          <button id="btn-search-river" class="btn icon" data-icon-name="magnifying-glass-solid" data-i18n-title="hydro.searchRiver" title="Search River ID"></button>
+          <button id="btn-clear-river" class="btn icon" data-icon-name="backspace" data-i18n-title="hydro.clearRiver" title="Clear the selected river" disabled></button>
+          <button id="btn-toggle-slider" class="btn icon" data-icon-name="clock-solid" data-i18n-title="stream.hideSlider" title="Hide timeseries slider"></button>
+        </div>
+      </section>
+      <section>
+        <h2 data-i18n="flood.heading">Flood Mapping</h2>
+        <div class="row wrap">
+          <button id="btn-flood-mode" class="btn toggle" data-i18n="flood.enable">Create Flood Maps</button>
+        </div>
+        <div class="field">
+          <label for="flood-style" data-i18n="flood.style">Flood style</label>
+          <select id="flood-style">
+            <option value="ratingcurve" selected data-i18n="flood.style.ratingcurve">Synthetic Rating Curve Slider</option>
+            <option value="returnperiod" data-i18n="flood.style.returnperiod">Return Period Indexed</option>
+            <option value="manual" data-i18n="flood.style.manual">Manually Specified Flow</option>
+            <option value="forecast" data-i18n="flood.style.forecast">Forecast Timeseries</option>
+            <option value="forecastmax" data-i18n="flood.style.forecastmax">Forecast Maximum</option>
+          </select>
+        </div>
+        <div class="row wrap">
+          <button id="btn-clear" class="btn" disabled data-i18n="flood.clear">Clear selection</button>
+          <button id="btn-save-geotiff" class="btn" disabled data-i18n="flood.saveGeotiff">⬇ Save GeoTIFF</button>
+        </div>
+        <div id="flood-controls" class="mode-off">
+          <div id="warning" class="warning hidden"></div>
+          <div id="qctl-ladder" class="field">
+            <label for="ladder"><span data-i18n="flood.dischargeLevel">Discharge level</span> <em id="ladder-val"></em></label>
+            <input id="ladder" type="range" min="0" max="10" step="0.05" value="5"/>
+          </div>
+          <div id="qctl-uniform" class="field hidden">
+            <label for="uniform" data-i18n="flood.uniformLabel">Discharge for every selected reach (m³/s)</label>
+            <input id="uniform" type="number" min="0" step="10" value="400"/>
+          </div>
+          <div id="qctl-forecast" class="field hidden">
+            <div class="player compact">
+              <button id="btn-fc-play" class="btn primary round" data-i18n-title="flood.fcPlay" title="Play / pause the forecast animation" disabled>▶</button>
+              <div class="col grow">
+                <div class="row between">
+                  <span id="fc-time-label" class="time">—</span>
+                  <span id="fc-step-label" class="step">–/–</span>
+                </div>
+                <input id="fc-slider" type="range" min="0" max="0" step="1" value="0" disabled/>
               </div>
-              <input id="fc-slider" type="range" min="0" max="0" step="1" value="0" disabled/>
-            </div>
-            <div class="speedwrap">
-              <label for="fc-speed" data-i18n="player.speed">Speed</label>
-              <select id="fc-speed">
-                <option value="1">1×</option>
-                <option value="2">2×</option>
-                <option value="4" selected>4×</option>
-                <option value="8">8×</option>
-              </select>
+              <div class="col speed">
+                <label for="fc-speed" data-i18n="player.speed">Speed</label>
+                <select id="fc-speed">
+                  <option value="1">1×</option>
+                  <option value="2">2×</option>
+                  <option value="4" selected>4×</option>
+                  <option value="8">8×</option>
+                </select>
+              </div>
             </div>
           </div>
+          <div id="flood-status" class="hint" data-i18n="flood.status">Flood updates live as you move the slider.</div>
+          <div class="row between hint"><span>0 m</span><span data-i18n="legend.floodDepth">flood depth</span><span>≥8 m</span></div>
+          <div id="legend-depth"></div>
+          <div id="readout" class="hint status" data-i18n="legend.readout">click a flooded pixel for depth</div>
         </div>
-        <div id="flood-status" class="hint" data-i18n="flood.status">Flood updates live as you move the slider.</div>
-
-        <div class="legend-label"><span>0 m</span><span data-i18n="legend.floodDepth">flood depth</span><span>≥8 m</span></div>
-        <div id="legend-depth"></div>
-        <div id="readout" class="hint" data-i18n="legend.readout">click a flooded pixel for depth</div>
+      </section>
+    </div>
+    <div id="charts-dock" class="dock">
+      <div class="modal-head">
+        <div class="row">
+          <h3 id="charts-modal-title" data-i18n="charts.heading">Discharge charts</h3>
+          <button id="charts-save" class="btn sm" type="button" aria-pressed="false" hidden></button>
+          <span id="charts-river-name" class="dock-river-name"></span>
+        </div>
+        <button id="charts-close" class="btn sm" data-i18n-aria-label="common.close" aria-label="Close">✕</button>
       </div>
-    </section>
+      <div class="tabs row" role="tablist">
+        <button id="charts-tab-forecast" class="btn tab active" role="tab" aria-selected="true" aria-controls="charts-panel-forecast"
+                data-charts-tab="forecast" data-i18n="charts.tab.forecast">Forecast</button>
+        <button id="charts-tab-retro" class="btn tab" role="tab" aria-selected="false" aria-controls="charts-panel-retro"
+                data-charts-tab="retro" data-i18n="charts.tab.retro">Retrospective</button>
+        <button id="charts-tab-details" class="btn tab" role="tab" aria-selected="false" aria-controls="charts-panel-details"
+                data-charts-tab="details" data-i18n="charts.tab.details">Details</button>
+      </div>
+      <div class="modal-body">
+        <div id="charts-panel-forecast" role="tabpanel" aria-labelledby="charts-tab-forecast"></div>
+        <div id="charts-panel-retro" role="tabpanel" aria-labelledby="charts-tab-retro" hidden></div>
+        <div id="charts-panel-details" role="tabpanel" aria-labelledby="charts-tab-details" hidden></div>
+      </div>
+    </div>
+    <div id="bookmarks-dock" class="dock">
+      <div class="modal-head">
+        <h3 data-i18n="bookmarks.heading">Notable Global Rivers Reference</h3>
+        <button class="btn sm" id="bookmarks-close" data-i18n-aria-label="common.close" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body" id="bookmarks-body"></div>
+    </div>
+    <div id="saved-dock" class="dock">
+      <div class="modal-head">
+        <h3 data-i18n="saved.heading">My Saved Rivers</h3>
+        <button class="btn sm" id="saved-close" data-i18n-aria-label="common.close" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body" id="saved-body"></div>
+    </div>
   </main>
-  <div id="charts-dock">
-    <div class="modal-head">
-      <div class="dock-title">
-        <h3 id="charts-modal-title" data-i18n="charts.heading">Discharge charts</h3>
-        <button id="charts-save" class="icon-btn heart-btn" type="button" aria-pressed="false" hidden></button>
-        <span id="charts-river-name" class="dock-river-name"></span>
-      </div>
-      <button id="charts-close" class="modal-close"
-              data-i18n-aria-label="common.close" aria-label="Close">✕</button>
-    </div>
-    <div class="charts-tabs mode-row" role="tablist">
-      <button id="charts-tab-forecast" class="mode active" role="tab" aria-selected="true"
-              aria-controls="charts-panel-forecast" data-charts-tab="forecast"
-              data-i18n="charts.tab.forecast">Forecast
-      </button>
-      <button id="charts-tab-retro" class="mode" role="tab" aria-selected="false"
-              aria-controls="charts-panel-retro" data-charts-tab="retro"
-              data-i18n="charts.tab.retro">Retrospective
-      </button>
-      <button id="charts-tab-details" class="mode" role="tab" aria-selected="false"
-              aria-controls="charts-panel-details" data-charts-tab="details"
-              data-i18n="charts.tab.details">Details
-      </button>
-    </div>
-    <div class="modal-body">
-      <div id="charts-panel-forecast" role="tabpanel" aria-labelledby="charts-tab-forecast"></div>
-      <div id="charts-panel-retro" role="tabpanel" aria-labelledby="charts-tab-retro" hidden></div>
-      <div id="charts-panel-details" role="tabpanel" aria-labelledby="charts-tab-details" hidden></div>
-    </div>
+</div>
+<div id="map"></div>
+
+<!-- MAP CONTROL OVERLAYS · all share .map-overlay and differ only in where they sit -->
+<div id="map-controls" class="col map-overlay">
+  <div class="anchor">
+    <button id="layer-btn" class="btn map" aria-haspopup="true" aria-expanded="false" data-i18n-title="layers.label" title="Map layers"></button>
+    <div id="layer-menu" class="card menu hidden" role="menu"></div>
   </div>
-  <div id="bookmarks-dock">
-    <div class="modal-head">
-      <h3 data-i18n="bookmarks.heading">Notable Global Rivers Reference</h3>
-      <button class="modal-close" id="bookmarks-close" data-i18n-aria-label="common.close" aria-label="Close">✕</button>
-    </div>
-    <div class="modal-body" id="bookmarks-body"></div>
-  </div>
-  <div id="saved-dock">
-    <div class="modal-head">
-      <h3 data-i18n="saved.heading">My Saved Rivers</h3>
-      <button class="modal-close" id="saved-close" data-i18n-aria-label="common.close" aria-label="Close">✕</button>
-    </div>
-    <div class="modal-body" id="saved-body"></div>
+  <div class="anchor">
+    <button id="basemap-btn" class="btn map" aria-haspopup="true" aria-expanded="false" data-i18n-title="basemap.label" title="Basemap"></button>
+    <div id="basemap-menu" class="card menu hidden" role="menu"></div>
   </div>
 </div>
-
-<!-- BOTTOM: animation player -->
-<div id="player">
+<div id="legend-overlay" class="card map-overlay">
+  <h2 data-i18n="legend.returnPeriod">Forecast return period</h2>
+  <div id="legend-items"></div>
+</div>
+<!-- last of the overlays so it paints over the legend where the two meet on a narrow map -->
+<div id="player" class="card player map-overlay">
   <div id="progress-bar"></div>
-  <button id="btn-play" data-i18n-title="player.play" title="Play / pause (space)">▶</button>
-  <div class="timewrap">
-    <div class="timerow">
-      <span id="time-label">—</span>
-      <span id="step-label">–/–</span>
+  <button id="btn-play" class="btn primary round" data-i18n-title="player.play" title="Play / pause (space)">▶</button>
+  <div class="col grow">
+    <div class="row between">
+      <span id="time-label" class="time">—</span>
+      <span id="step-label" class="step">–/–</span>
     </div>
     <input id="slider" type="range" min="0" max="0" step="1" value="0" disabled/>
   </div>
-  <div class="speedwrap">
+  <div class="col speed">
     <label for="speed" data-i18n="player.speed">Speed</label>
     <select id="speed">
       <option value="1">1×</option>
@@ -195,145 +198,197 @@
   </div>
 </div>
 
-<!-- MAP OVERLAY: map controls (top-right) — separate layer + basemap pickers -->
-<div id="map-controls">
-  <!-- layer picker: independent on/off toggles -->
-  <div id="layer-control">
-    <!-- icon injected from @esri/calcite-ui-icons at runtime (see src/icons/calcite.js) -->
-    <button id="layer-btn" class="map-btn icon-only" aria-haspopup="true" aria-expanded="false"
-            data-i18n-title="layers.label" data-i18n-aria-label="layers.label"
-            title="Map layers" aria-label="Map layers"></button>
-    <div id="layer-menu" class="map-menu hidden" role="menu"></div>
-  </div>
-  <!-- basemap picker: single-choice radio group, sits beneath the layer picker -->
-  <div id="basemap-control">
-    <!-- icon injected from @esri/calcite-ui-icons at runtime (see src/icons/calcite.js) -->
-    <button id="basemap-btn" class="map-btn icon-only" aria-haspopup="true" aria-expanded="false"
-            data-i18n-title="basemap.label" data-i18n-aria-label="basemap.label"
-            title="Basemap" aria-label="Basemap"></button>
-    <div id="basemap-menu" class="map-menu hidden" role="menu"></div>
-  </div>
-</div>
-
-<!-- MAP OVERLAY: forecast return-period legend (bottom-left) -->
-<div id="legend-overlay">
-  <h2 data-i18n="legend.returnPeriod">Forecast return period</h2>
-  <div id="legend-items"></div>
-</div>
-
-<!-- info / about modal · body is one document per language under src/modals/about/, fetched the first
-     time this is opened. Credits and attributions change whenever a dependency or data source does,
-     so they live as markup next to each other rather than as forty keys in the label dictionary. See
-     src/modals/about/about.js, and src/modals/docModal.js for the loading the two prose modals share. -->
-<div id="info-modal" class="modal-backdrop hidden">
-  <div class="modal medium" role="dialog" aria-modal="true" aria-labelledby="info-modal-title">
+<!-- MODALS -->
+<div id="info-modal" class="backdrop hidden">
+  <div class="card modal wide" role="dialog" aria-modal="true" aria-labelledby="info-modal-title">
     <div class="modal-head">
       <h3 id="info-modal-title" data-i18n="about.label">About</h3>
-      <button class="modal-close" data-close="info-modal" data-i18n-aria-label="common.close" aria-label="Close">✕</button>
+      <button class="btn sm" data-close="info-modal" data-i18n-aria-label="common.close" aria-label="Close">✕</button>
     </div>
-    <div class="modal-body doc-body" id="about-body"></div>
+    <!-- The sentences are the data-i18n keys, same as everywhere else; the links are here so each
+         URL is written once, and `{0}` in a sentence stands for this element's first child link —
+         which lets a translation put it wherever its word order wants. A credit that is only a
+         product name needs no key at all. -->
+    <div class="modal-body prose">
+      <p data-i18n-html="about.intro"></p>
+
+      <h4 data-i18n="about.data.h"></h4>
+      <ul>
+        <li data-i18n-html="about.data.geoglows">
+          <a href="https://geoglows.org/" target="_blank" rel="noopener">GEOGLOWS River Forecast System</a>
+        </li>
+        <li data-i18n-html="about.data.fabdem">
+          <a href="https://data.bris.ac.uk/data/dataset/25wfy0f9ukoge2gs7a5mqpq2j7" target="_blank" rel="noopener">FABDEM</a>
+        </li>
+      </ul>
+
+      <h4 data-i18n="about.layers.h"></h4>
+      <ul>
+        <li data-i18n-html="about.layers.basemaps">
+          <a href="https://livingatlas.arcgis.com/" target="_blank" rel="noopener">ArcGIS Living Atlas</a>
+          <a href="https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer" target="_blank" rel="noopener">USGS The National Map</a>
+        </li>
+        <li data-i18n-html="about.layers.riverfld">
+          <a href="https://floods.ssec.wisc.edu/products/RIVER-FLDglobal-composite" target="_blank" rel="noopener"
+             data-i18n="about.layers.riverfld.link"></a>
+        </li>
+        <li data-i18n-html="about.layers.goes">
+          <a href="https://www.arcgis.com/home/item.html?id=37a875ff3611496883b7ccca97f0f5f4" target="_blank" rel="noopener"
+             data-i18n="about.layers.goes.link"></a>
+        </li>
+        <li data-i18n-html="about.layers.viirs">
+          <a href="https://www.arcgis.com/home/item.html?id=c873f4c13aa54b25b01270df9358dc64" target="_blank" rel="noopener"
+             data-i18n="about.layers.viirs.link"></a>
+        </li>
+      </ul>
+
+      <h4 data-i18n="about.oss.h"></h4>
+      <ul>
+        <li><a href="https://maplibre.org/" target="_blank" rel="noopener">MapLibre GL JS</a></li>
+        <li><a href="https://github.com/Esri/calcite-ui-icons" target="_blank" rel="noopener">Calcite UI Icons</a></li>
+        <li><a href="https://github.com/tailwindlabs/heroicons" target="_blank" rel="noopener">Heroicons</a></li>
+        <li data-i18n-html="about.oss.chartjs">
+          <a href="https://www.chartjs.org/" target="_blank" rel="noopener">Chart.js</a>
+        </li>
+        <li data-i18n-html="about.oss.zarr">
+          <a href="https://github.com/manzt/zarrita.js" target="_blank" rel="noopener">zarrita.js</a>
+          <a href="https://github.com/manzt/numcodecs.js" target="_blank" rel="noopener">numcodecs</a>
+        </li>
+        <li><a href="https://github.com/protomaps/PMTiles" target="_blank" rel="noopener">PMTiles</a></li>
+      </ul>
+    </div>
   </div>
 </div>
-
-<!-- how-to-use modal · the text is not in here and not in i18n.js: it is one document per language
-     under src/modals/instructions/, fetched the first time this is opened. See
-     src/modals/instructions/instructions.js. -->
-<div id="instructions-modal" class="modal-backdrop hidden">
-  <div class="modal medium" role="dialog" aria-modal="true" aria-labelledby="instructions-modal-title">
+<div id="instructions-modal" class="backdrop hidden">
+  <div class="card modal wide" role="dialog" aria-modal="true" aria-labelledby="instructions-modal-title">
     <div class="modal-head">
       <h3 id="instructions-modal-title" data-i18n="instructions.heading">How to use this site</h3>
-      <button class="modal-close" data-close="instructions-modal" data-i18n-aria-label="common.close" aria-label="Close">✕</button>
+      <button class="btn sm" data-close="instructions-modal" data-i18n-aria-label="common.close" aria-label="Close">✕</button>
     </div>
-    <div class="modal-body doc-body" id="instructions-body"></div>
+    <!-- Prose, so the elements are empty and every sentence is a key in src/i18n/locales/.
+         data-i18n-html rather than data-i18n where a sentence emphasises the control it names. -->
+    <div class="modal-body prose">
+      <h4 data-i18n="instructions.disclaimer.h"></h4>
+      <p data-i18n-html="instructions.disclaimer.p"></p>
+
+      <h4 data-i18n="instructions.map.h"></h4>
+      <p data-i18n-html="instructions.map.click"></p>
+      <p data-i18n-html="instructions.map.pickers"></p>
+
+      <h4 data-i18n="instructions.hydro.h"></h4>
+      <p data-i18n-html="instructions.hydro.date"></p>
+      <p data-i18n-html="instructions.hydro.styleIntro"></p>
+      <ul>
+        <li data-i18n-html="instructions.hydro.style.standard"></li>
+        <li data-i18n-html="instructions.hydro.style.maxflow"></li>
+        <li data-i18n-html="instructions.hydro.style.timeseries"></li>
+        <li data-i18n-html="instructions.hydro.style.timeToPeak"></li>
+        <li data-i18n-html="instructions.hydro.style.belowQ95"></li>
+      </ul>
+      <p data-i18n-html="instructions.hydro.buttons"></p>
+
+      <h4 data-i18n="instructions.charts.h"></h4>
+      <p data-i18n-html="instructions.charts.tabs"></p>
+      <p data-i18n-html="instructions.charts.saved"></p>
+
+      <h4 data-i18n="instructions.flood.h"></h4>
+      <p data-i18n-html="instructions.flood.mode"></p>
+      <ol>
+        <li data-i18n-html="instructions.flood.step.zoom"></li>
+        <li data-i18n-html="instructions.flood.step.enable"></li>
+        <li data-i18n-html="instructions.flood.step.select"></li>
+        <li data-i18n-html="instructions.flood.step.style"></li>
+      </ol>
+      <p data-i18n-html="instructions.flood.styleIntro"></p>
+      <ul>
+        <li data-i18n-html="instructions.flood.style.ratingcurve"></li>
+        <li data-i18n-html="instructions.flood.style.returnperiod"></li>
+        <li data-i18n-html="instructions.flood.style.manual"></li>
+        <li data-i18n-html="instructions.flood.style.forecast"></li>
+        <li data-i18n-html="instructions.flood.style.forecastmax"></li>
+      </ul>
+      <p data-i18n-html="instructions.flood.readout"></p>
+
+      <h4 data-i18n="instructions.model.h"></h4>
+      <p data-i18n-html="instructions.model.p"></p>
+
+      <h4 data-i18n="instructions.settings.h"></h4>
+      <p data-i18n-html="instructions.settings.p"></p>
+    </div>
   </div>
 </div>
-
-<!-- river ID search, see src/ui/riverSearch.js. -->
-<div id="search-modal" class="modal-backdrop hidden">
-  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="search-modal-title">
+<div id="search-modal" class="backdrop hidden">
+  <div class="card modal entry" role="dialog" aria-modal="true" aria-labelledby="search-modal-title">
     <div class="modal-head">
       <h3 id="search-modal-title" data-i18n="search.heading">Find a river by ID</h3>
-      <button class="modal-close" data-close="search-modal" data-i18n-aria-label="common.close" aria-label="Close">✕</button>
+      <button class="btn sm" data-close="search-modal" data-i18n-aria-label="common.close" aria-label="Close">✕</button>
     </div>
     <div class="modal-body">
-      <form id="search-form" autocomplete="off">
-        <label class="field-label" for="search-river-id" data-i18n="search.label">River ID</label>
-        <div class="search-row">
-          <input id="search-river-id" class="select" type="text" inputmode="numeric"
+      <form id="search-form" class="field" autocomplete="off">
+        <label for="search-river-id" data-i18n="search.label">River ID</label>
+        <div class="row">
+          <input id="search-river-id" type="text" inputmode="numeric"
                  data-i18n-placeholder="search.placeholder" placeholder="e.g. 760021611"/>
           <button type="submit" class="btn primary" data-i18n="search.submit">Search</button>
         </div>
       </form>
-      <div id="search-status" class="hint" role="status" aria-live="polite"></div>
+      <div id="search-status" class="hint status" role="status" aria-live="polite"></div>
     </div>
   </div>
 </div>
-
-<!-- name-this-river prompt · the second half of clicking the heart on the charts dock. Its own
-     close/cancel wiring rather than the generic [data-close] handling, because dismissing it has to
-     answer the caller waiting on it (see ui/saveRiverName.js). -->
-<div id="save-river-modal" class="modal-backdrop hidden">
-  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="save-river-title">
+<div id="save-river-modal" class="backdrop hidden">
+  <div class="card modal entry" role="dialog" aria-modal="true" aria-labelledby="save-river-title">
     <div class="modal-head">
-      <h3 id="save-river-title">Save river</h3>
-      <button class="modal-close" id="save-river-close" data-i18n-aria-label="common.close" aria-label="Close">✕</button>
+      <h3 id="save-river-title" data-i18n="saveRiver.heading">Save river</h3>
+      <button class="btn sm" id="save-river-close" data-i18n-aria-label="common.close" aria-label="Close">✕</button>
     </div>
     <div class="modal-body">
-      <form id="save-river-form" autocomplete="off">
-        <label class="field-label" for="save-river-name" data-i18n="saveRiver.label">Name for this river</label>
-        <div class="search-row">
-          <input id="save-river-name" class="select" type="text" maxlength="60"
+      <form id="save-river-form" class="field" autocomplete="off">
+        <label for="save-river-name" data-i18n="saveRiver.label">Name for this river</label>
+        <div class="row">
+          <input id="save-river-name" type="text" maxlength="60"
                  data-i18n-placeholder="saveRiver.placeholder" placeholder="e.g. Gauge upstream of town"/>
           <button type="submit" class="btn primary" data-i18n="saveRiver.submit">Save</button>
-          <button type="button" id="save-river-cancel" class="btn ghost" data-i18n="common.cancel">Cancel</button>
+          <button type="button" id="save-river-cancel" class="btn" data-i18n="common.cancel">Cancel</button>
         </div>
       </form>
     </div>
   </div>
 </div>
-
-<!-- settings modal -->
-<div id="settings-modal" class="modal-backdrop hidden">
-  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="settings-modal-title">
+<div id="settings-modal" class="backdrop hidden">
+  <div class="card modal wide" role="dialog" aria-modal="true" aria-labelledby="settings-modal-title">
     <div class="modal-head">
       <h3 id="settings-modal-title" data-i18n="settings.label">Settings</h3>
-      <button class="modal-close" data-close="settings-modal" data-i18n-aria-label="common.close" aria-label="Close">✕</button>
+      <button class="btn sm" data-close="settings-modal" data-i18n-aria-label="common.close" aria-label="Close">✕</button>
     </div>
     <div class="modal-body">
-      <!-- Checked stat is set by defaults in the env file, then overriden by previous choice found in localStorage. -->
       <h4 data-i18n="settings.display">Display</h4>
-      <label class="setting-row">
+      <label class="row">
         <input type="checkbox" id="set-legend"/>
         <span data-i18n="settings.showLegend">Show forecast return-period legend</span>
       </label>
-      <label class="setting-row">
+      <label class="row">
         <input type="checkbox" id="set-shaded-warning-levels"/>
         <span data-i18n="settings.shadedWarningLevels">Shade warning levels on the forecast chart</span>
       </label>
-      <label class="setting-row">
+      <label class="row">
         <input type="checkbox" id="set-saved-highlight"/>
         <span data-i18n="settings.savedHighlight">Outline my saved rivers on the map</span>
       </label>
-
-      <!-- Downloads the user keeps on the device. Every one is explicit and optional: they are
-           large transfers, and no feature depends on one having been taken (river-ID search is
-           the only thing that even reads one, and it says so when it can't). Rows are rendered
-           from the registry in src/data/datasets.js — see src/ui/dataSettings.js. -->
       <h4 data-i18n="settings.data">Downloaded Data</h4>
-      <p class="hint" data-i18n="settings.data.hint">This site keeps local copies of some datasets
-                                                     for better performance. These can be redownloaded at any time and are safe to delete.</p>
-      <div id="data-list" class="data-list"></div>
-      <div class="data-foot">
-        <div id="data-foot-status" class="hint"></div>
-        <div class="data-foot-actions">
-          <button id="btn-download-all" class="btn ghost" data-i18n="settings.data.downloadAll">Download everything</button>
-          <button id="btn-delete-all" class="btn ghost" data-i18n="settings.data.deleteAll">Delete everything</button>
+      <p class="hint" data-i18n="settings.data.hint">
+        This site keeps local copies of some datasets for better performance. These can be redownloaded at any time and are safe to delete.
+      </p>
+      <div id="data-list" class="col"></div>
+      <div class="col data-foot">
+        <div id="data-foot-status" class="hint status"></div>
+        <div class="row wrap">
+          <button id="btn-download-all" class="btn" data-i18n="settings.data.downloadAll">Download everything</button>
+          <button id="btn-delete-all" class="btn" data-i18n="settings.data.deleteAll">Delete everything</button>
         </div>
       </div>
     </div>
   </div>
 </div>
-
-<script type="module" src="/src/main.js"></script>
 </body>
 </html>

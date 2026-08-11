@@ -44,12 +44,12 @@ function riverTable(rows, {removable = false} = {}) {
         <td class="n">${degrees(lat)}</td>
         <td class="n">${degrees(lon)}</td>
         <td class="a">
-          <button class="btn ghost row-btn" data-select-river="${riverId}">${t("bookmarks.select")}</button>
-          ${removable ? `<button class="btn ghost row-btn act-remove" data-remove-river="${riverId}">${t("saved.remove")}</button>` : ""}
+          <button class="btn auto" data-select-river="${riverId}">${t("bookmarks.select")}</button>
+          ${removable ? `<button class="btn auto danger" data-remove-river="${riverId}">${t("saved.remove")}</button>` : ""}
         </td>
       </tr>`).join("");
   return `
-      <table class="attr-table bookmarks-table">
+      <table class="table">
         <thead>
           <tr>
             <td>${t("bookmarks.col.id")}</td>
@@ -108,7 +108,7 @@ function createSavedRiversDock({map, onSelectRiver}) {
     const rows = listSavedRivers();
     body.innerHTML = rows.length
       ? riverTable(rows, {removable: true})
-      : `<div class="attr-empty">${t("saved.empty")}</div>`;
+      : `<div class="hint">${t("saved.empty")}</div>`;
   }
 
   function open() {

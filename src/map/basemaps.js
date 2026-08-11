@@ -154,7 +154,7 @@ function initBasemapPicker(map) {
   const closeMenu = wireMenu(btn, menu);
   for (const bm of BASEMAPS) {
     const opt = document.createElement("button");
-    opt.className = "layer-opt";
+    opt.className = "opt";
     opt.setAttribute("role", "menuitemradio");
     opt.textContent = bm.label;
     const active = bm.id === defaultBasemap().id;

@@ -1,0 +1,98 @@
+/**
+ * Where the camera goes when the app is pointed at a reach.
+ *
+ * Both moves here are meant to run *after* the left panel has finished widening — see reflowMap()
+ * in docks/dock.js. A camera animation and the panel transition overlapping is not a cosmetic
+ * problem: MapLibre fixes the screen point an ease travels toward when the ease is created, so a
+ * map that changes size mid-flight lands the reach wherever the old middle used to be.
+ */
+
+// Close enough that a reach fills the view rather than being a thread across it. Also the zoom the
+// search box and the saved rivers travel to, so every way of arriving at a reach frames it alike.
+const INSPECT_ZOOM = 10;
+// How much of each edge counts as "nearly off screen". A reach inside this box is left where it is;
+// one outside it is centered, which is what keeps a click near the panel edge from being swallowed
+// when the dock takes its half of the window.
+const EDGE_MARGIN = 0.15;
+
+/**
+ * The point on a clicked reach nearest the pointer, which is the thing to aim at — not the click.
+ *
+ * The map is queried with a ±10px box so a line a few pixels wide can be hit at all, and at low zoom
+ * that tolerance is enormous on the ground: ~200 km a side at z3, against the ~60 km a z10 viewport
+ * spans. Centering the click point can therefore leave the reach it found off screen entirely. The
+ * geometry comes back from queryRenderedFeatures in lng/lat, clipped to the tile, which is all this
+ * needs — the answer wanted is the part of the reach under the cursor.
+ *
+ * Returns null for a feature carrying no line, leaving the caller to fall back to the click.
+ */
+function snapToFeature(feature, {lng, lat}) {
+  const {type, coordinates} = feature?.geometry ?? {};
+  const lines = type === "LineString" ? [coordinates] : type === "MultiLineString" ? coordinates : null;
+  if (!lines?.length) return null;
+  // Degrees of longitude are shorter than degrees of latitude everywhere but the equator, so compare
+  // distances in a plane scaled for this latitude. Over the span of one tile that is exact enough to
+  // pick the right vertex, which is the only judgement being made.
+  const kx = Math.cos((lat * Math.PI) / 180);
+  let best = null;
+  let bestDist = Infinity;
+  const consider = (lon, la) => {
+    const dx = (lng - lon) * kx;
+    const dy = lat - la;
+    const dist = dx * dx + dy * dy;
+    if (dist >= bestDist) return;
+    bestDist = dist;
+    best = {lat: la, lon};
+  };
+  for (const line of lines) {
+    if (!line?.length) continue;
+    // A single-vertex line has no segment to project onto; it is still a candidate point.
+    consider(line[0][0], line[0][1]);
+    for (let i = 1; i < line.length; i++) {
+      const [ax, ay] = line[i - 1];
+      const [bx, by] = line[i];
+      const dx = (bx - ax) * kx;
+      const dy = by - ay;
+      const len2 = dx * dx + dy * dy;
+      // Where along this segment the pointer falls, clamped to its ends so the answer stays on the
+      // reach rather than on the infinite line through it.
+      const t = len2 ? Math.max(0, Math.min(1, (((lng - ax) * kx * dx) + (lat - ay) * dy) / len2)) : 0;
+      consider(ax + (bx - ax) * t, ay + (by - ay) * t);
+    }
+  }
+  return best;
+}
+
+/** Is the point well inside the map that is left, or is it at an edge — or behind the panel? */
+function isFramed(map, center) {
+  const {width, height} = map.getContainer().getBoundingClientRect();
+  const {x, y} = map.project(center);
+  return x > width * EDGE_MARGIN && x < width * (1 - EDGE_MARGIN)
+    && y > height * EDGE_MARGIN && y < height * (1 - EDGE_MARGIN);
+}
+
+/**
+ * A reach the user went looking for — searched by id, or picked off one of the saved lists. They
+ * asked to be taken there, so the camera travels whatever the view was showing before.
+ */
+function travelToRiver(map, {lat, lon}) {
+  if (lat == null || lon == null) return;
+  map.flyTo({center: [lon, lat], zoom: Math.max(map.getZoom(), INSPECT_ZOOM)});
+}
+
+/**
+ * A reach the user clicked, which they are already looking at — so the view moves only when it has
+ * to. Too far out to read a single stream: zoom in on it. Close enough already: hold the view still
+ * unless the reach is at an edge, where the panel that just widened may have taken it.
+ */
+function focusRiver(map, {lat, lon}) {
+  if (lat == null || lon == null) return;
+  const center = [lon, lat];
+  if (map.getZoom() < INSPECT_ZOOM) {
+    map.easeTo({center, zoom: INSPECT_ZOOM, duration: 600});
+    return;
+  }
+  if (!isFramed(map, center)) map.easeTo({center, duration: 400});
+}
+
+export {focusRiver, snapToFeature, travelToRiver};

@@ -12,8 +12,8 @@ const CHARTS_TABS = ["forecast", "retro", "details"];
 
 function renderAttrTable(props) {
   const keys = Object.keys(props).sort((a, b) => a === "riverId" ? -1 : b === "riverId" ? 1 : a.localeCompare(b));
-  if (!keys.length) return '<div class="attr-empty">This feature carries no attributes.</div>';
-  return `<table class="attr-table">${keys.map((k) => `<tr><td class="k">${k}</td><td class="v">${props[k]}</td></tr>`).join("")}</table>`;
+  if (!keys.length) return '<div class="hint">This feature carries no attributes.</div>';
+  return `<table class="table">${keys.map((k) => `<tr><td class="k">${k}</td><td class="v">${props[k]}</td></tr>`).join("")}</table>`;
 }
 
 // Shown by every tab when there's no reach to describe — e.g. the dock was opened from the header
@@ -206,11 +206,11 @@ function createChartsDock({map, streams, getForecastDate}) {
     btn.replaceChildren(heroIcon(saved ? "heart-solid" : "heart"));
     btn.classList.toggle("saved", !!saved);
     btn.setAttribute("aria-pressed", String(!!saved));
-    // Set as data-i18n-* as well as directly, so a language change retranslates a label whose key
-    // depends on state — applyTranslations() walks these attributes and can't know the state.
+    // Recorded as data-i18n-title as well as written, so a language change retranslates a label
+    // whose key depends on state — applyTranslations() walks that attribute and can't know the
+    // state. It writes the aria-label from the same key, so there is nothing to set here.
     const key = saved ? "river.unsave" : "river.save";
     btn.dataset.i18nTitle = key;
-    btn.dataset.i18nAriaLabel = key;
     btn.title = t(key);
     btn.setAttribute("aria-label", t(key));
     // Nothing to clear with no reach selected — the panel's button is the state readout for that.
@@ -293,9 +293,12 @@ function createChartsDock({map, streams, getForecastDate}) {
    * argument to reuse the last one. Whatever index the caller carries is the index of that reach on
    * the axis the readers hit; a caller with only an id leaves it null and targetIndex() looks it up.
    *
-   * `location` is where the reach is, if the caller knows: the click point for a map click, the
-   * stored outlet for a saved river. Passed separately from `props` because a map click's point is
-   * not one of the tile's attributes and has no business in the details table.
+   * `location` is where the reach is, if the caller knows: the point on the line for a map click,
+   * the stored outlet for a saved river. Passed separately from `props` because a map click's point
+   * is not one of the tile's attributes and has no business in the details table.
+   *
+   * Returns the dock's own promise: the charts start fetching here and now, but the panel takes a
+   * moment to widen, and a caller moving the camera has to let it finish first (see map/framing.js).
    */
   function openForRiver(props, location = null) {
     selectionId++;
@@ -315,7 +318,7 @@ function createChartsDock({map, streams, getForecastDate}) {
     renderHead();
     for (const name of CHARTS_TABS) rendered[name] = false;
     activateTab("forecast");
-    openDock(map, "charts");
+    return openDock(map, "charts");
   }
 
   /** Repaint live charts after a theme change; no-op if the chart bundle was never loaded. */

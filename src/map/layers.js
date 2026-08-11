@@ -108,7 +108,7 @@ function initLayerPicker(map) {
   wireMenu(btn, menu);
   LAYERS.forEach(layer => {
     const opt = document.createElement("button");
-    opt.className = "layer-opt layer-toggle";
+    opt.className = "opt";
     opt.setAttribute("role", "menuitemcheckbox");
     opt.setAttribute("aria-checked", String(layerVisible[layer.layerId]));
     const check = document.createElement("span");
