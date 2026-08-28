@@ -8,19 +8,22 @@ const BASEMAPS = [
     id: "environment",
     label: "Environment (Esri)",
   },
+  // The two gray canvases are each a base plus a separate labels layer, drawn above it.
   {
     id: "light",
-    label: "Light grey (Carto)",
-    maxzoom: 20,
-    tiles: ["a", "b", "c", "d"].map((s) => `https://${s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png`),
-    attribution: "© OpenStreetMap contributors © CARTO"
+    label: "Light grey (Esri)",
+    maxzoom: 16,
+    tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}"],
+    reference: ["https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}"],
+    attribution: "Esri, HERE, Garmin, © OpenStreetMap contributors, and the GIS User Community"
   },
   {
     id: "dark",
-    label: "Dark (Carto)",
-    maxzoom: 20,
-    tiles: ["a", "b", "c", "d"].map((s) => `https://${s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png`),
-    attribution: "© OpenStreetMap contributors © CARTO"
+    label: "Dark grey (Esri)",
+    maxzoom: 16,
+    tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}"],
+    reference: ["https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}"],
+    attribution: "Esri, HERE, Garmin, © OpenStreetMap contributors, and the GIS User Community"
   },
   {
     id: "streetsOSM",
@@ -133,10 +136,14 @@ async function applyBasemap(map, bm) {
   if (bm.id === "environment") {
     await createEnvironmentBasemap({map, beforeId});
   } else {
-    map.addSource("basemap", {type: "raster", tiles: bm.tiles, tileSize: 256, attribution: bm.attribution, maxzoom: bm.maxzoom ?? 19});
-    map.addLayer({id: "basemap", type: "raster", source: "basemap"}, beforeId);
-    basemapSourceIds.push("basemap");
-    basemapLayerIds.push("basemap");
+    const rasters = [["basemap", bm.tiles], ...(bm.reference ? [["basemap-reference", bm.reference]] : [])];
+    // Each inserted at the same beforeId, so the later (labels) one lands above the earlier (base).
+    for (const [id, tiles] of rasters) {
+      map.addSource(id, {type: "raster", tiles, tileSize: 256, attribution: bm.attribution, maxzoom: bm.maxzoom ?? 19});
+      map.addLayer({id, type: "raster", source: id}, beforeId);
+      basemapSourceIds.push(id);
+      basemapLayerIds.push(id);
+    }
   }
 }
 
