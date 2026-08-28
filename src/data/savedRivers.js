@@ -25,9 +25,16 @@ function normalize(entry) {
     lat: num(entry.lat),
     lon: num(entry.lon),
     name: typeof entry.name === "string" ? entry.name : "",
-    savedAt: typeof entry.savedAt === "string" ? entry.savedAt : ""
+    savedAt: typeof entry.savedAt === "string" ? entry.savedAt : "",
+    // Profile sync state (see data/userSync.js). A record not yet in the profile is unsynced; a
+    // removed one stays as a tombstone until the profile has dropped it too.
+    synced: entry.synced === true,
+    deleted: entry.deleted === true
   };
 }
+
+/** What the UI sees: everything that hasn't been removed. */
+const live = () => load().filter((e) => !e.deleted);
 
 function load() {
   if (cache) return cache;
@@ -59,12 +66,12 @@ function persist() {
 }
 
 /** A copy, so a caller iterating it can't be surprised by a save landing mid-loop. */
-const listSavedRivers = () => load().map((e) => ({...e}));
+const listSavedRivers = () => live().map((e) => ({...e}));
 
 /** Just the ids — what the map's outline filter matches on. */
-const savedRiverIds = () => load().map((e) => e.riverId);
+const savedRiverIds = () => live().map((e) => e.riverId);
 
-const getSavedRiver = (riverId) => load().find((e) => e.riverId === Number(riverId)) ?? null;
+const getSavedRiver = (riverId) => live().find((e) => e.riverId === Number(riverId)) ?? null;
 
 const isSavedRiver = (riverId) => getSavedRiver(riverId) != null;
 
@@ -75,7 +82,7 @@ const isSavedRiver = (riverId) => getSavedRiver(riverId) != null;
  * A field the caller doesn't have is left as whatever was already stored rather than nulled — that
  * way renaming a saved river can't quietly discard the coordinate it was saved with.
  */
-function saveRiver({riverId, riverIndex, lat, lon, name = ""}) {
+function saveRiver({riverId, riverIndex, lat, lon, name = ""}, {synced = false} = {}) {
   const list = load();
   const id = Number(riverId);
   const prior = list.find((e) => e.riverId === id);
@@ -85,7 +92,9 @@ function saveRiver({riverId, riverIndex, lat, lon, name = ""}) {
     lat: lat ?? prior?.lat,
     lon: lon ?? prior?.lon,
     name,
-    savedAt: new Date().toISOString()
+    savedAt: prior?.deleted ? new Date().toISOString() : (prior?.savedAt || new Date().toISOString()),
+    synced,
+    deleted: false
   });
   if (prior) list[list.indexOf(prior)] = entry;
   else list.push(entry);
@@ -95,11 +104,48 @@ function saveRiver({riverId, riverIndex, lat, lon, name = ""}) {
 
 function removeSavedRiver(riverId) {
   const list = load();
-  const at = list.findIndex((e) => e.riverId === Number(riverId));
-  if (at < 0) return false;
-  list.splice(at, 1);
+  const entry = list.find((e) => e.riverId === Number(riverId) && !e.deleted);
+  if (!entry) return false;
+  // A tombstone rather than a gap: the profile still has this row until the sync deletes it there.
+  // One that never reached the profile has nothing to delete and can go now.
+  if (entry.synced) entry.deleted = true;
+  else list.splice(list.indexOf(entry), 1);
   persist();
   return true;
+}
+
+// ── Profile sync hooks · used only by data/userSync.js ──
+
+/** Everything, tombstones included, for the sync to push. */
+const listSavedRiversForSync = () => load().map((e) => ({...e}));
+
+/**
+ * Replace the list with what the profile holds. Local-only fields (riverIndex, savedAt) survive for
+ * rivers already known here, since the profile doesn't store them; tombstones are gone because
+ * the profile has dropped them; anything unsynced that the profile doesn't have is kept, so a save
+ * made moments before a pull isn't lost — it goes up with the next push.
+ */
+function replaceFromSync(rows) {
+  const prior = new Map(load().map((e) => [e.riverId, e]));
+  const next = rows.map((r) => normalize({...prior.get(Number(r.riverId)), ...r, synced: true, deleted: false}));
+  const have = new Set(next.map((e) => e.riverId));
+  for (const e of prior.values()) if (!e.synced && !e.deleted && !have.has(e.riverId)) next.push(e);
+  cache = next;
+  persist();
+}
+
+/** The push succeeded for these ids: mark them synced and drop any tombstones among them. */
+function markSynced(riverIds) {
+  const ids = new Set(riverIds.map(Number));
+  cache = load().filter((e) => !(e.deleted && ids.has(e.riverId)));
+  for (const e of cache) if (ids.has(e.riverId)) e.synced = true;
+  persist();
+}
+
+/** Everything off the device, without touching the profile: sign-out, or another account signing in. */
+function clearSavedRivers() {
+  cache = [];
+  persist();
 }
 
 /**
@@ -113,7 +159,11 @@ function onSavedRiversChange(fn) {
 }
 
 export {
+  clearSavedRivers,
   getSavedRiver,
+  listSavedRiversForSync,
+  markSynced,
+  replaceFromSync,
   isSavedRiver,
   listSavedRivers,
   onSavedRiversChange,

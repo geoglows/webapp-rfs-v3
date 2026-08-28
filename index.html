@@ -12,9 +12,12 @@
 
 <div id="panel">
   <header>
-    <a href="%VITE_LOGO_HREF%">
-      <img src="%VITE_LOGO_SRC%" alt="%VITE_LOGO_ALT%" width="%VITE_LOGO_WIDTH%" height="%VITE_LOGO_HEIGHT%"/>
-    </a>
+    <div class="brand">
+      <div id="auth-action"></div>
+      <a href="%VITE_LOGO_HREF%">
+        <img src="%VITE_LOGO_SRC%" alt="%VITE_LOGO_ALT%" width="%VITE_LOGO_WIDTH%" height="%VITE_LOGO_HEIGHT%"/>
+      </a>
+    </div>
     <h1>%VITE_APP_TITLE%</h1>
     <div class="row">
       <button id="btn-settings" class="btn icon" data-icon-name="cog-6-tooth" data-i18n-title="settings.label" title="Settings"></button>
@@ -152,7 +155,7 @@
     </div>
     <div id="saved-dock" class="dock">
       <div class="modal-head">
-        <h3 data-i18n="saved.heading">My Saved Rivers</h3>
+        <h3 data-i18n="saved.heading">My Saved Rivers (limit 100)</h3>
         <button class="btn sm" id="saved-close" data-i18n-aria-label="common.close" aria-label="Close">✕</button>
       </div>
       <div class="modal-body" id="saved-body"></div>

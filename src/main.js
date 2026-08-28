@@ -1,5 +1,7 @@
+import "./auth.js";  // must be first: registers the auth listener before anything else runs
 import "./settings/rfsConfig.js"
-import {applyTheme, DEFAULT_THEME, initLanguagePicker, initSettings, onSetting} from "./settings/settings.js";
+import {initLanguagePicker, initSettings, initThemeToggle, onSetting} from "./settings/settings.js";
+import {startUserSync} from "./data/userSync.js";
 
 import {map} from "./map/map";
 import {applyBasemap, defaultBasemap} from "./map/basemaps";
@@ -194,18 +196,13 @@ initLanguagePicker(() => {
   chartsDock.rerenderCharts();
 });
 
-// What this device last chose, or the deployment's configured default for one that never has. A
-// stored value that is neither theme is treated as never having chosen.
-const storedTheme = localStorage.getItem("rfs-theme");
-let currentTheme = storedTheme === "light" || storedTheme === "dark" ? storedTheme : DEFAULT_THEME;
-applyTheme(currentTheme);
-$("btn-theme").addEventListener("click", () => {
-  currentTheme = currentTheme === "dark" ? "light" : "dark";
-  localStorage.setItem("rfs-theme", currentTheme);
-  applyTheme(currentTheme);
-  // Charts bake their axis/text/grid colors at construction, so any on screen need repainting.
-  chartsDock.restyleCharts();
-});
+// Charts bake their axis/text/grid colors at construction, so any on screen need repainting.
+initThemeToggle(() => chartsDock.restyleCharts());
+
+// Sign-in pulls the profile's preferences and saved rivers and pushes this device's; from then on
+// every local edit is mirrored. Started after every subscriber above is wired, so a pulled
+// preference reaches the map, the charts and the checkboxes.
+startUserSync();
 
 const openModal = (id) => $(id).classList.remove("hidden");
 const closeModal = (id) => $(id).classList.add("hidden");

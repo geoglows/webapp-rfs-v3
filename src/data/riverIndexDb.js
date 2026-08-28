@@ -16,9 +16,12 @@ const STORE = "river-index";
 const RECORD_KEY = "riverId-to-riverIndex";
 const META_KEY = "riverId-to-riverIndex:meta";
 
-// Bump when the record layout changes, so an old cache is discarded rather than misread. v2 added
-// the meta record: a v1 cache has none, and is rebuilt rather than read as absent.
-const SCHEMA_VERSION = 2;
+// The version of the cached lookup, as the date it was last invalidated: yyyymmdd, with .0, .1, .2
+// appended when more than one revision lands in a day. Bump it when the record layout changes, or
+// when the store's riverId axis is republished in a new order — either way a cache from before is
+// discarded rather than misread, since a lookup built from an earlier axis answers with the wrong
+// position for every id. Earlier caches carried the integers 1 and 2 here and are discarded too.
+const SCHEMA_VERSION = "20260828.0";
 
 function openDb() {
   return new Promise((resolve, reject) => {

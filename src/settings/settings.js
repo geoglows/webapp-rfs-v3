@@ -33,6 +33,7 @@ const envLanguage = import.meta.env.VITE_PREFERENCES_DEFAULT_LANGUAGE;
 const DEFAULT_LANGUAGE = LANGUAGES.includes(envLanguage) ? envLanguage : "en";
 
 const PREFERENCES = [
+  // The theme used to be its own localStorage key (rfs-theme); it is migrated in initSettings().
   {key: "theme", el: "set-theme", fallback: DEFAULT_THEME},
   {key: "language", el: "set-language", fallback: DEFAULT_LANGUAGE},
 ]
@@ -46,8 +47,10 @@ const SETTINGS = [
 ];
 
 const STORAGE_PREFIX = "rfs-setting-";
+const SAVED_AT_KEY = "rfs-settings-saved-at";
 const values = new Map();
 const listeners = new Map();
+const anyListeners = new Set();
 
 /** What the device remembers, or what the deployment ships with if it has never been touched. */
 function initialValue({key, fallback}) {
@@ -57,11 +60,62 @@ function initialValue({key, fallback}) {
 
 const getSetting = (key) => values.get(key) ?? false;
 
-function setSetting(key, value) {
+function setSetting(key, value, {remote = false} = {}) {
   if (values.get(key) === value) return;
   values.set(key, value);
   localStorage.setItem(STORAGE_PREFIX + key, String(value));
+  const el = SETTINGS.find((s) => s.key === key)?.el;
+  if (el && $(el)) $(el).checked = value;
   for (const fn of listeners.get(key) ?? []) fn(value);
+  if (!remote) noteLocalChange();
+}
+
+/** Stamp the device's last edit so a pull from the profile can tell which side is newer. */
+function noteLocalChange() {
+  localStorage.setItem(SAVED_AT_KEY, new Date().toISOString());
+  const snapshot = getPreferences();
+  for (const fn of anyListeners) fn(snapshot);
+}
+
+/** When this device last changed any preference, or null if never. */
+const preferencesSavedAt = () => localStorage.getItem(SAVED_AT_KEY);
+
+/**
+ * Every preference this app keeps, as the flat camelCase object rfs.user_data stores. It is shared
+ * with every other RFS app version, so keys are a contract: never renamed, never repurposed.
+ */
+function getPreferences() {
+  const out = {theme: prefs.get("theme"), lang: prefs.get("language")};
+  for (const {key} of SETTINGS) out[key] = getSetting(key);
+  return out;
+}
+
+/**
+ * Apply a preferences object that arrived from the profile. Unknown keys are ignored, invalid
+ * values are ignored, and nothing here counts as a local edit, so it can't bounce back up.
+ */
+function applyPreferences(obj) {
+  if (!obj || typeof obj !== "object") return;
+  if (obj.theme === "light" || obj.theme === "dark") prefs.set("theme", obj.theme, {remote: true});
+  if (LANGUAGES.includes(obj.lang)) prefs.set("language", obj.lang, {remote: true});
+  for (const {key} of SETTINGS) if (typeof obj[key] === "boolean") setSetting(key, obj[key], {remote: true});
+}
+
+/**
+ * Back to what the deployment ships with, as if this device had never been touched. For sign-out:
+ * the next person at this browser gets the defaults, not the last account's choices. Not a local
+ * edit — nothing here is pushed anywhere.
+ */
+function resetPreferences() {
+  for (const {key} of [...PREFERENCES, ...SETTINGS]) localStorage.removeItem(STORAGE_PREFIX + key);
+  localStorage.removeItem(SAVED_AT_KEY);
+  applyPreferences({theme: DEFAULT_THEME, lang: DEFAULT_LANGUAGE, ...Object.fromEntries(SETTINGS.map((s) => [s.key, s.fallback]))});
+}
+
+/** Fires with the whole preferences object after any local edit — what the profile sync pushes. */
+function onPreferencesChange(fn) {
+  anyListeners.add(fn);
+  return () => anyListeners.delete(fn);
 }
 
 function applyTheme(theme) {
@@ -83,30 +137,32 @@ function initLanguagePicker(onLanguageChange) {
   const options = [...menu.querySelectorAll(".opt[data-lang]")];
   // What this device last chose, or the deployment's configured default for one that never has. A
   // stored code the menu no longer offers (a typo in .env, a language since dropped) is neither.
-  const stored = prefs.get("language");
-  const active = LANGUAGES.includes(stored) ? stored : "en";
-  // Not awaited: index.html is written in English, so the app is readable from the first frame and
-  // simply retranslates a moment later. Started here rather than on first use so that a returning
-  // user's language is on its way while the map is still loading.
-  void setLanguage(active);
   // Same dropdown behaviour as the basemap and layer pickers, but anchored: this is the one that
   // opens inside `.panel`, whose overflow clip would otherwise cut it off at the column's edge.
   const closeMenu = wireMenu($("btn-language"), menu, {anchored: true});
   const markActive = (lang) => options.forEach((o) => o.classList.toggle("active", o.dataset.lang === lang));
-  markActive(active);
+  let first = true;
+  // Runs now with what this device last chose (or the deployment's default), and again on every
+  // change — a click below, or a language pulled from the profile. A stored code the menu no longer
+  // offers (a typo in .env, a language since dropped) reads as English.
+  onSetting("language", async (stored) => {
+    const code = LANGUAGES.includes(stored) ? stored : "en";
+    // Marked before the fetch: the click is answered now, not when the network says so.
+    markActive(code);
+    const isFirst = first;
+    first = false;
+    // Not awaited on load: index.html is written in English, so the app is readable from the first
+    // frame and simply retranslates a moment later. What is actually in effect afterwards: on a
+    // failed load that is English, and the menu is corrected to say so; on a click that a later
+    // click overtook, it is the later one's — so both settle on the same answer.
+    const applied = await setLanguage(code);
+    markActive(applied);
+    if (!isFirst) onLanguageChange?.(applied);
+  });
   for (const opt of options) {
-    const code = opt.dataset.lang;
-    opt.addEventListener("click", async () => {
-      // Marked and stored before the fetch: the click is answered now, not when the network says so.
-      markActive(code);
-      prefs.set("language", code);
+    opt.addEventListener("click", () => {
+      prefs.set("language", opt.dataset.lang);
       closeMenu();
-      // What is actually in effect afterwards. On a failed load that is English, and the menu is
-      // corrected to say so; on a click that a later click overtook, it is the later one's — so
-      // both settle on the same answer rather than racing each other back and forth.
-      const applied = await setLanguage(code);
-      markActive(applied);
-      onLanguageChange?.(applied);
     });
   }
 }
@@ -114,7 +170,7 @@ function initLanguagePicker(onLanguageChange) {
 function onSetting(key, fn) {
   if (!listeners.has(key)) listeners.set(key, new Set());
   listeners.get(key).add(fn);
-  fn(getSetting(key));
+  fn(PREFERENCES.some((p) => p.key === key) ? prefs.get(key) : getSetting(key));
 }
 
 /** Read every setting and wire its checkbox. Call once, before anything subscribes. */
@@ -123,6 +179,11 @@ function initSettings() {
   // heart and the outline the map draws stay the same colour — which is the whole point of the
   // variable. Left alone when nothing is configured, so each theme keeps the pink picked for it.
   if (SAVED_RIVERS.color) document.documentElement.style.setProperty("--saved", SAVED_RIVERS.color);
+  const legacyTheme = localStorage.getItem("rfs-theme");
+  if (legacyTheme === "light" || legacyTheme === "dark") {
+    localStorage.setItem(STORAGE_PREFIX + "theme", legacyTheme);
+    localStorage.removeItem("rfs-theme");
+  }
   for (const setting of SETTINGS) {
     values.set(setting.key, initialValue(setting));
     const el = document.getElementById(setting.el);
@@ -132,28 +193,44 @@ function initSettings() {
   }
 }
 
-const prefs = (() => {
-  return {
-    get(key) {
-      const pref = PREFERENCES.find((p) => p.key === key);
-      if (!pref) throw new Error(`Unknown preference: ${key}`);
-      const stored = localStorage.getItem(STORAGE_PREFIX + key);
-      return stored === null ? pref.fallback : stored;
-    },
-    set(key, value) {
-      const pref = PREFERENCES.find((p) => p.key === key);
-      if (!pref) throw new Error(`Unknown preference: ${key}`);
-      localStorage.setItem(STORAGE_PREFIX + key, value);
-    }
+const prefs = {
+  get(key) {
+    const pref = PREFERENCES.find((p) => p.key === key);
+    if (!pref) throw new Error(`Unknown preference: ${key}`);
+    const stored = localStorage.getItem(STORAGE_PREFIX + key);
+    return stored === null ? pref.fallback : stored;
+  },
+  set(key, value, {remote = false} = {}) {
+    const pref = PREFERENCES.find((p) => p.key === key);
+    if (!pref) throw new Error(`Unknown preference: ${key}`);
+    if (prefs.get(key) === value) return;
+    localStorage.setItem(STORAGE_PREFIX + key, value);
+    for (const fn of listeners.get(key) ?? []) fn(value);
+    if (!remote) noteLocalChange();
   }
-})()
+};
+
+/** The header's sun/moon button; the theme itself is a preference so the profile can carry it. */
+function initThemeToggle(onThemeChange) {
+  onSetting("theme", (theme) => {
+    applyTheme(theme);
+    onThemeChange?.(theme);
+  });
+  $("btn-theme").addEventListener("click", () => prefs.set("theme", prefs.get("theme") === "dark" ? "light" : "dark"));
+}
 
 export {
+  applyPreferences,
   applyTheme,
   DEFAULT_THEME,
+  getPreferences,
   getSetting,
   initLanguagePicker,
   initSettings,
+  initThemeToggle,
+  onPreferencesChange,
+  preferencesSavedAt,
+  resetPreferences,
   LANGUAGES,
   MAP_CENTER,
   MAP_DEFAULT_BASEMAP,

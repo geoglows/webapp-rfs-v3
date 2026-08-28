@@ -534,6 +534,22 @@ input[aria-invalid="true"] {
     font-weight: 700;
 }
 
+/* the river lists carry icon buttons, taller than a line of text: centre every cell on the row */
+.table.rivers td {
+    vertical-align: middle;
+}
+
+/* a row's actions: icon buttons side by side, never wrapped onto a second line */
+.table td.a {
+    width: 1%;
+    white-space: nowrap;
+}
+
+.table td.a .btn {
+    display: inline-flex;
+    vertical-align: middle;
+}
+
 /* the name of the thing in the row: an attribute, a river ID */
 .table td.k {
     width: 1%;
@@ -569,6 +585,19 @@ input[aria-invalid="true"] {
     padding: 16px 18px;
     border-bottom: 1px solid var(--border);
     background: var(--surface2);
+}
+
+/* the account avatar / sign-in button, left of the logo. It sits at the panel's left edge, so its
+   menu opens rightward rather than the library's default of hanging off the right. */
+#panel header .brand, #auth-action {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+#auth-action .geoglows-auth-action-menu {
+    left: 0;
+    right: auto;
 }
 
 #panel header img {

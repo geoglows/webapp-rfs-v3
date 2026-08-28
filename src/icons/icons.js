@@ -14,6 +14,7 @@ import clockSolid from "heroicons/24/solid/clock.svg?raw";
 import arrowDownTray from "heroicons/24/outline/arrow-down-tray.svg?raw";
 import backspace from "heroicons/24/outline/backspace.svg?raw";
 import trash from "heroicons/24/outline/trash.svg?raw";
+import mapPin from "heroicons/24/outline/map-pin.svg?raw";
 import xMark from "heroicons/24/outline/x-mark.svg?raw";
 
 const ICONS = {
@@ -32,6 +33,7 @@ const ICONS = {
   "arrow-down-tray": arrowDownTray,
   backspace,
   trash,
+  "map-pin": mapPin,
   "x-mark": xMark
 };
 

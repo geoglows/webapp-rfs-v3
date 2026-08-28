@@ -1,27 +1,30 @@
 import {t} from "../i18n/i18n.js";
+import {heroIcon} from "../icons/icons.js";
+import {travelToRiver} from "../map/framing.js";
 import {listSavedRivers, onSavedRiversChange, removeSavedRiver} from "../data/savedRivers.js";
 import {closeDock, isDockOpen, openDock} from "./dock.js";
 
-// todo the bookmarks should be databased.
 // todo the defaults should be a json fetched async only on first load.
-// todo bookmarks code needs a get/set interface to the db table
+// No riverIndex here on purpose: a position on the zarr axis is only good for the publication of
+// the store it was read from, and the axis is reordered when the data is regenerated. The charts
+// dock resolves the id through the lookup instead, which is kept in step with the store.
 const defaultBookmarks = [
-  {riverId: 760021611, riverIndex: 5192926, lat: 29.0929, lon: -89.2522, name: "Mississippi, USA"},
-  {riverId: 160064246, riverIndex: 1138142, lat: 31.4749, lon: 30.3599, name: "Nile, East Africa"},
-  {riverId: 710431167, riverIndex: 4725888, lat: 31.7776, lon: -114.7304, name: "Colorado, Mexico"},
-  {riverId: 441057380, riverIndex: 3074511, lat: 23.1933, lon: 90.6048, name: "Ganges, India"},
-  {riverId: 430157411, riverIndex: 2862943, lat: 10.1946, lon: 106.7421, name: "Mekong, Vietnam"},
-  {riverId: 210393186, riverIndex: 1320246, lat: 41.7370, lon: 12.2307, name: "Tiber, Italy"},
-  {riverId: 621010293, riverIndex: 4239728, lat: -0.4756, lon: -51.4222, name: "Amazon, Brazil"},
-  {riverId: 130747391, riverIndex: 539910, lat: -6.0567, lon: 12.3688, name: "Congo, D.R. Congo"},
-  {riverId: 640255644, riverIndex: 4485280, lat: -33.8890, lon: -58.4528, name: "Parana, Argentina"},
-  {riverId: 540514417, riverIndex: 3841659, lat: -35.3793, lon: 139.3540, name: "Murray, Australia"},
-  {riverId: 441077984, riverIndex: 3074481, lat: 24.0103, lon: 67.4701, name: "Indus, India"},
-  {riverId: 280302448, riverIndex: 1761448, lat: 46.5486, lon: 49.4263, name: "Volga, Russia"},
-  {riverId: 220463113, riverIndex: 1445605, lat: 45.1646, lon: 29.7219, name: "Danube, Romania"},
-  {riverId: 230452055, riverIndex: 1515260, lat: 49.4346, lon: 0.2895, name: "Seine, France"},
-  {riverId: 410641150, riverIndex: 2565012, lat: 53.1083, lon: 140.6268, name: "Amur, China/Russia"},
-  {riverId: 140049491, riverIndex: 710249, lat: 4.3350, lon: 6.0729, name: "Niger, Nigeria"}
+  {riverId: 760021611, lat: 29.0929, lon: -89.2522, name: "Mississippi, USA"},
+  {riverId: 160064246, lat: 31.4749, lon: 30.3599, name: "Nile, East Africa"},
+  {riverId: 710431167, lat: 31.7776, lon: -114.7304, name: "Colorado, Mexico"},
+  {riverId: 441057380, lat: 23.1933, lon: 90.6048, name: "Ganges, India"},
+  {riverId: 430157411, lat: 10.1946, lon: 106.7421, name: "Mekong, Vietnam"},
+  {riverId: 210393186, lat: 41.7370, lon: 12.2307, name: "Tiber, Italy"},
+  {riverId: 621010293, lat: -0.4756, lon: -51.4222, name: "Amazon, Brazil"},
+  {riverId: 130747391, lat: -6.0567, lon: 12.3688, name: "Congo, D.R. Congo"},
+  {riverId: 640255644, lat: -33.8890, lon: -58.4528, name: "Parana, Argentina"},
+  {riverId: 540514417, lat: -35.3793, lon: 139.3540, name: "Murray, Australia"},
+  {riverId: 441077984, lat: 24.0103, lon: 67.4701, name: "Indus, India"},
+  {riverId: 280302448, lat: 46.5486, lon: 49.4263, name: "Volga, Russia"},
+  {riverId: 220463113, lat: 45.1646, lon: 29.7219, name: "Danube, Romania"},
+  {riverId: 230452055, lat: 49.4346, lon: 0.2895, name: "Seine, France"},
+  {riverId: 410641150, lat: 53.1083, lon: 140.6268, name: "Amur, China/Russia"},
+  {riverId: 140049491, lat: 4.3350, lon: 6.0729, name: "Niger, Nigeria"}
 ]
 
 const degrees = (d) => (d == null ? "" : d.toFixed(4));
@@ -29,10 +32,15 @@ const degrees = (d) => (d == null ? "" : d.toFixed(4));
 // has no lat/lon either. Both are shown as blank cells rather than as "null" or a dropped row.
 const escapeHtml = (s) => String(s).replace(/[&<>"]/g, (c) => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
 
+/** An icon button for a row: its action and the river it acts on ride in data attributes. */
+const rowAction = (action, riverId, icon, titleKey, className = "") =>
+  `<button class="btn sm ${className}" data-action="${action}" data-river="${riverId}" title="${t(titleKey)}" aria-label="${t(titleKey)}">${heroIcon(icon).outerHTML}</button>`;
+
 /**
- * The rivers table both docks show: id · name · coordinate · the button that flies to it.
+ * The rivers table both docks show: id · name · coordinate · the actions on it — open its charts,
+ * fly the map to it, and (for the user's own list) drop it.
  *
- * `removable` adds the second action, which is the only difference between the read-only default
+ * `removable` adds the third action, which is the only difference between the read-only default
  * list and the user's own — the two are meant to read as the same list, and sharing the renderer is
  * what keeps them that way as either one changes.
  */
@@ -44,23 +52,35 @@ function riverTable(rows, {removable = false} = {}) {
         <td class="n">${degrees(lat)}</td>
         <td class="n">${degrees(lon)}</td>
         <td class="a">
-          <button class="btn auto" data-select-river="${riverId}">${t("bookmarks.select")}</button>
-          ${removable ? `<button class="btn auto danger" data-remove-river="${riverId}">${t("saved.remove")}</button>` : ""}
+          ${rowAction("charts", riverId, "chart-bar-solid", "bookmarks.charts")}
+          ${rowAction("locate", riverId, "map-pin", "bookmarks.locate")}
+          ${removable ? rowAction("remove", riverId, "trash", "saved.remove", "danger") : ""}
         </td>
       </tr>`).join("");
   return `
-      <table class="table">
+      <table class="table rivers">
         <thead>
           <tr>
             <td>${t("bookmarks.col.id")}</td>
             <td>${t("bookmarks.col.name")}</td>
             <td>${t("bookmarks.col.lat")}</td>
             <td>${t("bookmarks.col.lon")}</td>
-            <td>${t("bookmarks.col.actions")}</td>
+            <td></td>
           </tr>
         </thead>
         <tbody>${cells}</tbody>
       </table>`;
+}
+
+/**
+ * What a click in either table means: which action, on which of the rows. The click may land on
+ * the icon inside the button rather than the button itself, hence the walk up.
+ */
+function rowClick(e, rows) {
+  const btn = e.target?.closest?.("[data-action][data-river]");
+  if (!btn) return null;
+  const entry = rows.find((b) => String(b.riverId) === btn.dataset.river);
+  return entry ? {action: btn.dataset.action, entry} : null;
 }
 
 /** The read-only list of notable rivers the app ships with. */
@@ -80,10 +100,9 @@ function createBookmarksDock({map, onSelectRiver}) {
 
   // Delegated so the rows can be re-rendered freely without rewiring anything.
   body?.addEventListener("click", (e) => {
-    const id = e.target?.dataset?.selectRiver;
-    if (!id) return;
-    const entry = defaultBookmarks.find((b) => String(b.riverId) === id);
-    if (entry) onSelectRiver(entry);
+    const hit = rowClick(e, defaultBookmarks);
+    if (hit?.action === "charts") onSelectRiver(hit.entry);
+    else if (hit?.action === "locate") travelToRiver(map, hit.entry);
   });
   button?.addEventListener("click", () => (isDockOpen("bookmarks") ? close() : open()));
   exit?.addEventListener("click", close);
@@ -119,17 +138,13 @@ function createSavedRiversDock({map, onSelectRiver}) {
   const close = () => closeDock(map, "saved");
 
   body?.addEventListener("click", (e) => {
-    const remove = e.target?.dataset?.removeRiver;
-    if (remove) {
-      // The re-render is the change watcher's job, not this handler's — un-hearting the same river
-      // from the charts dock has to repaint this list too, so there is one path for both.
-      removeSavedRiver(Number(remove));
-      return;
-    }
-    const id = e.target?.dataset?.selectRiver;
-    if (!id) return;
-    const entry = listSavedRivers().find((b) => String(b.riverId) === id);
-    if (entry) onSelectRiver(entry);
+    const hit = rowClick(e, listSavedRivers());
+    if (!hit) return;
+    // The re-render after a removal is the change watcher's job, not this handler's — un-hearting
+    // the same river from the charts dock has to repaint this list too, so there is one path for both.
+    if (hit.action === "remove") removeSavedRiver(hit.entry.riverId);
+    else if (hit.action === "charts") onSelectRiver(hit.entry);
+    else if (hit.action === "locate") travelToRiver(map, hit.entry);
   });
   button?.addEventListener("click", () => (isDockOpen("saved") ? close() : open()));
   exit?.addEventListener("click", close);
