@@ -13,13 +13,13 @@
 <div id="panel">
   <header>
     <div class="brand">
-      <div id="auth-action"></div>
       <a href="%VITE_LOGO_HREF%">
         <img src="%VITE_LOGO_SRC%" alt="%VITE_LOGO_ALT%" width="%VITE_LOGO_WIDTH%" height="%VITE_LOGO_HEIGHT%"/>
       </a>
     </div>
     <h1>%VITE_APP_TITLE%</h1>
     <div class="row">
+      <div id="auth-action"></div>
       <button id="btn-settings" class="btn icon" data-icon-name="cog-6-tooth" data-i18n-title="settings.label" title="Settings"></button>
       <div class="anchor">
         <button id="btn-language" class="btn icon" data-icon-name="language" data-i18n-title="lang.title"
@@ -33,14 +33,14 @@
         </div>
       </div>
       <button id="btn-theme" class="btn icon" data-i18n-title="theme.toggle" title="Toggle light / dark theme"></button>
-      <button id="btn-instructions" class="btn icon" data-icon-name="question-mark-circle" data-i18n-title="instructions.label" title="How to use this site"></button>
-      <button id="btn-info" class="btn icon" data-icon-name="information-circle" data-i18n-title="about.label" title="About"></button>
+      <button id="btn-help" class="btn icon" data-icon-name="question-mark-circle" data-i18n-title="help.label" data-i18n-aria-label="help.aria"
+              title="Help and about" aria-label="Help and about this site"></button>
     </div>
   </header>
   <main>
     <div id="scroll">
       <section id="hydrology-section">
-        <h2 data-i18n="hydro.heading">Hydrology predictions</h2>
+        <h2 data-i18n="hydro.heading">Streams Exploration</h2>
         <div class="field">
           <label for="forecast-date" data-i18n="hydro.forecastDate">Forecast Initialization Date</label>
           <input id="forecast-date" type="date"/>
@@ -55,7 +55,7 @@
             <option value="below-q95" data-i18n="stream.style.below-q95">Below Q95 flow</option>
           </select>
         </div>
-        <div class="row">
+        <div class="row" id="hydro-actions">
           <button id="btn-charts" class="btn icon" data-icon-name="chart-bar-solid" data-i18n-title="hydro.charts" title="View discharge charts"></button>
           <button id="btn-bookmarks" class="btn icon" data-icon-name="bookmark-solid" data-i18n-title="hydro.bookmarks.title" data-i18n-aria-label="hydro.bookmarks.aria"
                   title="Notable global rivers" aria-label="Browse notable global rivers"></button>
@@ -66,7 +66,7 @@
           <button id="btn-toggle-slider" class="btn icon" data-icon-name="clock-solid" data-i18n-title="stream.hideSlider" title="Hide timeseries slider"></button>
         </div>
       </section>
-      <section>
+      <section id="flood-section">
         <h2 data-i18n="flood.heading">Flood Mapping</h2>
         <div class="row wrap">
           <button id="btn-flood-mode" class="btn toggle" data-i18n="flood.enable">Create Flood Maps</button>
@@ -134,11 +134,14 @@
       </div>
       <div class="tabs row" role="tablist">
         <button id="charts-tab-forecast" class="btn tab active" role="tab" aria-selected="true" aria-controls="charts-panel-forecast"
-                data-charts-tab="forecast" data-i18n="charts.tab.forecast">Forecast</button>
+                data-charts-tab="forecast" data-i18n="charts.tab.forecast">Forecast
+        </button>
         <button id="charts-tab-retro" class="btn tab" role="tab" aria-selected="false" aria-controls="charts-panel-retro"
-                data-charts-tab="retro" data-i18n="charts.tab.retro">Retrospective</button>
+                data-charts-tab="retro" data-i18n="charts.tab.retro">Retrospective
+        </button>
         <button id="charts-tab-details" class="btn tab" role="tab" aria-selected="false" aria-controls="charts-panel-details"
-                data-charts-tab="details" data-i18n="charts.tab.details">Details</button>
+                data-charts-tab="details" data-i18n="charts.tab.details">Details
+        </button>
       </div>
       <div class="modal-body">
         <div id="charts-panel-forecast" role="tabpanel" aria-labelledby="charts-tab-forecast"></div>
@@ -159,6 +162,145 @@
         <button class="btn sm" id="saved-close" data-i18n-aria-label="common.close" aria-label="Close">✕</button>
       </div>
       <div class="modal-body" id="saved-body"></div>
+    </div>
+    <div id="help-dock" class="dock">
+      <div class="modal-head">
+        <h3 data-i18n="help.heading">Help and about</h3>
+        <button class="btn sm" id="help-close" data-i18n-aria-label="common.close" aria-label="Close">✕</button>
+      </div>
+      <!-- Prose, so the elements are empty and every sentence is a key in src/i18n/locales/.
+           data-i18n-html rather than data-i18n where a sentence emphasises the control it names.
+           The credits are here so each URL is written once; `{0}` in a sentence stands for that
+           element's first child link, which lets a translation put it wherever its word order wants.
+           A credit that is only a product name needs no key at all.
+           This markup is the source of the help text's structure; the sentences themselves live in
+           src/i18n/locales/ under the help.* keys. Credits last. Each section is a hover target for
+           the control it is about (data-spotlight); passages inside it can point at something more
+           specific. -->
+      <div class="modal-body prose">
+        <section class="help-section">
+          <h4 data-i18n="help.about.h"></h4>
+          <p data-i18n="help.intro"></p>
+          <ol>
+            <li data-i18n="help.intro.gis"></li>
+            <li data-i18n="help.intro.retro"></li>
+            <li data-i18n="help.intro.forecast"></li>
+            <li data-i18n="help.intro.fim"></li>
+            <li data-i18n="help.intro.viz"></li>
+          </ol>
+          <p data-i18n-html="help.disclaimer"></p>
+          <p data-i18n="help.intro.use" data-spotlight="#map"></p>
+        </section>
+        <section class="help-section" data-spotlight="#panel header .row">
+          <h4 data-i18n="help.app.h"></h4>
+          <ul>
+            <li data-i18n-html="help.app.signin" data-spotlight="#auth-action"></li>
+            <li data-i18n-html="help.app.settings" data-spotlight="#btn-settings"></li>
+            <li data-i18n-html="help.app.lang" data-spotlight="#btn-language"></li>
+            <li data-i18n-html="help.app.theme" data-spotlight="#btn-theme"></li>
+            <li data-i18n-html="help.app.help" data-spotlight="#btn-help"></li>
+          </ul>
+        </section>
+        <section class="help-section" data-spotlight="#map">
+          <h4 data-i18n="help.map.h"></h4>
+          <ul>
+            <li data-i18n-html="help.map.nav" data-spotlight=".maplibregl-ctrl-top-left"></li>
+            <li data-i18n-html="help.map.layers" data-spotlight="#layer-btn"></li>
+            <li data-i18n-html="help.map.basemap" data-spotlight="#basemap-btn"></li>
+            <li data-i18n-html="help.map.slider" data-spotlight="#player, #btn-toggle-slider"></li>
+          </ul>
+          <p data-i18n="help.map.layersIntro" data-spotlight="#layer-btn"></p>
+          <ul>
+            <li data-i18n-html="help.layers.streams" data-spotlight="#layer-btn"></li>
+            <li data-i18n-html="help.layers.fim" data-spotlight="#layer-btn"></li>
+            <li data-i18n-html="help.layers.riverfld" data-spotlight="#layer-btn"><a href="https://floods.ssec.wisc.edu/products/RIVER-FLDglobal-composite" target="_blank" rel="noopener" data-i18n="help.layers.riverfld.link"></a></li>
+            <li data-i18n-html="help.layers.goes" data-spotlight="#layer-btn"><a href="https://www.arcgis.com/home/item.html?id=37a875ff3611496883b7ccca97f0f5f4" target="_blank" rel="noopener" data-i18n="help.layers.goes.link"></a></li>
+            <li data-i18n-html="help.layers.viirs" data-spotlight="#layer-btn"><a href="https://www.arcgis.com/home/item.html?id=c873f4c13aa54b25b01270df9358dc64" target="_blank" rel="noopener" data-i18n="help.layers.viirs.link"></a></li>
+            <li data-i18n-html="help.layers.basemaps" data-spotlight="#basemap-btn"><a href="https://livingatlas.arcgis.com/" target="_blank" rel="noopener">ArcGIS Living Atlas</a>
+              <a href="https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer" target="_blank" rel="noopener">USGS The National Map</a></li>
+          </ul>
+        </section>
+        <section class="help-section" data-spotlight="#hydrology-section">
+          <h4 data-i18n="help.hydro.h"></h4>
+          <p data-i18n="help.hydro.intro" data-spotlight="#hydrology-section"></p>
+          <ol>
+            <li data-i18n-html="help.hydro.date" data-spotlight="#forecast-date"></li>
+            <li data-i18n-html="help.hydro.styles" data-spotlight="#stream-style"></li>
+          </ol>
+          <ul>
+            <li data-i18n-html="help.hydro.style.standard" data-spotlight="#stream-style"></li>
+            <li data-i18n-html="help.hydro.style.maxflow" data-spotlight="#stream-style"></li>
+            <li data-i18n-html="help.hydro.style.timeseries" data-spotlight="#stream-style, #player"></li>
+            <li data-i18n-html="help.hydro.style.timeToPeak" data-spotlight="#stream-style"></li>
+            <li data-i18n-html="help.hydro.style.belowQ95" data-spotlight="#stream-style"></li>
+          </ul>
+          <p class="subhead" data-i18n="help.tools.h" data-spotlight="#hydro-actions"></p>
+          <p data-i18n-html="help.tools.intro" data-spotlight="#hydro-actions"></p>
+          <ul>
+            <li data-i18n-html="help.tools.charts" data-spotlight="#btn-charts"></li>
+            <li data-i18n-html="help.tools.notable" data-spotlight="#btn-bookmarks"></li>
+            <li data-i18n-html="help.tools.saved" data-spotlight="#btn-saved"></li>
+            <li data-i18n-html="help.tools.search" data-spotlight="#btn-search-river"></li>
+            <li data-i18n-html="help.tools.clear" data-spotlight="#btn-clear-river"></li>
+            <li data-i18n-html="help.tools.slider" data-spotlight="#btn-toggle-slider, #player"></li>
+          </ul>
+        </section>
+        <section class="help-section" data-spotlight="#btn-charts">
+          <h4 data-i18n="help.charts.h"></h4>
+          <p data-i18n="help.charts.open" data-spotlight="#map, #btn-charts"></p>
+          <ol>
+            <li data-i18n-html="help.charts.forecast" data-spotlight="#btn-charts"></li>
+            <li data-i18n-html="help.charts.retro" data-spotlight="#btn-charts"></li>
+            <li data-i18n-html="help.charts.details" data-spotlight="#btn-charts"></li>
+          </ol>
+          <p data-i18n-html="help.charts.saved" data-spotlight="#btn-saved"></p>
+        </section>
+        <section class="help-section" data-spotlight="#flood-section">
+          <h4 data-i18n="help.flood.h"></h4>
+          <p data-i18n="help.flood.mode" data-spotlight="#flood-section"></p>
+          <ol>
+            <li data-i18n="help.flood.step.zoom" data-spotlight="#map"></li>
+            <li data-i18n-html="help.flood.step.enable" data-spotlight="#btn-flood-mode"></li>
+            <li data-i18n="help.flood.step.select" data-spotlight="#map"></li>
+            <li data-i18n-html="help.flood.step.style" data-spotlight="#flood-style, #flood-controls"></li>
+          </ol>
+          <p data-i18n="help.flood.styleIntro" data-spotlight="#flood-style"></p>
+          <ul>
+            <li data-i18n-html="help.flood.style.ratingcurve" data-spotlight="#flood-style, #qctl-ladder"></li>
+            <li data-i18n-html="help.flood.style.returnperiod" data-spotlight="#flood-style"></li>
+            <li data-i18n-html="help.flood.style.manual" data-spotlight="#flood-style, #qctl-uniform"></li>
+            <li data-i18n-html="help.flood.style.forecast" data-spotlight="#flood-style, #qctl-forecast"></li>
+            <li data-i18n-html="help.flood.style.forecastmax" data-spotlight="#flood-style"></li>
+          </ul>
+          <p data-i18n-html="help.flood.readout" data-spotlight="#readout, #btn-save-geotiff, #btn-clear"></p>
+          <p class="subhead" data-i18n="help.flood.model.h"></p>
+          <p data-i18n-html="help.flood.model"></p>
+        </section>
+        <section class="help-section" data-spotlight="#btn-settings">
+          <h4 data-i18n="help.settings.h"></h4>
+          <p data-i18n="help.settings.menu" data-spotlight="#btn-settings"></p>
+          <p data-i18n="help.settings.data" data-spotlight="#btn-settings"></p>
+        </section>
+        <section class="help-section">
+          <h4 data-i18n="help.data.h"></h4>
+          <p class="subhead" data-i18n="help.data.sub"></p>
+          <ul>
+            <li data-i18n-html="help.data.geoglows"><a href="https://geoglows.org/" target="_blank" rel="noopener">GEOGLOWS River Forecast System</a></li>
+            <li data-i18n-html="help.data.fabdem"><a href="https://data.bris.ac.uk/data/dataset/25wfy0f9ukoge2gs7a5mqpq2j7" target="_blank" rel="noopener">FABDEM</a></li>
+          </ul>
+          <p class="subhead" data-i18n="help.oss.h"></p>
+          <ul>
+            <li><a href="https://maplibre.org/" target="_blank" rel="noopener">MapLibre GL JS</a></li>
+            <li data-i18n-html="help.oss.chartjs"><a href="https://www.chartjs.org/" target="_blank" rel="noopener">Chart.js</a></li>
+            <li data-i18n-html="help.oss.zarr"><a href="https://github.com/manzt/zarrita.js" target="_blank" rel="noopener">zarrita.js</a> <a href="https://github.com/manzt/numcodecs.js" target="_blank" rel="noopener">numcodecs</a></li>
+            <li><a href="https://github.com/protomaps/PMTiles" target="_blank" rel="noopener">PMTiles</a></li>
+            <li><a href="https://github.com/Esri/calcite-ui-icons" target="_blank" rel="noopener">Calcite UI Icons</a></li>
+            <li><a href="https://github.com/tailwindlabs/heroicons" target="_blank" rel="noopener">Heroicons</a></li>
+            <li><a href="https://github.com/MikeFHS/automated-rating-curve" target="_blank" rel="noopener">ARC</a></li>
+            <li><a href="https://github.com/rileyhales/river-route" target="_blank" rel="noopener">river-route</a></li>
+          </ul>
+        </section>
+      </div>
     </div>
   </main>
 </div>
@@ -202,124 +344,6 @@
 </div>
 
 <!-- MODALS -->
-<div id="info-modal" class="backdrop hidden">
-  <div class="card modal wide" role="dialog" aria-modal="true" aria-labelledby="info-modal-title">
-    <div class="modal-head">
-      <h3 id="info-modal-title" data-i18n="about.label">About</h3>
-      <button class="btn sm" data-close="info-modal" data-i18n-aria-label="common.close" aria-label="Close">✕</button>
-    </div>
-    <!-- The sentences are the data-i18n keys, same as everywhere else; the links are here so each
-         URL is written once, and `{0}` in a sentence stands for this element's first child link —
-         which lets a translation put it wherever its word order wants. A credit that is only a
-         product name needs no key at all. -->
-    <div class="modal-body prose">
-      <p data-i18n-html="about.intro"></p>
-
-      <h4 data-i18n="about.data.h"></h4>
-      <ul>
-        <li data-i18n-html="about.data.geoglows">
-          <a href="https://geoglows.org/" target="_blank" rel="noopener">GEOGLOWS River Forecast System</a>
-        </li>
-        <li data-i18n-html="about.data.fabdem">
-          <a href="https://data.bris.ac.uk/data/dataset/25wfy0f9ukoge2gs7a5mqpq2j7" target="_blank" rel="noopener">FABDEM</a>
-        </li>
-      </ul>
-
-      <h4 data-i18n="about.layers.h"></h4>
-      <ul>
-        <li data-i18n-html="about.layers.basemaps">
-          <a href="https://livingatlas.arcgis.com/" target="_blank" rel="noopener">ArcGIS Living Atlas</a>
-          <a href="https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer" target="_blank" rel="noopener">USGS The National Map</a>
-        </li>
-        <li data-i18n-html="about.layers.riverfld">
-          <a href="https://floods.ssec.wisc.edu/products/RIVER-FLDglobal-composite" target="_blank" rel="noopener"
-             data-i18n="about.layers.riverfld.link"></a>
-        </li>
-        <li data-i18n-html="about.layers.goes">
-          <a href="https://www.arcgis.com/home/item.html?id=37a875ff3611496883b7ccca97f0f5f4" target="_blank" rel="noopener"
-             data-i18n="about.layers.goes.link"></a>
-        </li>
-        <li data-i18n-html="about.layers.viirs">
-          <a href="https://www.arcgis.com/home/item.html?id=c873f4c13aa54b25b01270df9358dc64" target="_blank" rel="noopener"
-             data-i18n="about.layers.viirs.link"></a>
-        </li>
-      </ul>
-
-      <h4 data-i18n="about.oss.h"></h4>
-      <ul>
-        <li><a href="https://maplibre.org/" target="_blank" rel="noopener">MapLibre GL JS</a></li>
-        <li><a href="https://github.com/Esri/calcite-ui-icons" target="_blank" rel="noopener">Calcite UI Icons</a></li>
-        <li><a href="https://github.com/tailwindlabs/heroicons" target="_blank" rel="noopener">Heroicons</a></li>
-        <li data-i18n-html="about.oss.chartjs">
-          <a href="https://www.chartjs.org/" target="_blank" rel="noopener">Chart.js</a>
-        </li>
-        <li data-i18n-html="about.oss.zarr">
-          <a href="https://github.com/manzt/zarrita.js" target="_blank" rel="noopener">zarrita.js</a>
-          <a href="https://github.com/manzt/numcodecs.js" target="_blank" rel="noopener">numcodecs</a>
-        </li>
-        <li><a href="https://github.com/protomaps/PMTiles" target="_blank" rel="noopener">PMTiles</a></li>
-      </ul>
-    </div>
-  </div>
-</div>
-<div id="instructions-modal" class="backdrop hidden">
-  <div class="card modal wide" role="dialog" aria-modal="true" aria-labelledby="instructions-modal-title">
-    <div class="modal-head">
-      <h3 id="instructions-modal-title" data-i18n="instructions.heading">How to use this site</h3>
-      <button class="btn sm" data-close="instructions-modal" data-i18n-aria-label="common.close" aria-label="Close">✕</button>
-    </div>
-    <!-- Prose, so the elements are empty and every sentence is a key in src/i18n/locales/.
-         data-i18n-html rather than data-i18n where a sentence emphasises the control it names. -->
-    <div class="modal-body prose">
-      <h4 data-i18n="instructions.disclaimer.h"></h4>
-      <p data-i18n-html="instructions.disclaimer.p"></p>
-
-      <h4 data-i18n="instructions.map.h"></h4>
-      <p data-i18n-html="instructions.map.click"></p>
-      <p data-i18n-html="instructions.map.pickers"></p>
-
-      <h4 data-i18n="instructions.hydro.h"></h4>
-      <p data-i18n-html="instructions.hydro.date"></p>
-      <p data-i18n-html="instructions.hydro.styleIntro"></p>
-      <ul>
-        <li data-i18n-html="instructions.hydro.style.standard"></li>
-        <li data-i18n-html="instructions.hydro.style.maxflow"></li>
-        <li data-i18n-html="instructions.hydro.style.timeseries"></li>
-        <li data-i18n-html="instructions.hydro.style.timeToPeak"></li>
-        <li data-i18n-html="instructions.hydro.style.belowQ95"></li>
-      </ul>
-      <p data-i18n-html="instructions.hydro.buttons"></p>
-
-      <h4 data-i18n="instructions.charts.h"></h4>
-      <p data-i18n-html="instructions.charts.tabs"></p>
-      <p data-i18n-html="instructions.charts.saved"></p>
-
-      <h4 data-i18n="instructions.flood.h"></h4>
-      <p data-i18n-html="instructions.flood.mode"></p>
-      <ol>
-        <li data-i18n-html="instructions.flood.step.zoom"></li>
-        <li data-i18n-html="instructions.flood.step.enable"></li>
-        <li data-i18n-html="instructions.flood.step.select"></li>
-        <li data-i18n-html="instructions.flood.step.style"></li>
-      </ol>
-      <p data-i18n-html="instructions.flood.styleIntro"></p>
-      <ul>
-        <li data-i18n-html="instructions.flood.style.ratingcurve"></li>
-        <li data-i18n-html="instructions.flood.style.returnperiod"></li>
-        <li data-i18n-html="instructions.flood.style.manual"></li>
-        <li data-i18n-html="instructions.flood.style.forecast"></li>
-        <li data-i18n-html="instructions.flood.style.forecastmax"></li>
-      </ul>
-      <p data-i18n-html="instructions.flood.readout"></p>
-
-      <h4 data-i18n="instructions.model.h"></h4>
-      <p data-i18n-html="instructions.model.p"></p>
-
-      <h4 data-i18n="instructions.settings.h"></h4>
-      <p data-i18n-html="instructions.settings.p"></p>
-    </div>
-  </div>
-</div>
 <div id="search-modal" class="backdrop hidden">
   <div class="card modal entry" role="dialog" aria-modal="true" aria-labelledby="search-modal-title">
     <div class="modal-head">

@@ -44,7 +44,14 @@ const rowAction = (action, riverId, icon, titleKey, className = "") =>
  * list and the user's own — the two are meant to read as the same list, and sharing the renderer is
  * what keeps them that way as either one changes.
  */
-function riverTable(rows, {removable = false} = {}) {
+function riverTable(rows, {removable = false, sort = null} = {}) {
+  // A sortable column's header is a button; the one in effect carries its direction as an arrow.
+  const head = (key, labelKey) => {
+    if (!sort) return `<td>${t(labelKey)}</td>`;
+    const active = sort.key === key;
+    const arrow = active ? (sort.asc ? " ↑" : " ↓") : "";
+    return `<td aria-sort="${active ? (sort.asc ? "ascending" : "descending") : "none"}"><button class="sort${active ? " active" : ""}" data-sort="${key}" title="${t("saved.sort")}">${t(labelKey)}${arrow}</button></td>`;
+  };
   const cells = rows.map(({riverId, name, lat, lon}) => `
       <tr>
         <td class="k">${riverId}</td>
@@ -61,8 +68,8 @@ function riverTable(rows, {removable = false} = {}) {
       <table class="table rivers">
         <thead>
           <tr>
-            <td>${t("bookmarks.col.id")}</td>
-            <td>${t("bookmarks.col.name")}</td>
+            ${head("riverId", "bookmarks.col.id")}
+            ${head("name", "bookmarks.col.name")}
             <td>${t("bookmarks.col.lat")}</td>
             <td>${t("bookmarks.col.lon")}</td>
             <td></td>
@@ -110,9 +117,17 @@ function createBookmarksDock({map, onSelectRiver}) {
   return {open, close};
 }
 
+/** The saved list in the order asked for: by id numerically, or by name alphabetically (ignoring case). */
+function sortRivers(rows, {key, asc}) {
+  const cmp = key === "name"
+    ? (a, b) => (a.name ?? "").localeCompare(b.name ?? "", undefined, {sensitivity: "base"}) || a.riverId - b.riverId
+    : (a, b) => a.riverId - b.riverId;
+  return rows.sort((a, b) => (asc ? cmp(a, b) : cmp(b, a)));
+}
+
 /**
  * The rivers the user saved themselves — the same table as the defaults, plus the ability to drop a
- * row, and empty until somebody hearts a river.
+ * row and to sort by id or name, and empty until somebody hearts a river.
  *
  * Kept live rather than rendered once: hearting or un-hearting a river from the charts dock changes
  * this list while it may be on screen, so it re-renders on every change to it instead of only when
@@ -123,10 +138,13 @@ function createSavedRiversDock({map, onSelectRiver}) {
   const button = document.getElementById("btn-saved");
   const exit = document.getElementById("saved-close");
 
+  // Ascending by id to begin with; clicking a header sorts by it, clicking it again flips it.
+  let sort = {key: "riverId", asc: true};
+
   function render() {
-    const rows = listSavedRivers();
+    const rows = sortRivers(listSavedRivers(), sort);
     body.innerHTML = rows.length
-      ? riverTable(rows, {removable: true})
+      ? riverTable(rows, {removable: true, sort})
       : `<div class="hint">${t("saved.empty")}</div>`;
   }
 
@@ -138,6 +156,13 @@ function createSavedRiversDock({map, onSelectRiver}) {
   const close = () => closeDock(map, "saved");
 
   body?.addEventListener("click", (e) => {
+    const header = e.target?.closest?.("[data-sort]");
+    if (header) {
+      const key = header.dataset.sort;
+      sort = {key, asc: sort.key === key ? !sort.asc : true};
+      render();
+      return;
+    }
     const hit = rowClick(e, listSavedRivers());
     if (!hit) return;
     // The re-render after a removal is the change watcher's job, not this handler's — un-hearting

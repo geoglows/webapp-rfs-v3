@@ -31,8 +31,9 @@
     --surface: #ffffff;
     --surface2: #f1f5f9;
     --border: #cbd5e1;
-    --text: #0f172a;
-    --text-dim: #52627a;
+    /* Black, both of them: on a light ground a "dimmed" grey is just lower contrast, not hierarchy. */
+    --text: #000000;
+    --text-dim: #000000;
     --accent: #0284c7;
     --success: #059669;
     --danger: #dc2626;
@@ -429,7 +430,7 @@ input[aria-invalid="true"] {
     margin-top: min(22vh, 180px);
 }
 
-/* text-heavy modals: About, how-to-use, and Settings, whose rows wrap badly at the entry width */
+/* text-heavy modals — Settings, whose rows wrap badly at the entry width */
 .modal.wide {
     width: min(680px, calc(100vw - 40px));
     max-height: 88vh;
@@ -468,8 +469,8 @@ input[aria-invalid="true"] {
 .modal-body p {
     font-size: 14px;
     color: var(--text-dim);
-    line-height: 1.6;
-    margin-bottom: 10px;
+    line-height: 1.5;
+    margin-bottom: 6px;
 }
 
 .modal-body a {
@@ -491,15 +492,15 @@ input[aria-invalid="true"] {
 /* The prose modals — About and how-to-use. Plain elements only, so this is what they get. The reset
    zeroes list padding, which would put the markers under the text. */
 .prose ul, .prose ol {
-    margin: -2px 0 12px;
+    margin: 0 0 8px;
     padding-left: 20px;
 }
 
 .prose li {
     font-size: 14px;
     color: var(--text-dim);
-    line-height: 1.7;
-    margin-bottom: 6px;
+    line-height: 1.5;
+    margin-bottom: 2px;
 }
 
 .prose strong, .prose em {
@@ -575,6 +576,20 @@ input[aria-invalid="true"] {
     margin-left: 6px;
 }
 
+/* a sortable column header: the header text itself is the control, styled as text rather than a
+   button so the head still reads as a head; the active one is the column the rows follow */
+.table thead .sort {
+    all: unset;
+    cursor: pointer;
+    font: inherit;
+    color: inherit;
+    white-space: nowrap;
+}
+
+.table thead .sort:hover, .table thead .sort.active {
+    color: var(--text);
+}
+
 /* ── Left panel · header, sections, the flood controls ── */
 #panel header {
     flex: 0 0 auto;
@@ -587,8 +602,9 @@ input[aria-invalid="true"] {
     background: var(--surface2);
 }
 
-/* the account avatar / sign-in button, left of the logo. It sits at the panel's left edge, so its
-   menu opens rightward rather than the library's default of hanging off the right. */
+/* the account avatar / sign-in button leads the row of actions. In the narrow panel it sits at the
+   left edge, so its menu opens rightward rather than the library's default of hanging off the
+   right. */
 #panel header .brand, #auth-action {
     display: flex;
     align-items: center;
@@ -1019,7 +1035,7 @@ input[aria-invalid="true"] {
    dock grows in *beneath* the hydrology controls (date picker · stream style · action buttons),
    which stay pinned so you can retune the forecast while reading the charts. The other control
    sections give way to it. Only one shows at a time: `dock-open` on <body> drives the shared
-   layout, `charts-open` / `bookmarks-open` / `saved-open` pick which one (see docks/dock.js, which
+   layout, `charts-open` / `bookmarks-open` / `saved-open` / `help-open` pick which one (see docks/dock.js, which
    also calls map.resize() to track the width change). ── */
 .dock {
     display: none;
@@ -1030,7 +1046,8 @@ input[aria-invalid="true"] {
 
 body.charts-open #charts-dock,
 body.bookmarks-open #bookmarks-dock,
-body.saved-open #saved-dock {
+body.saved-open #saved-dock,
+body.help-open #help-dock {
     display: flex;
 }
 
@@ -1068,10 +1085,16 @@ body.dock-open #panel header {
     gap: 12px 16px;
 }
 
-/* and its actions move to the far end, in reverse order (info · help · theme · language · settings) */
+/* and its actions move to the far end, in reverse order (help · theme · language · settings) */
 body.dock-open #panel header .row {
     margin-left: auto;
     flex-direction: row-reverse;
+}
+
+/* …which puts the sign-in at the far right, where its menu should hang off the right again */
+body.dock-open #auth-action .geoglows-auth-action-menu {
+    left: auto;
+    right: 0;
 }
 
 /* pin the hydrology controls to their natural height; the dock takes the rest */
@@ -1083,6 +1106,126 @@ body.dock-open #scroll {
 /* the flood and legend sections step aside for the dock */
 body.dock-open #scroll > section:not(#hydrology-section) {
     display: none;
+}
+
+/* …except for the help dock, whose text points at those controls (data-spotlight): they stay, at
+   their natural height (the wide layout condenses each section onto a row or two), and the dock
+   flexes to take whatever is left beneath them. */
+body.help-open #scroll {
+    flex: 0 0 auto;
+    overflow: visible;
+}
+
+body.help-open #scroll > section:not(#hydrology-section, #flood-section) {
+    display: block;
+}
+
+/* ── Help dock · one boxed section per topic, ruled off from the next. The whole section is a hover
+   target (it carries the data-spotlight for the control it is about), so it tints while the pointer
+   is anywhere inside it — including the space between its passages. ── */
+.help-section {
+    padding: 4px 12px 10px;
+    margin: 0 -12px;
+    border-top: 1px solid var(--border);
+    border-radius: var(--radius);
+    transition: background-color .15s ease;
+}
+
+.help-section:first-child {
+    border-top: none;
+}
+
+.help-section:hover {
+    background: color-mix(in srgb, var(--spot) 9%, transparent);
+}
+
+.help-section h4 {
+    margin-top: 8px;
+}
+
+/* a topic within a section — bold, and spaced like a heading, but not ruled off as one */
+.help-section .subhead {
+    font-weight: 700;
+    color: var(--text);
+    margin-top: 10px;
+}
+
+/* ── Spotlight · the control a hovered help passage is about (docks/help.js). An outline rather
+   than a border so nothing shifts, with a big, bright halo around it that fades out to nothing
+   and pulses between two shades of the same colour to pull the eye. Layered box-shadows with
+   growing blur are what make the fade: each ring is softer and fainter than the one inside it. ── */
+/* Hot, high-contrast shades that stand out against both the blue-grey panel and the map, neither of
+   which has any warm colour in it. The pulse runs between a bright yellow and a light orange. */
+:root {
+    --spot: #fde047;      /* the halo's brighter shade: light yellow */
+    --spot-dim: #fb923c;  /* …and the one it pulses to: light orange */
+}
+
+:root[data-theme="light"] {
+    --spot: #facc15;
+    --spot-dim: #f97316;
+}
+
+@keyframes spotlight-pulse {
+    0%, 100% {
+        outline-color: var(--spot);
+        box-shadow:
+            0 0 0 6px var(--spot),
+            0 0 20px 14px color-mix(in srgb, var(--spot) 85%, transparent),
+            0 0 48px 30px color-mix(in srgb, var(--spot) 55%, transparent),
+            0 0 90px 52px color-mix(in srgb, var(--spot) 28%, transparent),
+            0 0 150px 80px color-mix(in srgb, var(--spot) 12%, transparent);
+    }
+    50% {
+        outline-color: var(--spot-dim);
+        box-shadow:
+            0 0 0 6px var(--spot-dim),
+            0 0 24px 18px color-mix(in srgb, var(--spot-dim) 80%, transparent),
+            0 0 58px 38px color-mix(in srgb, var(--spot-dim) 45%, transparent),
+            0 0 110px 64px color-mix(in srgb, var(--spot-dim) 22%, transparent),
+            0 0 180px 100px color-mix(in srgb, var(--spot-dim) 9%, transparent);
+    }
+}
+
+@keyframes spotlight-pulse-inset {
+    0%, 100% {
+        outline-color: var(--spot);
+        box-shadow:
+            inset 0 0 0 8px var(--spot),
+            inset 0 0 40px 20px color-mix(in srgb, var(--spot) 80%, transparent),
+            inset 0 0 100px 50px color-mix(in srgb, var(--spot) 45%, transparent),
+            inset 0 0 200px 90px color-mix(in srgb, var(--spot) 18%, transparent);
+    }
+    50% {
+        outline-color: var(--spot-dim);
+        box-shadow:
+            inset 0 0 0 8px var(--spot-dim),
+            inset 0 0 48px 26px color-mix(in srgb, var(--spot-dim) 75%, transparent),
+            inset 0 0 120px 64px color-mix(in srgb, var(--spot-dim) 38%, transparent),
+            inset 0 0 240px 110px color-mix(in srgb, var(--spot-dim) 14%, transparent);
+    }
+}
+
+.spotlight {
+    /* no position here on purpose: the map overlays (#map-controls, #player) are absolutely placed
+       and must stay so; z-index only lifts the halo above neighbours on things already positioned */
+    z-index: 5;
+    outline: 4px solid var(--spot);
+    outline-offset: 4px;
+    border-radius: var(--radius);
+    animation: spotlight-pulse 1.6s ease-in-out infinite;
+}
+
+/* the map fills its box, so its glow has to sit inside the edge to be seen at all */
+#map.spotlight {
+    outline-offset: -4px;
+    animation-name: spotlight-pulse-inset;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .spotlight {
+        animation-duration: 0s;
+    }
 }
 
 /* wide layout: lay the hydrology controls out in a row so they use the extra width and free up
@@ -1104,6 +1247,37 @@ body.dock-open #hydrology-section h2 {
 }
 
 body.dock-open #hydrology-section .field {
+    flex: 1 1 220px;
+}
+
+/* The flood section (on screen only under the help dock) follows the same rhythm: the mode button
+   and the style picker share a row, and everything after them wraps onto full-width rows. The
+   selector matches the specificity of the `body.dock-open #scroll > section:not(...)` rule that
+   hides the other sections, and sits after it, so this is the one that wins. */
+body.help-open #scroll > section#flood-section {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 12px;
+}
+
+body.help-open #flood-section > * + * {
+    margin-top: 0;
+}
+
+body.help-open #flood-section h2,
+body.help-open #flood-section #flood-controls {
+    flex-basis: 100%;
+}
+
+/* the mode button and the clear / save pair keep their natural widths and join the picker's row —
+   in the stacked layout they fill their rows instead */
+body.help-open #flood-section > .row,
+body.help-open #flood-section > .row .btn {
+    flex: 0 0 auto;
+}
+
+body.help-open #flood-section .field {
     flex: 1 1 220px;
 }
 

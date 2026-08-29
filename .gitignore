@@ -6,3 +6,5 @@ dist/
 /references/
 .DS_Store
 /.env.local
+uv.lock
+.venv/

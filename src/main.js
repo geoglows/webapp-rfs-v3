@@ -15,6 +15,7 @@ import {createChartsDock} from "./docks/charts.js";
 import {createBookmarksDock, createSavedRiversDock} from "./docks/bookmarks.js";
 import {onSavedRiversChange, savedRiverIds} from "./data/savedRivers.js";
 import {closeAllDocks} from "./docks/dock.js";
+import {createHelpDock} from "./docks/help.js";
 import {createPanelControls} from "./ui/panelControls";
 import {createDataSettings} from "./ui/dataSettings";
 import {createRiverSearch} from "./ui/riverSearch";
@@ -79,6 +80,7 @@ const goToRiver = (river) => void showRiver(river);
 // two lists are the same table over different rows — the app's defaults, and the user's own.
 createBookmarksDock({map, onSelectRiver: goToRiver});
 createSavedRiversDock({map, onSelectRiver: goToRiver});
+createHelpDock({map});
 
 // The pink outline on saved reaches. Set now for what was saved in an earlier session and again on
 // every change; the map re-applies it as tiles arrive, so nothing here waits for the map to load.
@@ -212,10 +214,8 @@ const closeModal = (id) => $(id).classList.add("hidden");
 createRiverSearch({onFound: goToRiver});
 
 $("btn-settings").addEventListener("click", () => openModal("settings-modal"));
-$("btn-info").addEventListener("click", () => openModal("info-modal"));
-$("btn-instructions").addEventListener("click", () => openModal("instructions-modal"));
 document.querySelectorAll("[data-close]").forEach((el) => el.addEventListener("click", () => closeModal(el.dataset.close)));
-for (const id of ["info-modal", "instructions-modal", "settings-modal", "search-modal"]) {
+for (const id of ["settings-modal", "search-modal"]) {
   $(id).addEventListener("click", (e) => {
     if (e.target === $(id)) closeModal(id);
   });
