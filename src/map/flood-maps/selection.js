@@ -1,8 +1,11 @@
 import {floodNetwork} from "./network";
 import {MAX_FLOOD_REACHES, MIN_FLOOD_MAPS_ZOOM} from "../../settings/settings.js";
 
-const NO_MATCH = ["in", ["get", "riverId"], ["literal", []]];
-const inFilter = (ids) => ids.length ? ["in", ["get", "riverId"], ["literal", ids]] : NO_MATCH;
+// Reaches are addressed by riverIndex everywhere in flood mapping — the streams tiles carry it as a
+// property, the flood stores key their river directories on it, and the network graph's edges are
+// in it — so the highlight filters match on that property, never on riverId.
+const NO_MATCH = ["in", ["get", "riverIndex"], ["literal", []]];
+const inFilter = (ids) => ids.length ? ["in", ["get", "riverIndex"], ["literal", ids]] : NO_MATCH;
 
 class Selection {
   /**
@@ -14,8 +17,10 @@ class Selection {
    * between(), from riverforecastsystem/v3/hydrography). Only `clicked` is toggled — clicking a reach the
    * corridor merely passes through pins it, so it survives dropping the click that pulled it in.
    *
-   * hasCoverage(riverId): whether a reach has flood-library data in the loaded (viewport) tiles.
-   * It arrives async and grows as you pan, so call refresh() when it updates.
+   * hasCoverage(riverIndex): whether the flood library holds a reach anywhere — the global bitset
+   * from the flood root, which arrives async once the worker is ready, so call refresh() then.
+   *
+   * Every reach here — clicked, corridor, coverage — is a riverIndex (see NO_MATCH above).
    */
   constructor(map, onChange, hasCoverage = () => false) {
     this.map = map;
@@ -88,10 +93,11 @@ class Selection {
    * mapped. The filter is the complement of the coverage set — there is no list of absent rivers
    * to match on, only the list of present ones to exclude.
    *
-   * Nothing is marked until at least one data tile's coverage has loaded. An empty set would
-   * otherwise mean "no river anywhere is in the library", painting the whole network red on the
-   * way into flood mode and everywhere outside the library's footprint — which reads as a broken
-   * map rather than as an answer. The set only grows as tiles load with panning.
+   * This is the viewport-derived list (the rivers of every data tile scrolled into view), not the
+   * global coverage bitset: a map filter needs an explicit id list, and listing every covered
+   * river on earth would be millions of ids. Nothing is marked until at least one data tile has
+   * loaded — an empty set would otherwise mean "no river anywhere is in the library", painting
+   * the whole network red on the way into flood mode. The set only grows as tiles load.
    */
   setCoverage(ids) {
     this.coverageIds = ids;
@@ -119,15 +125,15 @@ class Selection {
    * keep "part of" a corridor, so the click that crossed the line is undone and the selection is
    * left exactly as it was. Removing a reach can only shrink the corridor, so it never checks.
    */
-  select(rid) {
-    const added = !this.clicked.has(rid);
-    if (added) this.clicked.add(rid);
-    else this.clicked.delete(rid);
+  select(riverIndex) {
+    const added = !this.clicked.has(riverIndex);
+    if (added) this.clicked.add(riverIndex);
+    else this.clicked.delete(riverIndex);
     const between = this.computeCorridor();
     if (added && between.corridor.size > MAX_FLOOD_REACHES) {
-      this.clicked.delete(rid);
+      this.clicked.delete(riverIndex);
       this.warn(`That reach would make ${between.corridor.size.toLocaleString()} reaches — the limit is ${MAX_FLOOD_REACHES}. Selection unchanged.`);
-      console.warn(`Rejected reach ${rid}: corridor would span ${between.corridor.size} reaches (max ${MAX_FLOOD_REACHES}).`);
+      console.warn(`Rejected reach at index ${riverIndex}: corridor would span ${between.corridor.size} reaches (max ${MAX_FLOOD_REACHES}).`);
       return;
     }
     this.recompute(between);

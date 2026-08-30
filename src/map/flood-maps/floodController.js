@@ -39,7 +39,12 @@ function createFloodController({map, streams, getForecastDate, isMapLoaded}) {
   let worker = null;
   let workerReady = false;
   let floodView = null;
-  let coverageSet = null;
+  // Global coverage bitset from the flood root (bit riverIndex, little-endian): whether the library
+  // holds a reach anywhere on earth, known once the worker is ready. Independent of the viewport.
+  let coveredBits = null;
+  const hasCoverage = (riverIndex) => coveredBits
+    ? ((coveredBits[riverIndex >> 3] >> (riverIndex & 7)) & 1) === 1
+    : false;
   let selectSeq = 0;
   let flowsSpec = null;
   let frameInFlight = false;
@@ -87,14 +92,16 @@ function createFloodController({map, streams, getForecastDate, isMapLoaded}) {
     if (msg.type === "ready") {
       workerReady = true;
       $("legend-depth").style.background = `linear-gradient(to right, ${legendGradient()})`;
-      console.log(`Flood index ready: ${msg.nTiles.toLocaleString()} tiles. Coverage loads from the map viewport.`);
+      coveredBits = new Uint8Array(msg.covered);
+      console.log(`Flood index ready: ${msg.nTiles.toLocaleString()} tiles, global coverage loaded. Highlights load from the map viewport.`);
+      selection?.refresh();
       refreshControls();
       floodMapsTiles.sync();
     } else if (msg.type === "coverage") {
-      coverageSet = new Set(new Uint32Array(msg.coverage));
-      selection?.setCoverage([...coverageSet]);
-      console.log(`Flood coverage: ${msg.nRivers.toLocaleString()} river(s) across ${msg.nActiveTiles} loaded tile(s).`);
-      selection?.refresh();
+      // The viewport-derived set only drives the on-screen "unmappable" highlight; whether a reach
+      // can be mapped is answered by coveredBits above.
+      selection?.setCoverage([...new Uint32Array(msg.coverage)]);
+      console.log(`Flood highlight set: ${msg.nRivers.toLocaleString()} river(s) across ${msg.nActiveTiles} loaded tile(s).`);
       refreshControls();
     } else if (msg.type === "selected") {
       if (msg.id !== selectSeq) return;
@@ -138,7 +145,7 @@ function createFloodController({map, streams, getForecastDate, isMapLoaded}) {
   function requestSelect() {
     if (!workerReady || current.floodable.length === 0) return;
     $("flood-status").textContent = "Fetching river slices…";
-    worker.postMessage({type: "select", id: ++selectSeq, riverIds: current.floodable});
+    worker.postMessage({type: "select", id: ++selectSeq, riverIndices: current.floodable});
   }
 
   function queryDepth(lngLat) {
@@ -180,7 +187,7 @@ function createFloodController({map, streams, getForecastDate, isMapLoaded}) {
     else if (!workerReady) $("flood-status").textContent = "Loading flood index…";
     else if (current.floodable.length === 0) {
       $("flood-status").textContent = current.selected.length
-        ? "Selected reaches have no flood-library coverage in the loaded tiles yet."
+        ? "Selected reaches have no flood-library coverage."
         : "Click reaches on the map to select them.";
     } else {
       $("flood-status").textContent = `${current.floodable.length} reach(es) flooding live — move the slider.`;
@@ -224,14 +231,14 @@ function createFloodController({map, streams, getForecastDate, isMapLoaded}) {
     if (floodStyle === "manual") return uniformFlows(flowsSpec, Number($("uniform").value));
     if (floodStyle === "ratingcurve") return flowsAtLadderPosition(flowsSpec, Number($("ladder").value));
     if (!forecastFlows) return null;
-    // forecasts is Map(riverId -> {riverIndex, median, peak, memberCount}) — the per-reach median
-    // series and its peak, so both forecast styles read off the same entry.
+    // forecasts is Map(riverIndex -> {riverIndex, median, peak, memberCount}) — the per-reach
+    // median series and its peak, so both forecast styles read off the same entry.
     const out = new Map();
-    for (const [riverId, entry] of forecastFlows.forecasts) {
+    for (const [riverIndex, entry] of forecastFlows.forecasts) {
       const v = floodStyle === "forecastmax"
         ? entry.peak
         : entry.median[Math.min(fcStep, entry.median.length - 1)];
-      if (Number.isFinite(v)) out.set(riverId, v);
+      if (Number.isFinite(v)) out.set(riverIndex, v);
     }
     return out;
   }
@@ -245,7 +252,7 @@ function createFloodController({map, streams, getForecastDate, isMapLoaded}) {
     const full = flowsForFloodStyle();
     if (!full) return;
     const flows = [];
-    for (const riverId of current.floodable) if (full.has(riverId)) flows.push([riverId, full.get(riverId)]);
+    for (const riverIndex of current.floodable) if (full.has(riverIndex)) flows.push([riverIndex, full.get(riverIndex)]);
     if (flows.length === 0) return;
     frameInFlight = true;
     $("flood-status").textContent = "Computing…";
@@ -284,6 +291,8 @@ function createFloodController({map, streams, getForecastDate, isMapLoaded}) {
       syncForecastPlayer();
       return;
     }
+    // The selection is already in riverIndex, which is the forecast store's row axis — so the
+    // download needs no id lookup at all, and its result map comes back keyed the same way.
     const ids = [...current.floodable].sort((a, b) => a - b);
     const date = getForecastDate();
     const key = `${date}|${ids.join(",")}`;
@@ -304,7 +313,7 @@ function createFloodController({map, streams, getForecastDate, isMapLoaded}) {
       const {forecastsBulk} = await import("riverforecastsystem/v3/discharge");
       const fc = await forecastsBulk({
         date,
-        riverIds: ids,
+        riverIndices: ids,
         onProgress: (done, total) => {
           $("flood-status").textContent = `Downloading forecast… ${done}/${total} reach(es)`;
         }
@@ -443,6 +452,9 @@ function createFloodController({map, streams, getForecastDate, isMapLoaded}) {
         styleSel.dispatchEvent(new Event("change"));
       }
     }
+    // One thickness for every reach while in flood mode, so the selection highlights read as the
+    // only width on the map. Restored on the way out.
+    streams.setUniformWidth(on);
     const btn = $("btn-flood-mode");
     btn.classList.toggle("active", on);
     btn.textContent = t(on ? "flood.disable" : "flood.enable");
@@ -507,14 +519,16 @@ function createFloodController({map, streams, getForecastDate, isMapLoaded}) {
   /** Add the flood-related map layers and stand up the reach picker. Call once, on map load. */
   function onMapLoad() {
     // floodMapsTiles adds itself on first entry into flood mode — see FloodMapsTilesLayer.add().
-    selection = new Selection(map, onSelectionChange, (id) => coverageSet?.has(id) ?? false);
+    // Coverage is the set of riverIndex values the loaded tiles' river directories hold.
+    selection = new Selection(map, onSelectionChange, hasCoverage);
     selection.addHighlightLayers();
   }
 
   return {
     onMapLoad,
     isMappingMode: () => mappingMode,
-    selectReach: (id) => selection?.select(id),
+    /** Toggle a reach, given by riverIndex, in the flood selection. */
+    selectReach: (riverIndex) => selection?.select(riverIndex),
     queryDepth,
     /** The forecast styles read the initialization date, so they refetch when it changes. */
     onForecastDateChange() {
