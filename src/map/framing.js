@@ -101,6 +101,33 @@ function travelToRiver(map, {lat, lon}) {
 }
 
 /**
+ * A river the user found by name, which is a whole river rather than a reach — so the camera frames
+ * its published extent instead of travelling to a point on it.
+ *
+ * A name found in the table comes with the bounding box of every reach it covers, which is the only
+ * way this app can frame a river at all: the reaches are in vector tiles that are not loaded until
+ * the camera is already looking at them. Flying to the mouth instead would put the Amazon on screen
+ * as an estuary, with the river off the west edge.
+ *
+ * The padding keeps the river off the window edges and, on the left, out from under the panel that
+ * is opening as this runs. Falls back to the point when a row carries no box — an older release of
+ * the names table has none, and a river is still worth going to.
+ */
+function frameRiverExtent(map, {bbox, lat, lon}) {
+  if (!bbox || bbox.length !== 4) return travelToRiver(map, {lat, lon});
+  const [west, south, east, north] = bbox;
+  const {width} = map.getContainer().getBoundingClientRect();
+  map.fitBounds([[west, south], [east, north]], {
+    // A river narrower than the padding cannot be fitted at all, so the padding is capped at a
+    // share of the window rather than being a flat number of pixels.
+    padding: Math.min(80, Math.round(width * 0.12)),
+    // A single short reach has a near-degenerate box, and fitting one lands the camera at z22 on a
+    // stream. This is the zoom a reach is inspected at everywhere else in the app.
+    maxZoom: INSPECT_ZOOM
+  });
+}
+
+/**
  * A reach the user clicked, which they are already looking at — so the view moves only when it has
  * to. Too far out to read a single stream: zoom in on it. Close enough already: hold the view still
  * unless the reach is at an edge, where the panel that just widened may have taken it.
@@ -115,4 +142,4 @@ function focusRiver(map, {lat, lon}) {
   if (!isFramed(map, center)) map.easeTo({center, duration: 400});
 }
 
-export {focusRiver, snapToFeature, travelToRiver, nearestFeature};
+export {focusRiver, frameRiverExtent, snapToFeature, travelToRiver, nearestFeature};

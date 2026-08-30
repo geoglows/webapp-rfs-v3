@@ -7,6 +7,15 @@ import {SAVED_RIVERS} from "../settings/settings.js";
 const NO_MATCH = ["in", ["get", "riverId"], ["literal", []]];
 const inFilter = (ids) => ids.length ? ["in", ["get", "riverId"], ["literal", ids]] : NO_MATCH;
 
+// A named river is a contiguous run of riverIndex — every reach upstream of its mouth — so it is
+// selected as a range rather than as a list of ids. That is the whole reason the names table can
+// name a river at all: it publishes two bounds instead of the hundreds of thousands of ids between
+// them. There is no riverIndex equivalent of NO_MATCH here because an empty range says it already.
+const NO_SPAN = ["==", ["get", "riverIndex"], -1];
+const spanFilter = (span) => span
+  ? ["all", [">=", ["get", "riverIndex"], span.lo], ["<=", ["get", "riverIndex"], span.hi]]
+  : NO_SPAN;
+
 const RET_COLORS = ["#3182bd", "#fee08b", "#fdae61", "#f46d43", "#d73027", "#a50026", "#7a0177"];
 // Uniform stream color for the "Standard" styleset (matches the normal-flow return-period blue).
 const STANDARD_COLOR = "#3182bd";
@@ -20,6 +29,15 @@ const WIDTH_UNIFORM = 5;
 // --saved so an unconfigured deployment looks exactly as it did before there was a setting.
 const SAVED_COLOR = SAVED_RIVERS.color || "#ff4fa3";
 const SAVED_BORDER = SAVED_RIVERS.borderWidth;
+// The river found by name. Not on the return-period scale, not the saved pink, not the inspect
+// green and not the amber a flood corridor uses — a named river is a different kind of answer from
+// all of them, and the one thing it must never be mistaken for is a reading of the forecast.
+const NAMED_COLOR = "#ff5f1f";
+// Wider than WIDTH_MAX so the casing shows on the thickest reach the ramp can draw, not just on
+// the headwaters. Flat rather than following strahlerOrder: the highlight is the answer to "which
+// river is this", one thing, and a casing that thinned along it would read as the river petering
+// out instead of as one continuous river.
+const NAMED_WIDTH = WIDTH_MAX + 4;
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 const fetchOk = async url => {
@@ -45,6 +63,9 @@ class Streams {
   idFi = new Map();
   // riverId -> riverIndex (cube row; -1 = no forecast)
   savedIds = [];
+  // The riverIndex range of the river last found by name, or null. Held like savedIds so the layer
+  // can be rebuilt with it after a style change.
+  namedSpan = null;
   // Whether the saved-river outline is drawn. The deployment's default until the Settings
   // subscription reports what this device actually chose, which happens before the map loads.
   savedHighlightVisible = SAVED_RIVERS.highlight;
@@ -89,6 +110,7 @@ class Streams {
       if (this.cube && e.sourceId === "geoglows" && e.tile) this.scheduleApply();
     });
     this.addSavedHighlightLayer();
+    this.addNamedHighlightLayer();
     this.addInspectHighlightLayer();
   }
 
@@ -155,6 +177,53 @@ class Streams {
       return;
     }
     this.map.setFilter("saved-highlight", inFilter(this.savedIds));
+  }
+
+  /**
+   * The neon orange casing under the whole of a river found by name.
+   *
+   * Beneath `streams` and wider than it, like the saved-river outline: the streams line covers the
+   * middle, so what shows is a border down both sides and the reach keeps its own forecast colour.
+   * Above it instead would paint over the forecast for the length of the Amazon.
+   *
+   * One filter over a riverIndex range does the whole river — 233,398 reaches for the Amazon — and
+   * paints itself onto tiles as they arrive, so panning along a river needs nothing re-run.
+   */
+  addNamedHighlightLayer() {
+    if (this.map.getLayer("named-highlight")) return;
+    this.map.addLayer({
+      id: "named-highlight",
+      type: "line",
+      source: "geoglows",
+      "source-layer": "streams",
+      filter: NO_SPAN,
+      layout: {"line-cap": "round", "line-join": "round"},
+      paint: {
+        "line-color": NAMED_COLOR,
+        // The streams ramp's own zoom scale, so the casing keeps its proportion to the network at
+        // every zoom, but with a flat width in place of the strahlerOrder step.
+        "line-width": [
+          "interpolate", ["linear"], ["zoom"],
+          3, 0.25 * NAMED_WIDTH,
+          7, 0.5 * NAMED_WIDTH,
+          12, NAMED_WIDTH,
+          16, 2.2 * NAMED_WIDTH
+        ],
+        "line-opacity": 0.9
+      }
+    }, "streams");
+    this.setNamedRiver(this.namedSpan);
+  }
+
+  /** The riverIndex range to outline as a named river, `{lo, hi}`. Pass null to clear. */
+  setNamedRiver(span) {
+    this.namedSpan = span ?? null;
+    if (!this.map.getLayer("named-highlight")) return;
+    if (!this.map.isStyleLoaded()) {
+      this.map.once("idle", () => this.setNamedRiver(this.namedSpan));
+      return;
+    }
+    this.map.setFilter("named-highlight", spanFilter(this.namedSpan));
   }
 
   /**

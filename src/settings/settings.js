@@ -40,7 +40,8 @@ const PREFERENCES = [
   {key: "language", el: "set-language", fallback: DEFAULT_LANGUAGE},
 ]
 const SETTINGS = [
-  {key: "legend", el: "set-legend", fallback: envToBool(import.meta.env.VITE_SETTINGS_LEGEND)},
+  // No checkbox: this one is flipped by the streams panel's legend button (panelControls).
+  {key: "legend", fallback: envToBool(import.meta.env.VITE_SETTINGS_LEGEND)},
   {key: "shadedWarningLevels", el: "set-shaded-warning-levels", fallback: envToBool(import.meta.env.VITE_SETTINGS_SHADED_WARNING_LEVELS)},
   // The deployment picks the starting state (VITE_SAVED_RIVERS_HIGHLIGHT, via SAVED_RIVERS below);
   // from there it is the user's, per device. The colour and width of the outline stay deployment
@@ -234,6 +235,7 @@ export {
   onPreferencesChange,
   preferencesSavedAt,
   resetPreferences,
+  setSetting,
   LANGUAGES,
   MAP_CENTER,
   MAP_DEFAULT_BASEMAP,

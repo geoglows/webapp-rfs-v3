@@ -9,10 +9,12 @@
  * That clone is ~55 MB, so a second, tiny record shadows it: the same descriptive fields without
  * the buffers. Anything that only needs to know whether a lookup exists and how big it is — the
  * Settings rows, the search box on open — reads that one instead of deserializing the arrays.
+ *
+ * The connection belongs to data/db.js; this file owns only the two records it keeps in the shared
+ * store and what makes one of them usable.
  */
-const DB_NAME = "rfs-v3";
-const DB_VERSION = 1;
-const STORE = "river-index";
+import {runTransaction} from "./db.js";
+
 const RECORD_KEY = "riverId-to-riverIndex";
 const META_KEY = "riverId-to-riverIndex:meta";
 
@@ -22,37 +24,6 @@ const META_KEY = "riverId-to-riverIndex:meta";
 // discarded rather than misread, since a lookup built from an earlier axis answers with the wrong
 // position for every id. Earlier caches carried the integers 1 and 2 here and are discarded too.
 const SCHEMA_VERSION = "20260828.0";
-
-function openDb() {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, DB_VERSION);
-    req.onupgradeneeded = () => {
-      const db = req.result;
-      if (!db.objectStoreNames.contains(STORE)) db.createObjectStore(STORE);
-    };
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
-}
-
-function runTransaction(mode, work) {
-  return openDb().then((db) => new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE, mode);
-    const req = work(tx.objectStore(STORE));
-    tx.oncomplete = () => {
-      db.close();
-      resolve(req?.result);
-    };
-    tx.onerror = () => {
-      db.close();
-      reject(tx.error);
-    };
-    tx.onabort = () => {
-      db.close();
-      reject(tx.error ?? new Error("river index transaction aborted"));
-    };
-  }));
-}
 
 /** The arrays and everything else. ~55 MB to deserialize — for the lookup itself, never for a status line. */
 const readRecord = () => runTransaction("readonly", (store) => store.get(RECORD_KEY));
@@ -76,16 +47,6 @@ const deleteRecord = () => runTransaction("readwrite", (store) => {
   store.delete(META_KEY);
   return store.delete(RECORD_KEY);
 });
-
-/**
- * Empty the store rather than deleting the keys we know about. A "clear stored data" that leaves an
- * orphaned record from a superseded key behind is a lie, and that record is exactly what a later
- * version would trip over.
- *
- * This is the whole database — openDb() creates exactly one store. A second store would be declared
- * there, and would have to be added here with it.
- */
-const clearStore = () => runTransaction("readwrite", (store) => store.clear());
 
 /**
  * A cached lookup is only usable if it was built by this version of the code and from the store the
@@ -116,7 +77,6 @@ export {
   META_KEY,
   RECORD_KEY,
   SCHEMA_VERSION,
-  clearStore,
   deleteRecord,
   isUsable,
   isUsableMeta,

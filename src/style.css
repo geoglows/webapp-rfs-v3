@@ -895,9 +895,10 @@ input[aria-invalid="true"] {
 }
 
 /* ── Settings · the downloadable dataset list ── */
+/* .col, so --gap is the space between the rows. */
 #data-list {
     margin: 8px 0 4px;
-    --gap: 2px;
+    --gap: 4px;
 }
 
 /* name takes the slack, size sits against the buttons, status spans the width beneath */
@@ -906,19 +907,18 @@ input[aria-invalid="true"] {
     grid-template-columns: 1fr auto auto;
     align-items: center;
     gap: 8px;
-    padding: 7px 0;
-    border-bottom: 1px solid var(--border);
-    font-size: 14px;
+    font-size: 15px;
 }
 
-.data-row:last-child {
-    border-bottom: 0;
+/* the two actions, which --gap would otherwise zero along with the rows */
+.data-row .row {
+    gap: 10px;
 }
 
 .data-size {
     color: var(--text-dim);
     font-variant-numeric: tabular-nums;
-    font-size: 13.5px;
+    font-size: 14px;
 }
 
 /* progress and errors belong under the row they describe, not beside it */
@@ -1300,4 +1300,61 @@ body.dock-open #player {
     left: 75%;
     width: min(640px, calc(50vw - 48px));
     min-width: 0;
+}
+
+/* ── Search ── */
+/* The ID box, under the name box. Ruled off rather than merely spaced: they are two questions, and
+   the results list belonging to the one above needs a visible end. */
+.search-second {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+}
+
+
+/* The list a name search fills. Capped rather than allowed to grow the modal: a query like "san"
+   matches a dozen rivers, and a dialog that resizes under the person typing into it is worse than
+   one that scrolls. */
+.search-results {
+    max-height: 260px;
+    overflow-y: auto;
+    margin: 8px 0 0;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface2);
+}
+
+/* A button rather than a styled div, so it is reachable and operable from the keyboard without
+   this file having to reimplement any of that. */
+.search-hit {
+    display: block;
+    width: 100%;
+    padding: 7px 10px;
+    border: 0;
+    border-bottom: 1px solid var(--border);
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.search-hit:last-child {
+    border-bottom: 0;
+}
+
+.search-hit:hover,
+.search-hit:focus-visible {
+    background: var(--surface);
+}
+
+.search-hit b {
+    display: block;
+}
+
+/* The disambiguating line — country, what it flows into, the system it belongs to. Dimmer than the
+   name because it is read only when two rows share one. */
+.search-hit .hint {
+    display: block;
+    margin: 1px 0 0;
 }
