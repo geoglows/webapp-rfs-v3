@@ -24,7 +24,9 @@ const EDGE_MARGIN = 0.15;
  * geometry comes back from queryRenderedFeatures in lng/lat, clipped to the tile, which is all this
  * needs — the answer wanted is the part of the reach under the cursor.
  *
- * Returns null for a feature carrying no line, leaving the caller to fall back to the click.
+ * Returns null for a feature carrying no line, leaving the caller to fall back to the click. The
+ * point carries `dist2`, its squared planar distance from the click in latitude-scaled degrees —
+ * meaningless as a length, but comparable across features, which is what nearestFeature needs.
  */
 function snapToFeature(feature, {lng, lat}) {
   const {type, coordinates} = feature?.geometry ?? {};
@@ -42,7 +44,7 @@ function snapToFeature(feature, {lng, lat}) {
     const dist = dx * dx + dy * dy;
     if (dist >= bestDist) return;
     bestDist = dist;
-    best = {lat: la, lon};
+    best = {lat: la, lon, dist2: dist};
   };
   for (const line of lines) {
     if (!line?.length) continue;
@@ -59,6 +61,24 @@ function snapToFeature(feature, {lng, lat}) {
       const t = len2 ? Math.max(0, Math.min(1, (((lng - ax) * kx * dx) + (lat - ay) * dy) / len2)) : 0;
       consider(ax + (bx - ax) * t, ay + (by - ay) * t);
     }
+  }
+  return best;
+}
+
+/**
+ * Of the features a box query returned, the one whose line actually passes closest to the click.
+ *
+ * queryRenderedFeatures hands back everything inside the box in draw order, so once zoomed in far
+ * enough for reaches to sit a few pixels apart, taking the first one selects whichever neighbour
+ * happens to be painted on top rather than the one under the pointer. Features without a line
+ * still count, but only when nothing better is there.
+ */
+function nearestFeature(features, lngLat) {
+  let best = null;
+  let bestDist = Infinity;
+  for (const f of features) {
+    const d = snapToFeature(f, lngLat)?.dist2 ?? Infinity;
+    if (best === null || d < bestDist) { best = f; bestDist = d; }
   }
   return best;
 }
@@ -95,4 +115,4 @@ function focusRiver(map, {lat, lon}) {
   if (!isFramed(map, center)) map.easeTo({center, duration: 400});
 }
 
-export {focusRiver, snapToFeature, travelToRiver};
+export {focusRiver, snapToFeature, travelToRiver, nearestFeature};

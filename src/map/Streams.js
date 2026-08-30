@@ -1,12 +1,20 @@
 import {urls} from "riverforecastsystem/v3";
-import {inFilter, NO_MATCH} from "./flood-maps/selection";
 import {SAVED_RIVERS} from "../settings/settings.js";
+
+// The inspect and saved-river highlights address reaches by riverId — the charts dock and the saved
+// list are keyed on it. flood-maps/selection.js has helpers of the same shape keyed on riverIndex;
+// they are not interchangeable, so these are kept apart.
+const NO_MATCH = ["in", ["get", "riverId"], ["literal", []]];
+const inFilter = (ids) => ids.length ? ["in", ["get", "riverId"], ["literal", ids]] : NO_MATCH;
 
 const RET_COLORS = ["#3182bd", "#fee08b", "#fdae61", "#f46d43", "#d73027", "#a50026", "#7a0177"];
 // Uniform stream color for the "Standard" styleset (matches the normal-flow return-period blue).
 const STANDARD_COLOR = "#3182bd";
 // Width of the smallest reaches, and the single width every reach takes in flood mapping mode.
 const WIDTH_BASE = 4;
+// The strahlerOrder ramp runs WIDTH_BASE → WIDTH_MAX; flood mode flattens it to one thin width.
+const WIDTH_MAX = 10;
+const WIDTH_UNIFORM = 5;
 // The saved-river outline, all three of them configurable per deployment (VITE_SAVED_RIVERS_* — see
 // SAVED_RIVERS in settings/settings.js). The colour falls back to the stylesheet's dark-theme
 // --saved so an unconfigured deployment looks exactly as it did before there was a setting.
@@ -28,6 +36,7 @@ class Streams {
   N = 0;
   T = 0;
   step = 0;
+  uniformWidth = false;  // flood mode flattens the thickness ramp — see setUniformWidth()
   playing = false;
   timer = null;
   fps = 4;
@@ -198,7 +207,9 @@ class Streams {
       ? ["coalesce", ["feature-state", "thk"], ["get", "strahlerOrder"]]
       : ["get", "strahlerOrder"];
     const THK = ["max", 1, ["min", 6, thkSource]];
-    const RAMP = ["step", THK, WIDTH_BASE, 3, 9, 5, 10];
+    // In flood mode every reach is the same thickness: the selection highlights are the signal
+    // there, and a network varying in width underneath them only competes.
+    const RAMP = this.uniformWidth ? WIDTH_UNIFORM : ["step", THK, WIDTH_BASE, 3, 9, 5, WIDTH_MAX];
     const at = (scale) => (pad ? ["+", ["*", scale, RAMP], pad] : ["*", scale, RAMP]);
     return [
       "interpolate",
@@ -240,6 +251,12 @@ class Streams {
   /** Whether the active styleset drives line thickness from per-reach feature-state. */
   animatedWidth() {
     return this.styleset === "timeseries" || this.styleset === "max-flow";
+  }
+
+  /** Flatten (or restore) the per-reach thickness ramp — see streamWidthExpr(). */
+  setUniformWidth(on) {
+    this.uniformWidth = on;
+    this.applyPaint();
   }
 
   /** Set the streams line-color/line-width paint for the active styleset. */

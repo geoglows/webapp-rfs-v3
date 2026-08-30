@@ -1,6 +1,8 @@
 import {heroIcon} from "../icons/icons.js"
 import {setLanguage} from "../i18n/i18n.js";
 import {wireMenu} from "../map/menu.js";
+// When this bundle was made — stampBuildDate() in vite.config.js writes the module.
+import BUILD_DATE from "virtual:build-date";
 
 const $ = (id) => document.getElementById(id);
 
@@ -184,6 +186,7 @@ function initSettings() {
     localStorage.setItem(STORAGE_PREFIX + "theme", legacyTheme);
     localStorage.removeItem("rfs-theme");
   }
+  if ($("build-date")) $("build-date").textContent = BUILD_DATE;
   for (const setting of SETTINGS) {
     values.set(setting.key, initialValue(setting));
     const el = document.getElementById(setting.el);

@@ -489,6 +489,16 @@ input[aria-invalid="true"] {
     cursor: pointer;
 }
 
+/* The last line of the Settings modal: which build is running. Quiet on purpose — it is there to be
+   quoted in a bug report, not read. */
+.build-stamp {
+    margin: 20px 0 2px;
+    text-align: center;
+    font-family: var(--mono);
+    font-size: 12px;
+    opacity: 0.7;
+}
+
 /* The prose modals — About and how-to-use. Plain elements only, so this is what they get. The reset
    zeroes list padding, which would put the markers under the text. */
 .prose ul, .prose ol {
@@ -1270,8 +1280,8 @@ body.help-open #flood-section #flood-controls {
     flex-basis: 100%;
 }
 
-/* the mode button and the clear / save pair keep their natural widths and join the picker's row —
-   in the stacked layout they fill their rows instead */
+/* the mode / clear / save button row keeps its natural width and joins the picker's row — in the
+   stacked layout it fills its own row instead */
 body.help-open #flood-section > .row,
 body.help-open #flood-section > .row .btn {
     flex: 0 0 auto;

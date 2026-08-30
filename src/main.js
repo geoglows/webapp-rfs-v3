@@ -7,7 +7,7 @@ import {map} from "./map/map";
 import {applyBasemap, defaultBasemap} from "./map/basemaps";
 import {addRasterLayer, applyStreamsVisibility} from "./map/layers";
 import {Streams} from "./map/Streams.js";
-import {focusRiver, snapToFeature, travelToRiver} from "./map/framing";
+import {focusRiver, nearestFeature, snapToFeature, travelToRiver} from "./map/framing";
 import {createFloodController} from "./map/flood-maps/floodController";
 import {build, status} from "./data/riverIndex";
 import {hydrateIcons} from "./icons/icons";
@@ -151,11 +151,13 @@ map.on("load", async () => {
       [e.point.x + pad, e.point.y + pad]
     ];
     const feats = map.queryRenderedFeatures(box, {layers: ["streams"]});
-    const hit = feats.find((f) => f.properties?.riverId != null);
+    // Nearest to the pointer, not first in draw order — see nearestFeature.
+    const hit = nearestFeature(feats.filter((f) => f.properties?.riverId != null), e.lngLat);
     if (hit) {
       if (flood.isMappingMode()) {
         // In mapping mode the click is a reach selection, not a navigation — leave the view alone.
-        flood.selectReach(Number(hit.properties.riverId));
+        // Flood mapping addresses reaches by riverIndex (the tile carries it), never by riverId.
+        if (hit.properties.riverIndex != null) flood.selectReach(Number(hit.properties.riverIndex));
         return;
       }
       // The reach itself rather than where the pointer landed, which at low zoom are nowhere near
