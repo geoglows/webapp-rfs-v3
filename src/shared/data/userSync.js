@@ -20,7 +20,7 @@ import {
   onSavedRiversChange,
   replaceFromSync
 } from "./savedRivers.js";
-import {applyPreferences, getPreferences, onPreferencesChange, preferencesSavedAt, resetPreferences} from "../../settings/settings.js";
+import {applyPreferences, getPreferences, onPreferencesChange, preferencesSavedAt, resetPreferences} from "../../shared/settings/settings.js";
 
 const LAST_USER_KEY = "rfs-sync-user";
 const PREFS_SYNCED_KEY = "rfs-prefs-synced";

@@ -4,7 +4,7 @@ import maplibreWorkerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&ur
 import {Protocol} from "pmtiles";
 import {initBasemapPicker} from "./basemaps";
 import {initLayerPicker} from "./layers";
-import {MAP_CENTER, MAP_ZOOM} from "../settings/settings.js";
+import {MAP_CENTER, MAP_ZOOM} from "../shared/settings/settings.js";
 
 // The map starts on an empty style; the real basemap (raster or vector) is injected by
 // applyBasemap() so the two kinds share one code path. See basemaps.js.

@@ -1,6 +1,6 @@
-import {heroIcon} from "../shared/icons/icons.js"
-import {setLanguage} from "../shared/i18n/i18n.js";
-import {wireMenu} from "../map/menu.js";
+import {heroIcon} from "../icons/icons.js"
+import {setLanguage} from "../i18n/i18n.js";
+import {wireMenu} from "../../map/menu.js";
 // When this bundle was made — stampBuildDate() in vite.config.js writes the module.
 import BUILD_DATE from "virtual:build-date";
 
@@ -41,7 +41,7 @@ const PREFERENCES = [
 ]
 const SETTINGS = [
   // No checkbox: this one is flipped by the streams panel's legend button (panelControls).
-  {key: "legend", fallback: envToBool(import.meta.env.VITE_SETTINGS_LEGEND)},
+  {key: "legend", el: "set-legend", fallback: envToBool(import.meta.env.VITE_SETTINGS_LEGEND)},
   {key: "shadedWarningLevels", el: "set-shaded-warning-levels", fallback: envToBool(import.meta.env.VITE_SETTINGS_SHADED_WARNING_LEVELS)},
   // The deployment picks the starting state (VITE_SAVED_RIVERS_HIGHLIGHT, via SAVED_RIVERS below);
   // from there it is the user's, per device. The colour and width of the outline stay deployment
@@ -190,6 +190,14 @@ function initSettings() {
   if (SAVED_RIVERS.color) document.documentElement.style.setProperty("--saved", SAVED_RIVERS.color);
   // Adopt on every load, not seed-once: the other app writes this key when its user flips the
   // theme, and this read is the only way that choice reaches this app.
+  // The hydrography page kept its settings under its own prefix while it was a separate app.
+  for (const {key} of SETTINGS) {
+    const old = localStorage.getItem("rfs-hydrography-setting-" + key);
+    if (old !== null && localStorage.getItem(STORAGE_PREFIX + key) === null) {
+      localStorage.setItem(STORAGE_PREFIX + key, old);
+    }
+    localStorage.removeItem("rfs-hydrography-setting-" + key);
+  }
   const legacyTheme = localStorage.getItem(LEGACY_THEME_KEY);
   if (legacyTheme === "light" || legacyTheme === "dark") {
     localStorage.setItem(STORAGE_PREFIX + "theme", legacyTheme);

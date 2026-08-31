@@ -1,5 +1,5 @@
 import {urls} from "riverforecastsystem/v3";
-import {MIN_FLOOD_MAPS_ZOOM} from "../../settings/settings.js";
+import {MIN_FLOOD_MAPS_ZOOM} from "../../shared/settings/settings.js";
 
 /**
  * The FLDPLN data-tile footprints, and the viewport → coverage bridge built on them.

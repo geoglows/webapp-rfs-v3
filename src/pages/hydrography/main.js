@@ -20,7 +20,7 @@ import {downloadGeometry} from './geometry.js';
 import {fmt, progress, progressHistory, stageHistory, stages} from './ui.js';
 import {heroIcon} from '../../shared/icons/icons.js';
 import {initMapControls, syncLayerPicker} from './mapControls.js';
-import {initSettings, onSetting} from './settings.js';
+import {initSettings, initThemeToggle, onSetting} from '../../shared/settings/settings.js';
 import {createDataSettings} from '../../shared/ui/dataSettings.js';
 import {createRiverSearch} from '../../shared/ui/riverSearch.js';
 import {watch as watchRiverNames} from '../../shared/data/riverNames.js';
@@ -591,44 +591,11 @@ $('btn-geoparquet').addEventListener('click', () => {
   });
 });
 // ── theme ────────────────────────────────────────────────────────────────────
-// The RFS v3 app remembers its light/dark choice under this key. Both apps are served from
-// apps.geoglows.org, so that is one localStorage — switching theme in either is switching it for
-// both, which is the point of matching the palette in the first place.
-const THEME_KEY = 'rfs-theme';
-const isTheme = v => v === 'light' || v === 'dark';
-
-function applyTheme(theme) {
-  document.documentElement.setAttribute('data-theme', theme);
-  // The button shows what a click would switch to, the way RFS v3's does: a sun to go light.
-  $('btn-theme').replaceChildren(heroIcon(theme === 'dark' ? 'sun' : 'moon'));
-}
-
-const storedTheme = () => {
-  try {
-    return localStorage.getItem(THEME_KEY);
-  } catch {
-    return null;
-  }
-};
-
-let theme = isTheme(storedTheme()) ? storedTheme() : 'dark';
-applyTheme(theme);
-
-$('btn-theme').addEventListener('click', () => {
-  theme = theme === 'dark' ? 'light' : 'dark';
-  try {
-    localStorage.setItem(THEME_KEY, theme);
-  } catch { /* private mode — the choice holds for this tab and is not remembered */ }
-  applyTheme(theme);
-});
-
-// The other app, in another tab, flipping the same key. Only fires for other documents, so this
-// cannot loop with the click handler above.
-window.addEventListener('storage', e => {
-  if (e.key !== THEME_KEY || !isTheme(e.newValue) || e.newValue === theme) return;
-  theme = e.newValue;
-  applyTheme(theme);
-});
+// Both pages share one settings module, so the theme is stored once, defaults off
+// prefers-color-scheme once, and swaps the button's sun/moon once. This page used to keep its own
+// copy against the raw `rfs-theme` key — the same key the forecast page had already migrated off
+// and was deleting on every visit, which is why a theme picked here did not survive one.
+initThemeToggle();
 
 // ── the river names section ──────────────────────────────────────────────────
 /**
