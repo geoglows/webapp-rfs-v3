@@ -4,7 +4,7 @@ import {FloodOverlay} from "./overlay";
 import {flowsAtLadderPosition, uniformFlows} from "./hydro";
 import {legendGradient} from "./colormap";
 import {getConfig} from "riverforecastsystem/v3";
-import {t} from "../../i18n/i18n";
+import {t} from "../../shared/i18n/i18n";
 import {onStreamsVisibility, streamsVisible} from "../layers";
 
 const $ = (id) => document.getElementById(id);

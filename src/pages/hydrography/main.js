@@ -21,8 +21,8 @@ import {fmt, progress, progressHistory, stageHistory, stages} from './ui.js';
 import {heroIcon} from '../../shared/icons/icons.js';
 import {initMapControls, syncLayerPicker} from './mapControls.js';
 import {initSettings, onSetting} from './settings.js';
-import {createDataSettings} from './dataSettings.js';
-import {createRiverSearch} from './riverSearch.js';
+import {createDataSettings} from '../../shared/ui/dataSettings.js';
+import {createRiverSearch} from '../../shared/ui/riverSearch.js';
 import {watch as watchRiverNames} from '../../shared/data/riverNames.js';
 import {dropLegacyDatabase} from '../../shared/data/db.js';
 
@@ -798,7 +798,14 @@ onSetting('legend', on => $('legend-overlay').classList.toggle('hidden', !on));
 // read by the other. dropLegacyDatabase() reclaims the space the viewer used before that was true.
 dropLegacyDatabase();
 $('btn-search').replaceChildren(heroIcon('magnifying-glass'));
-createRiverSearch({onFound: goToRiver, onClear: () => clearSelection()});
+createRiverSearch({
+  onFound: goToRiver,
+  onClear: () => clearSelection(),
+  // A named river's row already carries its span, so this page reads nothing on pick;
+  // and without a location there is no upstream count, so there is no selection to make.
+  locateOnPick: false,
+  requireLocationById: true
+});
 
 let ready = false;
 

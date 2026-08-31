@@ -1,6 +1,6 @@
 import {dataProgress, t} from "../i18n/i18n";
-import {heroIcon, iconButton} from "../shared/icons/icons.js";
-import {byKey, removeAll, surveyAll} from "../shared/data/datasets";
+import {heroIcon, iconButton} from "../icons/icons.js";
+import {byKey, removeAll, surveyAll} from "../data/datasets";
 
 const $ = (id) => document.getElementById(id);
 

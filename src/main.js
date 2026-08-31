@@ -23,8 +23,8 @@ import {onSavedRiversChange, savedRiverIds} from "./shared/data/savedRivers.js";
 import {closeAllDocks} from "./docks/dock.js";
 import {createHelpDock} from "./docks/help.js";
 import {createPanelControls} from "./ui/panelControls";
-import {createDataSettings} from "./ui/dataSettings";
-import {createRiverSearch} from "./ui/riverSearch";
+import {createDataSettings} from "./shared/ui/dataSettings";
+import {createRiverSearch} from "./shared/ui/riverSearch";
 
 const $ = (id) => document.getElementById(id);
 

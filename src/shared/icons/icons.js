@@ -1,4 +1,4 @@
-import {t} from "../../i18n/i18n";
+import {t} from "../../shared/i18n/i18n";
 import informationCircle from "heroicons/24/outline/information-circle.svg?raw";
 import questionMarkCircle from "heroicons/24/outline/question-mark-circle.svg?raw";
 import cog6Tooth from "heroicons/24/outline/cog-6-tooth.svg?raw";

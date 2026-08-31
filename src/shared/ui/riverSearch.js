@@ -1,8 +1,8 @@
-import {el} from "../shared/dom.js";
+import {el} from "../dom.js";
 import {dataProgress, t} from "../i18n/i18n";
-import {resolve} from "../shared/data/riverIndex";
-import {load as loadNames, search as searchNames} from "../shared/data/riverNames";
-import {locate} from "../shared/data/riverLocation";
+import {resolve} from "../data/riverIndex";
+import {load as loadNames, search as searchNames} from "../data/riverNames";
+import {locate} from "../data/riverLocation";
 
 const $ = (id) => document.getElementById(id);
 
@@ -279,7 +279,9 @@ function createRiverSearch({onFound, onClear, locateOnPick = true, requireLocati
 
   clearBtn?.addEventListener("click", () => clearHighlight());
 
-  $("btn-search-river")?.addEventListener("click", () => open());
+  // Either id: the forecast page's header calls it "search a river", the hydrography page's just
+  // "search". Both are the same dialog and neither markup is worth churning to agree.
+  ($("btn-search-river") ?? $("btn-search"))?.addEventListener("click", () => open());
 
   return {open, close};
 }

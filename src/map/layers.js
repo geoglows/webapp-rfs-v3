@@ -1,5 +1,5 @@
 import {calciteIcon} from "../shared/icons/calcite.js";
-import {t} from "../i18n/i18n";
+import {t} from "../shared/i18n/i18n";
 import {wireMenu} from "./menu";
 
 const LAYERS = [
