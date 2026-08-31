@@ -8,7 +8,7 @@ import {URLS, V3_BASE} from './config.js';
 import {upstreamRange} from './data.js';
 import {applyHighlight, applyInlets, applyPicks, applyStreamStyle, archive, clearHighlight, currentSelection, fitRiverBounds, flyToPick, hoverRegions, initMap, map, regionsAt, setSelectionHighlightVisible, streamLayerIds,} from './map.js';
 import {compileLayers} from './streamStyle.js';
-import {loadRiverNames, nameAt, namesStyle, PALETTE, riverNames, UNNAMED} from './nameColouring.js';
+import {activePalette, activeUnnamed, loadRiverNames, nameAt, namesStyle, riverNames} from './nameColouring.js';
 import {loadStreamAttributes} from './streamAttributes.js';
 import {createStylePanel} from './stylePanel.js';
 import {renderRiverAttributes} from './riverPanel.js';
@@ -315,7 +315,7 @@ function applyStyle() {
   // The legend swatch has to be the colour the line on the map actually is. With the names mode on
   // the network no longer has one colour, so the swatch stands for the unnamed reaches — which the
   // mode leaves in the app's own blue precisely so that the network still reads as itself.
-  const base = names ? UNNAMED : spec.base.color[0]?.value;
+  const base = names ? activeUnnamed() : spec.base.color[0]?.value;
   if (base) document.documentElement.style.setProperty('--stream', base);
 }
 
@@ -626,8 +626,8 @@ function paintNames() {
   }
   $('names-count').textContent = fmt(n.riverCount);
   $('names-body').replaceChildren(
-    row(PALETTE, 'Named'),
-    row([UNNAMED], 'No name in the table'),
+    row(activePalette(), 'Named'),
+    row([activeUnnamed()], 'No name in the table'),
   );
 }
 

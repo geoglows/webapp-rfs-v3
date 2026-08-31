@@ -55,6 +55,14 @@ export const NAMED_WIDTH_SCALE = 2.5;
 
 let names = null;
 
+/**
+ * The colours actually in use, which is not always the constants above: an older riverNames.json
+ * ships its own palette. The legend has to read these rather than PALETTE, or its swatches claim a
+ * colour the map is not drawing.
+ */
+export const activePalette = () => names?.palette ?? PALETTE;
+export const activeUnnamed = () => names?.unnamed ?? UNNAMED;
+
 /** What the app knows about the names, or null until the fetch lands. */
 export const riverNames = () => names;
 
@@ -72,8 +80,20 @@ export const riverNames = () => names;
 function compile(d) {
   const bin = ['step', ['get', 'riverIndex'], d.first];
   for (let i = 0; i < d.bounds.length; i++) bin.push(d.bounds[i], d.stops[i]);
+  // Two generations of riverNames.json are in the wild. The newer one publishes `slots` and leaves
+  // the colours to this file; the older one has no `slots` at all and ships its own `palette`
+  // instead. Only the *count* is read from either — the colours above are the committed set, picked
+  // against this basemap, and the older file's fourth entry is a near-black that all but disappears
+  // on it.
+  //
+  // Getting the count wrong is silent and total: `slots` comes back undefined, Math.min() against
+  // it is NaN, the loop that builds the colour arms runs zero times, and MapLibre is handed a
+  // two-argument `match` it rejects — so the whole network stays one colour, with nothing but a
+  // console warning to say why.
   return {
-    slots: d.slots,
+    slots: d.slots ?? (Array.isArray(d.palette) ? d.palette.length : 0),
+    palette: PALETTE,
+    unnamed: UNNAMED,
     bin,
     // Smallest span first, which is the order `nameAt` needs: the winner on a reach is the
     // innermost named river containing it, the same rule the colouring paints by.
@@ -98,8 +118,8 @@ function compile(d) {
  */
 function colorExpr() {
   const expr = ['match', names.bin];
-  for (let i = 0; i < Math.min(PALETTE.length, names.slots); i++) expr.push(i, PALETTE[i]);
-  expr.push(UNNAMED);
+  for (let i = 0; i < Math.min(names.palette.length, names.slots); i++) expr.push(i, names.palette[i]);
+  expr.push(names.unnamed);
   return expr;
 }
 
@@ -120,6 +140,9 @@ export async function loadRiverNames() {
     throw new Error('riverNames.json is not the shape this app reads');
   }
   names = compile(d);
+  // A file with neither `slots` nor a `palette` would otherwise compile to a `match` with no arms,
+  // which MapLibre drops with a console warning while the mode reports itself as on.
+  if (!(names.slots > 0)) throw new Error('riverNames.json declares no colour slots');
   return names;
 }
 
