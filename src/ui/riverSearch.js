@@ -1,75 +1,213 @@
 import {dataProgress, t} from "../i18n/i18n";
 import {resolve} from "../data/riverIndex";
+import {load as loadNames, search as searchNames} from "../data/riverNames";
 import {locate} from "../data/riverLocation";
 
 const $ = (id) => document.getElementById(id);
 
+// Long enough that a burst of typing is one search, short enough to feel like none. The search
+// itself is a scan of a few hundred rows in memory, so this is about how often the list is rebuilt
+// under the user's eyes, not about cost.
+const TYPING_MS = 120;
+
 /**
- * Find a reach by typing its river ID.
+ * Find a reach by name, or by ID — two boxes, because they are two different questions.
  *
- * This is the one way into a reach that arrives without an index: map clicks read one off the tile
- * and saved rivers store their own, but a bare ID has to be resolved against the riverId axis. That
- * costs a one-time ~17 MB download on a device that hasn't got the lookup yet, which is this box's
- * job to take rather than an errand to send the user on — so Search always searches, and the status
- * line reports the download when there is one.
+ * They are kept apart rather than merged into one field that guesses from what was typed, because
+ * almost nothing about them is the same. A name is answered from a ~100 kB table the app keeps on
+ * the device, matches loosely, can return a dozen rivers, and needs a list to choose from. An ID is
+ * exact, returns one reach or none, and has to be resolved against the riverId axis — a one-time
+ * ~17 MB download on a device without the lookup. One box would have to be a name box that
+ * sometimes takes 17 MB, with a results list that sometimes appears, under a label that could only
+ * describe both vaguely.
  *
- * onFound({riverId, riverIndex, lat, lon}) hands the resolved reach on — main.js points it at the
- * charts dock and the camera. Same shape a saved river has, so a found river is treated as one; the
- * coordinate is read from the metadata store once the index is known, and is the only part that may
- * be missing (the reach is still found, the map just stays where it is).
+ * The split is also what lets each say the right thing when it fails: "no named river matches that"
+ * and "no river has that ID" are different answers, and neither belongs under the other's box. So
+ * each half has its own status line.
+ *
+ * Only the name box is worth typing into as you go — its answers are already on the device, and
+ * every row carries the mouth's `riverIndex`, so a name hit needs no lookup at all.
+ *
+ * onFound({riverId, riverIndex, lat, lon}, {bbox, span}) hands the resolved reach on — main.js
+ * points it at the charts dock, the camera and the map highlight. The first argument is the reach
+ * and nothing else, in the shape a saved river has, because the charts dock renders its fields as
+ * the river's attributes. The second is only sent for a river found by name: `bbox` frames the
+ * whole river instead of its mouth, `span` paints all of it.
+ *
+ * onClear() takes that highlight back off. It needs asking for: the painted river stays after this
+ * dialog closes, which is the point of painting it, so nothing else in the app is going to notice
+ * that the user is done with it.
  */
-function createRiverSearch({onFound}) {
+function createRiverSearch({onFound, onClear}) {
   const modal = $("search-modal");
-  const form = $("search-form");
-  const input = $("search-river-id");
-  const line = $("search-status");
-  if (!modal || !form || !input || !line) return;
+  const nameForm = $("search-name-form");
+  const nameInput = $("search-river-name");
+  const nameLine = $("search-name-status");
+  const idForm = $("search-id-form");
+  const idInput = $("search-river-id");
+  const idLine = $("search-id-status");
+  const results = $("search-results");
+  const clearBtn = $("search-clear");
+  if (!modal || !nameForm || !nameInput || !nameLine || !idForm || !idInput || !idLine || !results) return;
 
   let busy = false;
-  let errored = false;
+  // Which lines are currently showing a rejection, so typing clears only the box's own.
+  const errored = new Set();
+  let typing = null;
+  // The rows on screen now, so Enter can take the first one without reading them back out of the DOM.
+  let shown = [];
+  // Whether a river is currently painted on the map. The highlight deliberately outlives this
+  // dialog — you close it to look at the river — so the only thing that knows it is still there is
+  // this flag, and the Clear button is off until there is something to clear.
+  let highlighted = false;
 
   /**
-   * The status line carries everything this box has to say, so a rejection has to look different
-   * from "Searching…" — same element, same dim hint styling otherwise, and a "no such river" that
-   * reads as progress text is a message the user does not register.
+   * A status line carries everything its box has to say, so a rejection has to look different from
+   * "Searching…" — same element, same dim hint styling otherwise, and a "no such river" that reads
+   * as progress text is a message the user does not register.
    *
    * `error` is for answers the user has to act on: a malformed ID, an ID the network doesn't have.
    * A slow first search is not one — it is progress, and it says so in the same place.
    */
-  function say(text, {error = false} = {}) {
+  function say(line, input, text, {error = false} = {}) {
     line.textContent = text;
     line.classList.toggle("error", error);
     input.setAttribute("aria-invalid", String(error));
-    errored = error;
+    if (error) errored.add(line);
+    else errored.delete(line);
   }
+
+  const sayName = (text, opts) => say(nameLine, nameInput, text, opts);
+  const sayId = (text, opts) => say(idLine, idInput, text, opts);
 
   const close = () => modal.classList.add("hidden");
 
-  function open() {
-    modal.classList.remove("hidden");
-    input.focus();
-    input.select();
-    say("");
+  /**
+   * Take the highlighted river off the map, and empty the box that put it there.
+   *
+   * Both, because a cleared map under a box still showing "Severn" and its results looks like the
+   * search failed rather than like the highlight was removed.
+   */
+  function clearHighlight() {
+    highlighted = false;
+    nameInput.value = "";
+    renderResults([]);
+    sayName("");
+    if (clearBtn) clearBtn.disabled = true;
+    onClear?.();
   }
 
-  async function search() {
+  function open() {
+    modal.classList.remove("hidden");
+    // The name box, not the ID box: it is the one most people want, and the one that costs nothing.
+    nameInput.focus();
+    nameInput.select();
+    sayName("");
+    sayId("");
+    if (clearBtn) clearBtn.disabled = !highlighted;
+    // The names are wanted the moment this box is opened, not when the app started: most sessions
+    // never open it, and the table is small enough that fetching it on open is not a wait.
+    void loadNames().then(() => {
+      if (!modal.classList.contains("hidden")) runNameSearch();
+    }).catch((e) => console.warn(`[names] the river names could not be loaded: ${e.message}`));
+  }
+
+  const el = (tag, cls, text) => {
+    const n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = text;
+    return n;
+  };
+
+  /**
+   * The line under a name that says which river this one is.
+   *
+   * Two Severns and three Verdes are in the table, so the name alone is not an answer. What
+   * separates them, in the order a person actually reads: the country it is in, then the river it
+   * flows into if it is a tributary, then the system it belongs to. The watershed is dropped when
+   * it only repeats one of the other two, which is the common case for a river that names its own
+   * basin — "Severn · United Kingdom" rather than "Severn · United Kingdom · Severn".
+   */
+  function describe(river) {
+    const parts = [river.country, river.parentName && t("search.tributaryOf").replace("{name}", river.parentName)];
+    if (river.watershed && river.watershed !== river.name && river.watershed !== river.parentName) {
+      parts.push(river.watershed);
+    }
+    return parts.filter(Boolean).join(" · ");
+  }
+
+  /**
+   * Go to a river the user picked out of the list.
+   *
+   * The row already carries the mouth's riverIndex, so the charts can open without any lookup. Its
+   * coordinate is read the same way the ID path reads one — off the metadata store, by index — and
+   * for the same reason: it is what makes a found river savable, and it is a small read the names
+   * table has no business carrying a second copy of. A river is still worth going to if it fails,
+   * because the bounding box, not the point, is what the camera uses here.
+   */
+  async function pick(river) {
+    close();
+    const at = await locate(river.riverIndex).catch((e) => {
+      console.error(`could not locate ${river.name} (${river.riverId}): ${e.message}`);
+      return null;
+    });
+    // Two arguments, not one object. The first is the reach, and it is handed straight to the
+    // charts dock, which renders every field it carries in the Details tab — so anything that is
+    // not an attribute of the reach cannot travel in it. The extent and the span are instructions
+    // to the map, not facts about the river, and go beside it.
+    onFound?.(
+      {riverId: river.riverId, riverIndex: river.riverIndex, lat: at?.lat, lon: at?.lon},
+      {bbox: river.bbox, span: {lo: river.lo, hi: river.hi}}
+    );
+    highlighted = true;
+    if (clearBtn) clearBtn.disabled = false;
+  }
+
+  function renderResults(rivers) {
+    shown = rivers;
+    results.replaceChildren(...rivers.map((river) => {
+      const row = el("button", "search-hit");
+      row.type = "button";
+      row.append(el("b", null, river.name), el("span", "hint", describe(river)));
+      row.addEventListener("click", () => void pick(river));
+      return row;
+    }));
+    results.classList.toggle("hidden", !rivers.length);
+    nameInput.setAttribute("aria-expanded", String(rivers.length > 0));
+  }
+
+  /** Names, on every keystroke. Silent about an empty box; explicit about a query that found nothing. */
+  function runNameSearch() {
+    const raw = nameInput.value.trim();
+    if (!raw) {
+      renderResults([]);
+      sayName("");
+      return;
+    }
+    const hits = searchNames(raw);
+    renderResults(hits);
+    if (!hits.length) sayName(t("search.noName").replace("{name}", raw), {error: true});
+    else sayName("");
+  }
+
+  /** IDs, on submit, because this is the half that may have to download 17 MB first. */
+  async function searchById(raw) {
     if (busy) return;
-    const raw = input.value.trim();
     if (!/^\d+$/.test(raw)) {
-      say(t("search.invalid"), {error: true});
+      sayId(t("search.invalid"), {error: true});
       return;
     }
     busy = true;
     // The first search of a session pulls ~44 MB of typed arrays out of IndexedDB; later ones are a
     // binary search over memory. Only the first is slow enough to need saying, but saying it always
     // is simpler than deciding.
-    say(t("search.searching"));
+    sayId(t("search.searching"));
     try {
       // Downloads the lookup if this device hasn't got it — the status line turns into a progress
       // reading for as long as that takes, and the search finishes on the far side of it.
-      const riverIndex = await resolve(raw, {onProgress: (p) => say(dataProgress(p))});
+      const riverIndex = await resolve(raw, {onProgress: (p) => sayId(dataProgress(p))});
       if (riverIndex < 0) {
-        say(t("search.notFound").replace("{id}", raw), {error: true});
+        sayId(t("search.notFound").replace("{id}", raw), {error: true});
         return;
       }
       // The reach is found either way; where it is on the map is a second, smaller read. Hand on the
@@ -81,22 +219,44 @@ function createRiverSearch({onFound}) {
       close();
       onFound?.({riverId: Number(raw), riverIndex, lat: at?.lat, lon: at?.lon});
     } catch (e) {
-      say(`${t("search.failed")}: ${e.message}`, {error: true});
+      sayId(`${t("search.failed")}: ${e.message}`, {error: true});
     } finally {
       busy = false;
     }
   }
 
-  // A <form> rather than a click handler: Enter submits for free, which is how a search box is used.
-  form.addEventListener("submit", (e) => {
+  // Forms rather than click handlers: Enter submits for free, which is how a search box is used, and
+  // Enter in one box cannot submit the other.
+  nameForm.addEventListener("submit", (e) => {
     e.preventDefault();
-    void search();
+    const raw = nameInput.value.trim();
+    // Enter takes the top row, which is the one the ranking put there. Typing a name and pressing
+    // Enter is how this box is used when the answer is obvious, and reaching for the mouse to
+    // confirm a single result is not.
+    if (shown.length) return void pick(shown[0]);
+    if (raw) sayName(t("search.noName").replace("{name}", raw), {error: true});
   });
-  // A rejection of the last ID sitting under the one being typed now reads as a rejection of this
-  // one. Only clears errors, so an in-flight download's progress isn't wiped by typing.
-  input.addEventListener("input", () => {
-    if (errored) say("");
+
+  idForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    void searchById(idInput.value.trim());
   });
+
+  nameInput.addEventListener("input", () => {
+    // A rejection of the last thing typed, sitting under the thing being typed now, reads as a
+    // rejection of this one.
+    if (errored.has(nameLine)) sayName("");
+    clearTimeout(typing);
+    typing = setTimeout(runNameSearch, TYPING_MS);
+  });
+
+  // Only clears errors, so an in-flight download's progress isn't wiped by typing beside it.
+  idInput.addEventListener("input", () => {
+    if (errored.has(idLine)) sayId("");
+  });
+
+  clearBtn?.addEventListener("click", () => clearHighlight());
+
   $("btn-search-river")?.addEventListener("click", () => open());
 
   return {open, close};

@@ -7,9 +7,11 @@ import {map} from "./map/map";
 import {applyBasemap, defaultBasemap} from "./map/basemaps";
 import {addRasterLayer, applyStreamsVisibility} from "./map/layers";
 import {Streams} from "./map/Streams.js";
-import {focusRiver, snapToFeature, travelToRiver} from "./map/framing";
+import {focusRiver, frameRiverExtent, nearestFeature, snapToFeature, travelToRiver} from "./map/framing";
 import {createFloodController} from "./map/flood-maps/floodController";
 import {build, status} from "./data/riverIndex";
+import {dropLegacyDatabase} from "./data/db.js";
+import {watch as watchRiverNames} from "./data/riverNames";
 import {hydrateIcons} from "./icons/icons";
 import {createChartsDock} from "./docks/charts.js";
 import {createBookmarksDock, createSavedRiversDock} from "./docks/bookmarks.js";
@@ -74,7 +76,20 @@ async function showRiver(river, {location = river, target = river, move = travel
   if (seq === cameraSeq) move(map, target);
 }
 
-const goToRiver = (river) => void showRiver(river);
+/**
+ * A river found by name arrives as a whole river: an extent to frame and a span of the network to
+ * paint, both passed beside the reach rather than inside it. Everything else — a saved river, a
+ * searched ID, a click — is one reach, travelled to as a point, and clears the highlight rather
+ * than leaving the last named river lit under it.
+ */
+const goToRiver = (river, named) => {
+  streams.setNamedRiver(named?.span ?? null);
+  // The extent rides in `target`, which only the camera sees — never in `river`, which the charts
+  // dock renders field by field as the reach's attributes.
+  void showRiver(river, named?.bbox
+    ? {target: {bbox: named.bbox, lat: river.lat, lon: river.lon}, move: frameRiverExtent}
+    : {move: travelToRiver});
+};
 
 // A saved river arrives whole: id, position on the zarr riverId axis, and outlet coordinate. The
 // two lists are the same table over different rows — the app's defaults, and the user's own.
@@ -151,11 +166,13 @@ map.on("load", async () => {
       [e.point.x + pad, e.point.y + pad]
     ];
     const feats = map.queryRenderedFeatures(box, {layers: ["streams"]});
-    const hit = feats.find((f) => f.properties?.riverId != null);
+    // Nearest to the pointer, not first in draw order — see nearestFeature.
+    const hit = nearestFeature(feats.filter((f) => f.properties?.riverId != null), e.lngLat);
     if (hit) {
       if (flood.isMappingMode()) {
         // In mapping mode the click is a reach selection, not a navigation — leave the view alone.
-        flood.selectReach(Number(hit.properties.riverId));
+        // Flood mapping addresses reaches by riverIndex (the tile carries it), never by riverId.
+        if (hit.properties.riverIndex != null) flood.selectReach(Number(hit.properties.riverIndex));
         return;
       }
       // The reach itself rather than where the pointer landed, which at low zoom are nowhere near
@@ -164,6 +181,7 @@ map.on("load", async () => {
       const at = snapToFeature(hit, e.lngLat) ?? {lat: e.lngLat.lat, lon: e.lngLat.lng};
       // That point comes along as the reach's location: saving it from here then costs no lookup at
       // all, since the tile already carried the index and this is where it is.
+      streams.setNamedRiver(null);
       void showRiver(hit.properties, {location: at, target: at, move: focusRiver});
       return;
     }
@@ -174,6 +192,9 @@ map.on("load", async () => {
   panelControls.initForecastDatePicker({defaultDate: currentForecastDate});
   void streams.setDate(currentForecastDate);
   whenIdle(prefetchRiverIndex);
+  // Not a prefetch: the names are fetched when the search box is first opened, and this only keeps
+  // whatever copy the device has from going stale under a session left open past the 5th.
+  watchRiverNames();
 });
 // MapLibre flattens every failure into a generic `error` event, so a bad tile fetch arrives as
 // nothing but "Bad response code: 404". The source id and url live on the event, not the message —
@@ -186,15 +207,22 @@ map.on("error", (e) => {
 
 // ═══════════════════════════════════════════════════════════════════════════
 hydrateIcons()
+// The caches moved to a database shared with the hydrography explorer; the one this app used alone
+// is dead weight on any device that ever searched by ID.
+dropLegacyDatabase();
 initSettings();
-onSetting("legend", (on) => $("legend-overlay").classList.toggle("hidden", !on));
+onSetting("legend", (on) => {
+  $("legend-overlay").classList.toggle("hidden", !on);
+  panelControls.updateLegendButton();
+});
 onSetting("shadedWarningLevels", () => chartsDock.rerenderCharts());
 // Fires now, before the map has loaded, so Streams holds the answer and builds the layer with it.
 onSetting("savedHighlight", (on) => streams.setSavedHighlightVisible(on));
-// The text that walking [data-i18n] cannot reach: the slider button, whose label depends on its
-// state, and the charts, whose axis titles are drawn into a canvas.
+// The text that walking [data-i18n] cannot reach: the slider and legend buttons, whose labels
+// depend on their state, and the charts, whose axis titles are drawn into a canvas.
 initLanguagePicker(() => {
   panelControls.updateSliderVisibility();
+  panelControls.updateLegendButton();
   chartsDock.rerenderCharts();
 });
 
@@ -211,7 +239,7 @@ const closeModal = (id) => $(id).classList.add("hidden");
 
 // A searched river arrives resolved to the same three things a saved one carries — id, index, and
 // where it is — so it is gone to the same way.
-createRiverSearch({onFound: goToRiver});
+createRiverSearch({onFound: goToRiver, onClear: () => streams.setNamedRiver(null)});
 
 $("btn-settings").addEventListener("click", () => openModal("settings-modal"));
 document.querySelectorAll("[data-close]").forEach((el) => el.addEventListener("click", () => closeModal(el.dataset.close)));

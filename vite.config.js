@@ -89,8 +89,26 @@ function serveDataDir(dir) {
   };
 }
 
+// The moment this bundle was made, printed at the bottom of the Settings modal. A deployment is a
+// static site with no version anywhere in it, so a bug report can otherwise only say "the site" —
+// the stamp says which build. It is a module rather than a `define` because a define is not
+// substituted by the dev server, which would leave the line blank for everyone running `npm run
+// dev`. Stamped when the config is loaded: the build itself under `vite build`, and the moment the
+// server started under `vite dev`.
+const BUILD_DATE_ID = "virtual:build-date";
+
+function stampBuildDate() {
+  const resolved = "\0" + BUILD_DATE_ID;
+  const stamp = new Date().toISOString().replace("T", " ").slice(0, 16) + " UTC";
+  return {
+    name: "stamp-build-date",
+    resolveId: (id) => (id === BUILD_DATE_ID ? resolved : null),
+    load: (id) => (id === resolved ? `export default ${JSON.stringify(stamp)};` : null)
+  };
+}
+
 let vite_config_default = defineConfig({
-  plugins: [serveDataDir("data")],
+  plugins: [serveDataDir("data"), stampBuildDate()],
   resolve: {
     dedupe: ["chart.js", "chartjs-adapter-date-fns", "chartjs-chart-matrix", "chartjs-plugin-zoom", "date-fns", "numcodecs"],
   },

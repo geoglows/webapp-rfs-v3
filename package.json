@@ -21,7 +21,7 @@
     "maplibre-gl": "^6.0.0",
     "numcodecs": "^0.3.2",
     "pmtiles": "^4.0.1",
-    "riverforecastsystem": "^0.3.0"
+    "riverforecastsystem": "file:../js-riverforecastsystem"
   },
   "devDependencies": {
     "vite": "^8.2.1"

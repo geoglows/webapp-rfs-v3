@@ -101,12 +101,12 @@ class FloodMapper {
   synthesizeFlows() {
     const byRiver = /* @__PURE__ */ new Map();
     for (const s of this.slices) {
-      const list = byRiver.get(s.riverId);
+      const list = byRiver.get(s.riverIndex);
       if (list) list.push(s);
-      else byRiver.set(s.riverId, [s]);
+      else byRiver.set(s.riverIndex, [s]);
     }
     const rivers = {};
-    for (const [riverId, group] of byRiver) {
+    for (const [riverIndex, group] of byRiver) {
       const qBase = [];
       const perIdx = LADDER_IDX.map(() => []);
       for (const s of group) {
@@ -117,14 +117,14 @@ class FloodMapper {
           for (let k = 0; k < LADDER_IDX.length; k++) perIdx[k].push(s.q[o + LADDER_IDX[k]]);
         }
       }
-      rivers[String(riverId)] = {qBase: median(qBase) || 0, ladder: perIdx.map(median)};
+      rivers[String(riverIndex)] = {qBase: median(qBase) || 0, ladder: perIdx.map(median)};
     }
     return {source: "rating-curve medians (per selection)", ladderLabels: LADDER_LABELS, rivers};
   }
 
   /**
-   * Render one frame for a Map of riverId -> discharge. Reaches missing from the map keep no water.
-   * Returns the RGBA buffer (transferable) plus how much of the canvas came out flooded.
+   * Render one frame for a Map of riverIndex -> discharge. Reaches missing from the map keep no
+   * water. Returns the RGBA buffer (transferable) plus how much of the canvas came out flooded.
    */
   frame(flows) {
     const t0 = performance.now();
@@ -135,7 +135,7 @@ class FloodMapper {
     let floodedCells = 0;
     for (let k = 0; k < this.slices.length; k++) {
       const s = this.slices[k];
-      const flow = flows.get(s.riverId);
+      const flow = flows.get(s.riverIndex);
       if (flow === void 0) continue;
       computeDofSlice(s, flow, this.dof[k], this.scratch);
       floodedCells += reduceSliceToCanvas(s, this.dof[k], this.grid, this.row0, this.col0, this.width);

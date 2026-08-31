@@ -1,7 +1,12 @@
 import {build, cancel, clear, isBuilding, status} from "./riverIndex.js";
-import {clearStore} from "./riverIndexDb.js";
+import {clearAll} from "./db.js";
+import * as names from "./riverNames.js";
 
 /**
+ * TWIN FILE: webapp-rfs-hydrography/src/datasets.js — the same registry over the same two caches,
+ * which both apps keep in the one database. Only the labels differ: that app has no i18n, and it
+ * fetches the river IDs on demand rather than shortly after load.
+ *
  * The catalogue of things the user can download and keep on the device: what each one is called,
  * how big it is right now, and how to fetch, cancel, and erase it.
  *
@@ -12,7 +17,9 @@ import {clearStore} from "./riverIndexDb.js";
  * here is decided when a feature needs it, not in advance.
  *
  * Everything here is a cache. Erasing any of it costs a re-download and nothing else, which is why
- * clearing needs no ceremony beyond the sweeping button's confirm.
+ * clearing needs no ceremony beyond the sweeping button's confirm. It is the hydrography explorer's
+ * cache too — the database is shared — so a row can already be held because that app filled it, and
+ * erasing one here erases it for both.
  *
  * Adding one is a single entry: `status` reporting `{n, bytes}` or null, `download({onProgress})`,
  * a `cancel`, a `remove`, and optionally `busy` for a dataset something outside Settings can start
@@ -34,6 +41,25 @@ const DATASETS = [
     remove: clear,
     /** True while a build is in flight — this app prefetches this one after load. */
     busy: isBuilding
+  },
+  {
+    key: "riverNames",
+    label: "settings.data.riverNames",
+    hint: "settings.data.riverNames.hint",
+    /** `{n, bytes}` when held, else null. The row count and the weight of the file it came from. */
+    status: async () => {
+      const meta = await names.status();
+      return meta ? {n: meta.n, bytes: meta.bytes} : null;
+    },
+    /**
+     * Forced, because this is the button a user presses when they want the newest names — the
+     * unforced path is the monthly boundary, and it would answer "already fresh" and do nothing.
+     * There is no progress to report: one request for ~100 kB, against the river IDs' hundreds.
+     */
+    download: () => names.refresh({force: true}),
+    // A single small request. Nothing to abort that would finish before the abort did.
+    cancel: () => {},
+    remove: names.clear
   }
 ];
 
@@ -52,12 +78,12 @@ const surveyAll = () => Promise.all(DATASETS.map(async (d) => ({
 })));
 
 /**
- * Erase the lot. Clears the whole object store rather than looping the registry's `remove`s, so a
- * record left behind by a dataset this version no longer lists goes too — otherwise "delete
- * everything" quietly isn't, and the orphan is exactly what a later version would trip over.
+ * Erase the lot. Clears every store rather than looping the registry's `remove`s, so a record left
+ * behind by a dataset this version no longer lists goes too — otherwise "delete everything" quietly
+ * isn't, and the orphan is exactly what a later version would trip over.
  */
 async function removeAll() {
-  await clearStore();
+  await clearAll();
   // The registry's own invalidation still has to run: clearing the store doesn't drop the copies
   // features are holding in memory.
   await Promise.all(DATASETS.map((d) => d.remove().catch(() => {})));

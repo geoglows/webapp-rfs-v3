@@ -24,7 +24,9 @@ const EDGE_MARGIN = 0.15;
  * geometry comes back from queryRenderedFeatures in lng/lat, clipped to the tile, which is all this
  * needs — the answer wanted is the part of the reach under the cursor.
  *
- * Returns null for a feature carrying no line, leaving the caller to fall back to the click.
+ * Returns null for a feature carrying no line, leaving the caller to fall back to the click. The
+ * point carries `dist2`, its squared planar distance from the click in latitude-scaled degrees —
+ * meaningless as a length, but comparable across features, which is what nearestFeature needs.
  */
 function snapToFeature(feature, {lng, lat}) {
   const {type, coordinates} = feature?.geometry ?? {};
@@ -42,7 +44,7 @@ function snapToFeature(feature, {lng, lat}) {
     const dist = dx * dx + dy * dy;
     if (dist >= bestDist) return;
     bestDist = dist;
-    best = {lat: la, lon};
+    best = {lat: la, lon, dist2: dist};
   };
   for (const line of lines) {
     if (!line?.length) continue;
@@ -59,6 +61,24 @@ function snapToFeature(feature, {lng, lat}) {
       const t = len2 ? Math.max(0, Math.min(1, (((lng - ax) * kx * dx) + (lat - ay) * dy) / len2)) : 0;
       consider(ax + (bx - ax) * t, ay + (by - ay) * t);
     }
+  }
+  return best;
+}
+
+/**
+ * Of the features a box query returned, the one whose line actually passes closest to the click.
+ *
+ * queryRenderedFeatures hands back everything inside the box in draw order, so once zoomed in far
+ * enough for reaches to sit a few pixels apart, taking the first one selects whichever neighbour
+ * happens to be painted on top rather than the one under the pointer. Features without a line
+ * still count, but only when nothing better is there.
+ */
+function nearestFeature(features, lngLat) {
+  let best = null;
+  let bestDist = Infinity;
+  for (const f of features) {
+    const d = snapToFeature(f, lngLat)?.dist2 ?? Infinity;
+    if (best === null || d < bestDist) { best = f; bestDist = d; }
   }
   return best;
 }
@@ -81,6 +101,33 @@ function travelToRiver(map, {lat, lon}) {
 }
 
 /**
+ * A river the user found by name, which is a whole river rather than a reach — so the camera frames
+ * its published extent instead of travelling to a point on it.
+ *
+ * A name found in the table comes with the bounding box of every reach it covers, which is the only
+ * way this app can frame a river at all: the reaches are in vector tiles that are not loaded until
+ * the camera is already looking at them. Flying to the mouth instead would put the Amazon on screen
+ * as an estuary, with the river off the west edge.
+ *
+ * The padding keeps the river off the window edges and, on the left, out from under the panel that
+ * is opening as this runs. Falls back to the point when a row carries no box — an older release of
+ * the names table has none, and a river is still worth going to.
+ */
+function frameRiverExtent(map, {bbox, lat, lon}) {
+  if (!bbox || bbox.length !== 4) return travelToRiver(map, {lat, lon});
+  const [west, south, east, north] = bbox;
+  const {width} = map.getContainer().getBoundingClientRect();
+  map.fitBounds([[west, south], [east, north]], {
+    // A river narrower than the padding cannot be fitted at all, so the padding is capped at a
+    // share of the window rather than being a flat number of pixels.
+    padding: Math.min(80, Math.round(width * 0.12)),
+    // A single short reach has a near-degenerate box, and fitting one lands the camera at z22 on a
+    // stream. This is the zoom a reach is inspected at everywhere else in the app.
+    maxZoom: INSPECT_ZOOM
+  });
+}
+
+/**
  * A reach the user clicked, which they are already looking at — so the view moves only when it has
  * to. Too far out to read a single stream: zoom in on it. Close enough already: hold the view still
  * unless the reach is at an edge, where the panel that just widened may have taken it.
@@ -95,4 +142,4 @@ function focusRiver(map, {lat, lon}) {
   if (!isFramed(map, center)) map.easeTo({center, duration: 400});
 }
 
-export {focusRiver, snapToFeature, travelToRiver};
+export {focusRiver, frameRiverExtent, snapToFeature, travelToRiver, nearestFeature};

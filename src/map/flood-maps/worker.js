@@ -7,13 +7,19 @@ import {FloodMapper} from "./mapper.js";
  * the bottom of this file.
  *
  * post(message, transfer) is the worker's own postMessage. Messages in:
- *   init      {v3Base}                   point the package at the data, open the manifest -> ready
- *   viewport  {tiles}                    fold those tiles into coverage      -> coverage
- *   select    {id, riverIds}             fetch slices, build the canvas      -> selected
+ *   init      {v3Base}                   point the package at the data, open the root -> ready
+ *                                        (carries the global coverage bitset: bit riverIndex)
+ *   viewport  {tiles}                    fold those tiles into the highlight set -> coverage
+ *   select    {id, riverIndices}         fetch slices, build the canvas      -> selected
  *   frame     {id, flows}                render one discharge state          -> frame
  *   query     {id, row, col}             depth at one arc-second cell        -> query
  *   export    {id}                       the last frame's wet/dry mask       -> export
  * Anything that throws comes back as {type: "error", message}.
+ *
+ * Every reach crossing this boundary is a riverIndex: the coverage buffer, the selection, and
+ * the [riverIndex, discharge] pairs in `flows`. The stores' river directories are keyed on it
+ * (attrs.rivers.riverIndex), which is what makes the forecast store's row and the flood slice the
+ * same number.
  */
 function createFloodWorker(post) {
   let index = null;
@@ -32,7 +38,10 @@ function createFloodWorker(post) {
         // across so the flood library resolves under it here too.
         configure({v3Base: msg.v3Base});
         index = await FloodMapsIndex.open();
-        post({type: "ready", nTiles: index.tilePath.size});
+        // The bitset is copied out rather than transferred: the index keeps its own for resolve()
+        // and hasCoverage() on this side, the page gets one to test reaches on its own thread.
+        const covered = index.coveredBits().slice();
+        post({type: "ready", nTiles: index.tilePath.size, covered: covered.buffer}, [covered.buffer]);
       } else if (msg.type === "viewport") {
         if (!index) throw new Error("worker not initialized");
         const coverage = await index.setActiveTiles(msg.tiles);
@@ -49,7 +58,7 @@ function createFloodWorker(post) {
         if (!index) throw new Error("worker not initialized");
         if (msg.id < latestSelectId) return;
         latestSelectId = msg.id;
-        const slices = await index.slicesFor(msg.riverIds);
+        const slices = await index.slicesFor(msg.riverIndices);
         // A newer selection arrived while we were fetching — that one owns `mapper` now.
         if (msg.id < latestSelectId) return;
         mapper = FloodMapper.forSlices(slices);

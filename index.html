@@ -61,6 +61,7 @@
                   title="Notable global rivers" aria-label="Browse notable global rivers"></button>
           <button id="btn-saved" class="btn icon" data-icon-name="heart-solid" data-i18n-title="hydro.saved.title" data-i18n-aria-label="hydro.saved.aria"
                   title="My saved rivers" aria-label="Browse my saved rivers"></button>
+          <button id="btn-legend" class="btn icon" data-i18n-title="stream.showLegend" title="Show forecast legend"></button>
           <button id="btn-search-river" class="btn icon" data-icon-name="magnifying-glass-solid" data-i18n-title="hydro.searchRiver" title="Search River ID"></button>
           <button id="btn-clear-river" class="btn icon" data-icon-name="backspace" data-i18n-title="hydro.clearRiver" title="Clear the selected river" disabled></button>
           <button id="btn-toggle-slider" class="btn icon" data-icon-name="clock-solid" data-i18n-title="stream.hideSlider" title="Hide timeseries slider"></button>
@@ -69,7 +70,9 @@
       <section id="flood-section">
         <h2 data-i18n="flood.heading">Flood Mapping</h2>
         <div class="row wrap">
-          <button id="btn-flood-mode" class="btn toggle" data-i18n="flood.enable">Create Flood Maps</button>
+          <button id="btn-flood-mode" class="btn toggle" data-i18n="flood.enable">FIM Mode: Off</button>
+          <button id="btn-clear" class="btn icon" data-icon-name="backspace" data-i18n-title="flood.clear" title="Clear selection" disabled></button>
+          <button id="btn-save-geotiff" class="btn icon" data-icon-name="arrow-down-tray" data-i18n-title="flood.saveGeotiff" title="Save GeoTIFF" disabled></button>
         </div>
         <div class="field">
           <label for="flood-style" data-i18n="flood.style">Flood style</label>
@@ -80,10 +83,6 @@
             <option value="forecast" data-i18n="flood.style.forecast">Forecast Timeseries</option>
             <option value="forecastmax" data-i18n="flood.style.forecastmax">Forecast Maximum</option>
           </select>
-        </div>
-        <div class="row wrap">
-          <button id="btn-clear" class="btn" disabled data-i18n="flood.clear">Clear selection</button>
-          <button id="btn-save-geotiff" class="btn" disabled data-i18n="flood.saveGeotiff">⬇ Save GeoTIFF</button>
         </div>
         <div id="flood-controls" class="mode-off">
           <div id="warning" class="warning hidden"></div>
@@ -243,6 +242,7 @@
             <li data-i18n-html="help.tools.search" data-spotlight="#btn-search-river"></li>
             <li data-i18n-html="help.tools.clear" data-spotlight="#btn-clear-river"></li>
             <li data-i18n-html="help.tools.slider" data-spotlight="#btn-toggle-slider, #player"></li>
+            <li data-i18n-html="help.tools.legend" data-spotlight="#btn-legend, #legend-overlay"></li>
           </ul>
         </section>
         <section class="help-section" data-spotlight="#btn-charts">
@@ -347,19 +347,34 @@
 <div id="search-modal" class="backdrop hidden">
   <div class="card modal entry" role="dialog" aria-modal="true" aria-labelledby="search-modal-title">
     <div class="modal-head">
-      <h3 id="search-modal-title" data-i18n="search.heading">Find a river by ID</h3>
+      <h3 id="search-modal-title" data-i18n="search.heading">Find a river</h3>
       <button class="btn sm" data-close="search-modal" data-i18n-aria-label="common.close" aria-label="Close">✕</button>
     </div>
     <div class="modal-body">
-      <form id="search-form" class="field" autocomplete="off">
-        <label for="search-river-id" data-i18n="search.label">River ID</label>
+      <form id="search-name-form" class="field" autocomplete="off">
+        <label for="search-river-name" data-i18n="search.nameLabel">River name</label>
+        <div class="row">
+          <input id="search-river-name" type="text" role="combobox" aria-expanded="false"
+                 aria-controls="search-results" aria-autocomplete="list"
+                 data-i18n-placeholder="search.namePlaceholder" placeholder="e.g. Colorado"/>
+          <button type="submit" class="btn primary" data-i18n="search.submit">Search</button>
+          <button type="button" id="search-clear" class="btn" data-i18n="search.clear"
+                  data-i18n-title="search.clearHint" title="Remove the highlighted river from the map">Clear</button>
+        </div>
+      </form>
+      <div id="search-results" class="search-results hidden" role="listbox"
+           data-i18n-aria-label="search.results" aria-label="Matching rivers"></div>
+      <div id="search-name-status" class="hint status" role="status" aria-live="polite"></div>
+
+      <form id="search-id-form" class="field search-second" autocomplete="off">
+        <label for="search-river-id" data-i18n="search.idLabel">River ID</label>
         <div class="row">
           <input id="search-river-id" type="text" inputmode="numeric"
-                 data-i18n-placeholder="search.placeholder" placeholder="e.g. 760021611"/>
+                 data-i18n-placeholder="search.idPlaceholder" placeholder="e.g. 760021611"/>
           <button type="submit" class="btn primary" data-i18n="search.submit">Search</button>
         </div>
       </form>
-      <div id="search-status" class="hint status" role="status" aria-live="polite"></div>
+      <div id="search-id-status" class="hint status" role="status" aria-live="polite"></div>
     </div>
   </div>
 </div>
@@ -391,10 +406,6 @@
     <div class="modal-body">
       <h4 data-i18n="settings.display">Display</h4>
       <label class="row">
-        <input type="checkbox" id="set-legend"/>
-        <span data-i18n="settings.showLegend">Show forecast return-period legend</span>
-      </label>
-      <label class="row">
         <input type="checkbox" id="set-shaded-warning-levels"/>
         <span data-i18n="settings.shadedWarningLevels">Shade warning levels on the forecast chart</span>
       </label>
@@ -414,6 +425,8 @@
           <button id="btn-delete-all" class="btn" data-i18n="settings.data.deleteAll">Delete everything</button>
         </div>
       </div>
+      <!-- stamped at build time by stampBuildDate() in vite.config.js; filled in initSettings() -->
+      <p class="hint build-stamp"><span data-i18n="settings.build">Build</span> <span id="build-date"></span></p>
     </div>
   </div>
 </div>

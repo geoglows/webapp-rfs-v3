@@ -3,6 +3,8 @@ import {configure, urls} from "riverforecastsystem/v3";
 import {isUsableMeta, readMeta, SCHEMA_VERSION, writeRecord} from "./riverIndexDb.js";
 
 /**
+ * TWIN FILE: webapp-rfs-hydrography/src/riverIndexWorker.js — the same worker, keep the two in step.
+ *
  * Builds the riverId -> riverIndex lookup and caches it, off the main thread.
  *
  * The metadata store's riverId axis is in topological order — a hydrologically meaningful
