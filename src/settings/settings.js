@@ -51,6 +51,12 @@ const SETTINGS = [
 
 const STORAGE_PREFIX = "rfs-setting-";
 const SAVED_AT_KEY = "rfs-settings-saved-at";
+// Where the theme used to live, and where it still lives for the hydrography explorer: that app is
+// deployed alongside this one at /rfs-hydrography and reads this key directly, and the two share
+// one origin, so this is not a dead migration key — it is a live channel between two apps. Hence
+// copy-and-mirror below rather than the move this used to do, which silently wiped that app's
+// theme on every visit here. Delete this and both call sites when that app is retired into this one.
+const LEGACY_THEME_KEY = "rfs-theme";
 const values = new Map();
 const listeners = new Map();
 const anyListeners = new Set();
@@ -182,10 +188,11 @@ function initSettings() {
   // heart and the outline the map draws stay the same colour — which is the whole point of the
   // variable. Left alone when nothing is configured, so each theme keeps the pink picked for it.
   if (SAVED_RIVERS.color) document.documentElement.style.setProperty("--saved", SAVED_RIVERS.color);
-  const legacyTheme = localStorage.getItem("rfs-theme");
+  // Adopt on every load, not seed-once: the other app writes this key when its user flips the
+  // theme, and this read is the only way that choice reaches this app.
+  const legacyTheme = localStorage.getItem(LEGACY_THEME_KEY);
   if (legacyTheme === "light" || legacyTheme === "dark") {
     localStorage.setItem(STORAGE_PREFIX + "theme", legacyTheme);
-    localStorage.removeItem("rfs-theme");
   }
   if ($("build-date")) $("build-date").textContent = BUILD_DATE;
   for (const setting of SETTINGS) {
@@ -209,6 +216,9 @@ const prefs = {
     if (!pref) throw new Error(`Unknown preference: ${key}`);
     if (prefs.get(key) === value) return;
     localStorage.setItem(STORAGE_PREFIX + key, value);
+    // The other half of the LEGACY_THEME_KEY channel: mirror the choice out so the hydrography
+    // explorer picks it up on its next load.
+    if (key === "theme") localStorage.setItem(LEGACY_THEME_KEY, value);
     for (const fn of listeners.get(key) ?? []) fn(value);
     if (!remote) noteLocalChange();
   }

@@ -58,14 +58,7 @@ function createPanelControls({streams, onForecastDateChange}) {
     }
     $("btn-toggle-slider")?.addEventListener("click", () => {
       sliderVisible = !sliderVisible;
-      const legendBtn = $("btn-legend");
-    if (legendBtn) {
-      // Calcite's legend glyph, so it is filled in here rather than by hydrateIcons, which only
-      // walks the heroicon-backed [data-icon-name] buttons.
-      legendBtn.replaceChildren(calciteIcon("legend"));
-      legendBtn.addEventListener("click", () => setSetting("legend", !getSetting("legend")));
-    }
-    updateSliderVisibility();
+      updateSliderVisibility();
     });
     const legendBtn = $("btn-legend");
     if (legendBtn) {

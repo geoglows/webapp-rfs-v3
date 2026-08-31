@@ -38,7 +38,19 @@ const TYPING_MS = 120;
  * dialog closes, which is the point of painting it, so nothing else in the app is going to notice
  * that the user is done with it.
  */
-function createRiverSearch({onFound, onClear}) {
+/**
+ * The two options exist because the hydrography explorer asks this dialog a different question.
+ *
+ * `locateOnPick` — a named river's row already carries everything that page needs (the span is the
+ * selection, and `hi - lo` is the upstream count), so it reads nothing when a name is picked. This
+ * page needs the mouth's coordinate as well, because a found river has to be savable. Off means the
+ * name path touches no store at all.
+ *
+ * `requireLocationById` — when the metadata store will not say where a reach is, this page still
+ * goes: the charts only need the riverIndex. The explorer cannot, because the same read is where
+ * its upstream count comes from and there is no selection without one. On means say so and stop.
+ */
+function createRiverSearch({onFound, onClear, locateOnPick = true, requireLocationById = false}) {
   const modal = $("search-modal");
   const nameForm = $("search-name-form");
   const nameInput = $("search-river-name");
@@ -147,17 +159,28 @@ function createRiverSearch({onFound, onClear}) {
    */
   async function pick(river) {
     close();
-    const at = await locate(river.riverIndex).catch((e) => {
-      console.error(`could not locate ${river.name} (${river.riverId}): ${e.message}`);
-      return null;
-    });
+    const at = locateOnPick
+      ? await locate(river.riverIndex).catch((e) => {
+        console.error(`could not locate ${river.name} (${river.riverId}): ${e.message}`);
+        return null;
+      })
+      : null;
     // Two arguments, not one object. The first is the reach, and it is handed straight to the
     // charts dock, which renders every field it carries in the Details tab — so anything that is
     // not an attribute of the reach cannot travel in it. The extent and the span are instructions
     // to the map, not facts about the river, and go beside it.
+    //
+    // The upstream count is read off the row rather than the store: the span is every reach that
+    // drains through this one, so its length is the count, already in hand.
     onFound?.(
-      {riverId: river.riverId, riverIndex: river.riverIndex, lat: at?.lat, lon: at?.lon},
-      {bbox: river.bbox, span: {lo: river.lo, hi: river.hi}}
+      {
+        riverId: river.riverId,
+        riverIndex: river.riverIndex,
+        upstreamCount: river.hi - river.lo,
+        lat: at?.lat,
+        lon: at?.lon
+      },
+      {bbox: river.bbox, span: {lo: river.lo, hi: river.hi}, name: river.name}
     );
     highlighted = true;
     if (clearBtn) clearBtn.disabled = false;
@@ -216,8 +239,14 @@ function createRiverSearch({onFound, onClear}) {
         console.error(`could not locate river ${raw}: ${e.message}`);
         return null;
       });
+      if (!at && requireLocationById) {
+        sayId(t("search.unlocatable"), {error: true});
+        return;
+      }
       close();
-      onFound?.({riverId: Number(raw), riverIndex, lat: at?.lat, lon: at?.lon});
+      onFound?.({
+        riverId: Number(raw), riverIndex, upstreamCount: at?.upstreamCount, lat: at?.lat, lon: at?.lon
+      });
     } catch (e) {
       sayId(`${t("search.failed")}: ${e.message}`, {error: true});
     } finally {

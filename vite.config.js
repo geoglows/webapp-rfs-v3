@@ -1,93 +1,133 @@
 import {defineConfig} from "vite";
-import {createReadStream, statSync} from "node:fs";
-import {join, normalize, resolve, sep} from "node:path";
+import {createReadStream, existsSync, realpathSync, statSync} from "node:fs";
+import {extname, join, normalize, sep} from "node:path";
+import {fileURLToPath} from "node:url";
 
-// ./data is a symlink to the local data root, so resolve() gives the link path and the reads below
-// follow it. Nothing configures where the data lives; the link is the configuration.
-function serveDataDir(dir) {
-  const root = resolve(dir);
-  const TYPES = {
-    ".json": "application/json",
-    ".parquet": "application/octet-stream",
-    ".pmtiles": "application/octet-stream",
-    ".bin": "application/octet-stream"
+// ./data is a symlink to wherever the v3 artifacts actually live. Serving it from the Vite server
+// is the point: PMTiles, the metadata parquets and the zarr chunks are all read by byte range — so
+// one server does the app and the data, with no second process and no CORS. The artifacts are
+// gigabytes and deliberately not copied into dist/.
+//
+// Resolved against this file rather than process.cwd(), so running Vite from anywhere still finds
+// the link, and realpath'd up front so a dangling link is a build-time warning instead of a
+// mystery 404 on every request.
+const here = fileURLToPath(new URL(".", import.meta.url));
+const DATA_MOUNT = "/data";
+const dataLink = `${here}data`;
+const dataRoot = existsSync(dataLink) ? realpathSync(dataLink) : null;
+
+const TYPES = {
+  ".json": "application/json",
+  ".geojson": "application/geo+json",
+  ".parquet": "application/vnd.apache.parquet",
+  ".pmtiles": "application/octet-stream",
+  ".bin": "application/octet-stream",
+  ".txt": "text/plain; charset=utf-8"
+};
+
+/**
+ * Range-aware static file serving, in the ~40 lines it actually takes.
+ *
+ * Everything this app reads it reads by byte range, so **206 with a correct `Content-Range` is the
+ * whole job** — a server that answers 200 with the entire file makes PMTiles refuse the response
+ * outright ("content-length exceeding request") and makes a parquet footer read pull the whole
+ * gigabyte. That is the one behaviour worth being careful about, and it is small enough not to be
+ * worth a dependency.
+ *
+ * The 416 path matters too: PMTiles probes an archive it does not know the length of and reads the
+ * size back out of `Content-Range: bytes * /size` on the refusal.
+ */
+const serveRange = (root, req, res, next) => {
+  try {
+    const rel = decodeURIComponent((req.url || "/").split("?")[0]);
+    // Normalising an *absolute* path clamps at "/" — `/a/../../../etc/passwd` collapses to
+    // `/etc/passwd` rather than climbing above it — so forcing the leading slash is what stops a
+    // traversal, and the prefix check below is the second lock rather than the only one.
+    const path = join(root, normalize(`/${rel}`));
+    if (path !== root && !path.startsWith(root + sep)) {
+      res.statusCode = 403;
+      return res.end("forbidden\n");
+    }
+    let stat;
+    try {
+      stat = statSync(path);
+    } catch {
+      return next();
+    }
+    if (!stat.isFile()) return next();
+
+    const size = stat.size;
+    res.setHeader("accept-ranges", "bytes");
+    res.setHeader("content-type", TYPES[extname(path).toLowerCase()] ?? "application/octet-stream");
+    // No caching: this serves whatever the symlink points at right now, which during a pipeline run
+    // is a file that changes under you.
+    res.setHeader("cache-control", "no-cache");
+
+    const m = /^bytes=(\d*)-(\d*)$/.exec(req.headers.range ?? "");
+    let start = 0;
+    let end = size - 1;
+    if (m) {
+      // "bytes=-500" is the last 500 bytes; "bytes=500-" is everything from 500 on.
+      if (m[1] === "") start = Math.max(0, size - Number(m[2]));
+      else {
+        start = Number(m[1]);
+        if (m[2] !== "") end = Math.min(Number(m[2]), size - 1);
+      }
+      if (!(start <= end) || start >= size) {
+        res.statusCode = 416;
+        res.setHeader("content-range", `bytes */${size}`);
+        return res.end();
+      }
+      res.statusCode = 206;
+      res.setHeader("content-range", `bytes ${start}-${end}/${size}`);
+    }
+    res.setHeader("content-length", end - start + 1);
+    if (req.method === "HEAD") return res.end();
+    createReadStream(path, {start, end}).on("error", () => res.destroy()).pipe(res);
+  } catch (err) {
+    // A malformed percent-escape throws out of decodeURIComponent; without this it lands in
+    // connect's default handler and the response says nothing useful about which file was asked for.
+    res.statusCode = 500;
+    res.end(err.message);
+  }
+};
+
+/**
+ * Mount ./data on both the dev server and the preview server.
+ *
+ * The same middleware for both, rather than leaning on `server.fs.allow` in dev, so the two behave
+ * identically and there is only one thing to reason about — and `fs.allow` would not help the
+ * preview server at all, which serves dist/ and nothing else. Preview mattering is not theoretical:
+ * it is the only way to exercise a production build against real artifacts.
+ *
+ * The explicit 404 matters more than it looks. Vite's SPA fallback rewrites any unmatched path to
+ * index.html, so a missing artifact would come back as **200 with a page of HTML** — PMTiles then
+ * fails on a malformed header and a parquet read on a bad magic number, neither of which says
+ * "that file is not there". Ending the request here keeps a missing file looking like a missing
+ * file. Registering in configureServer (not its returned post-hook) puts this ahead of the
+ * fallback.
+ */
+const serveData = () => {
+  const mount = (server) => {
+    if (!dataRoot) return;
+    server.middlewares.use(DATA_MOUNT, (req, res) => serveRange(dataRoot, req, res, () => {
+      res.statusCode = 404;
+      res.setHeader("content-type", "text/plain");
+      res.end(`no such file under ${DATA_MOUNT}: ${req.url}\n`);
+    }));
   };
   return {
-    name: `serve-data-dir:${dir}`,
-    apply: "serve",
-    configureServer(server) {
-      server.middlewares.use(`/${dir}`, (req, res, next) => {
-        try {
-          const rel = decodeURIComponent((req.url ?? "/").split("?")[0]);
-          const filePath = normalize(join(root, rel));
-          if (filePath !== root && !filePath.startsWith(root + sep)) {
-            res.statusCode = 403;
-            res.end("Forbidden");
-            return;
-          }
-          // 404 rather than next(). Falling through hands the SPA's index.html to whatever asked —
-          // with a 200 — so a missing zarr chunk surfaces as "Failed to decode JSON" from inside a
-          // decoder, and a missing pmtiles as a byte-serving complaint. Neither names the file.
-          let st;
-          try {
-            st = statSync(filePath);
-          } catch {
-            res.statusCode = 404;
-            res.end(`Not found: ${rel}`);
-            return;
-          }
-          // This mount serves files, not listings; a directory hit is a caller's bad path, not a
-          // request for the app shell.
-          if (st.isDirectory()) {
-            res.statusCode = 404;
-            res.end(`Not a file: ${rel}`);
-            return;
-          }
-          const dot = filePath.lastIndexOf(".");
-          res.setHeader("Content-Type", dot >= 0 && TYPES[filePath.slice(dot).toLowerCase()] || "application/octet-stream");
-          res.setHeader("Accept-Ranges", "bytes");
-          res.setHeader("Cache-Control", "no-cache");
-          const size = st.size;
-          const range = req.headers.range;
-          const m = range && /^bytes=(\d*)-(\d*)$/.exec(range);
-          if (m) {
-            let start = m[1] === "" ? NaN : parseInt(m[1], 10);
-            let end = m[2] === "" ? NaN : parseInt(m[2], 10);
-            if (Number.isNaN(start)) {
-              start = Math.max(0, size - (end || 0));
-              end = size - 1;
-            } else if (Number.isNaN(end) || end >= size) end = size - 1;
-            if (start > end || start >= size) {
-              res.statusCode = 416;
-              res.setHeader("Content-Range", `bytes */${size}`);
-              res.end();
-              return;
-            }
-            res.statusCode = 206;
-            res.setHeader("Content-Range", `bytes ${start}-${end}/${size}`);
-            res.setHeader("Content-Length", String(end - start + 1));
-            if (req.method === "HEAD") {
-              res.end();
-              return;
-            }
-            createReadStream(filePath, {start, end}).pipe(res);
-            return;
-          }
-          res.statusCode = 200;
-          res.setHeader("Content-Length", String(size));
-          if (req.method === "HEAD") {
-            res.end();
-            return;
-          }
-          createReadStream(filePath).pipe(res);
-        } catch (err) {
-          res.statusCode = 500;
-          res.end(err.message);
-        }
-      });
+    name: "serve-data-symlink",
+    configureServer: mount,
+    configurePreviewServer: mount,
+    buildStart() {
+      if (!dataRoot) {
+        this.warn(`./data is missing or dangling — the app will have no v3 artifacts to read. ` +
+          `Symlink it: ln -s <path-to-v3-data> ${dataLink}`);
+      }
     }
   };
-}
+};
 
 // The moment this bundle was made, printed at the bottom of the Settings modal. A deployment is a
 // static site with no version anywhere in it, so a bug report can otherwise only say "the site" —
@@ -97,7 +137,7 @@ function serveDataDir(dir) {
 // server started under `vite dev`.
 const BUILD_DATE_ID = "virtual:build-date";
 
-function stampBuildDate() {
+const stampBuildDate = () => {
   const resolved = "\0" + BUILD_DATE_ID;
   const stamp = new Date().toISOString().replace("T", " ").slice(0, 16) + " UTC";
   return {
@@ -105,15 +145,28 @@ function stampBuildDate() {
     resolveId: (id) => (id === BUILD_DATE_ID ? resolved : null),
     load: (id) => (id === resolved ? `export default ${JSON.stringify(stamp)};` : null)
   };
-}
+};
 
-let vite_config_default = defineConfig({
-  plugins: [serveDataDir("data"), stampBuildDate()],
+// The portal builds every app with `vite build --base="$BASE/"` (see apps.geoglows
+// scripts/build-local.sh), so `base` is left at the default here and supplied on the command line.
+export default defineConfig({
+  plugins: [serveData(), stampBuildDate()],
   resolve: {
-    dedupe: ["chart.js", "chartjs-adapter-date-fns", "chartjs-chart-matrix", "chartjs-plugin-zoom", "date-fns", "numcodecs"],
+    dedupe: ["chart.js", "chartjs-adapter-date-fns", "chartjs-chart-matrix", "chartjs-plugin-zoom", "date-fns", "numcodecs"]
+  },
+  // Vite crawls the page's imports to decide what to pre-bundle, and it does not crawl into
+  // workers. The riverId lookup's zarr reads are reachable from nowhere else, so in dev they were
+  // discovered only when the worker first ran — at which point Vite re-optimized, and the worker's
+  // already-loaded module ids went stale: a 504 on numcodecs/blosc, a worker that never answers,
+  // and a lookup that silently never starts. Naming them here has them bundled before the server is
+  // listening. `resolve.dedupe` happens to have masked this, but dedupe is not a pre-bundling
+  // mechanism and stops helping the moment the worker's dependencies change.
+  optimizeDeps: {
+    include: ["riverforecastsystem/v3", "riverforecastsystem/v3/hydrography", "numcodecs/blosc"]
   },
   worker: {format: "es"},
   build: {
+    target: ["es2020", "safari14"],
     rolldownOptions: {
       output: {
         codeSplitting: {
@@ -125,13 +178,5 @@ let vite_config_default = defineConfig({
   server: {
     allowedHosts: [".ngrok-free.app", ".ngrok.app", ".ngrok.io", "tunnel.hales.app"],
     watch: {ignored: ["**/data/**"]}
-  },
-  test: {
-    environment: "node",
-    testTimeout: 12e4,
-    include: ["tests/**/*.test.js"]
   }
 });
-export {
-  vite_config_default as default
-};

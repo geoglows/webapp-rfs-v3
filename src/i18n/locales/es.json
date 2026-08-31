@@ -81,6 +81,7 @@
   "search.invalid": "Introduzca un ID de río — solo dígitos.",
   "search.searching": "Buscando…",
   "search.notFound": "Ningún río con el ID {id} está en la red.",
+  "search.unlocatable": "Ese río está en la red, pero el almacén de metadatos no indica dónde se encuentra.",
   "search.failed": "Error en la búsqueda",
   "common.cancel": "Cancelar",
   "river.heading": "Río",

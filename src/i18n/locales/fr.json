@@ -81,6 +81,7 @@
   "search.invalid": "Saisissez un ID de rivière — chiffres uniquement.",
   "search.searching": "Recherche…",
   "search.notFound": "Aucune rivière avec l'ID {id} dans le réseau.",
+  "search.unlocatable": "Cette rivière est dans le réseau, mais le magasin de métadonnées n'indique pas où elle se trouve.",
   "search.failed": "Échec de la recherche",
   "common.cancel": "Annuler",
   "river.heading": "Rivière",

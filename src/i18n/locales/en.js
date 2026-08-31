@@ -107,6 +107,7 @@ export default {
   "search.invalid": "Enter a river ID — digits only.",
   "search.searching": "Searching…",
   "search.notFound": "No river with ID {id} is in the network.",
+  "search.unlocatable": "That river is in the network, but the metadata store would not say where it is.",
   "search.noName": "No named river matches \u201c{name}\u201d. Only major rivers are named; every reach can still be found by ID.",
   "search.tributaryOf": "flows into the {name}",
   "search.failed": "Search failed",
