@@ -1,3 +1,4 @@
+import {el} from "../../shared/dom.js";
 const $ = id => document.getElementById(id);
 
 const stagesEl = $('stages');
@@ -122,16 +123,9 @@ let phaseState = new Map();
 let nodes = new Map();
 let groupNodes = new Map();
 
-const el = (tag, cls, text) => {
-  const n = document.createElement(tag);
-  if (cls) n.className = cls;
-  if (text != null) n.textContent = text;
-  return n;
-};
-
 const bar = () => {
-  const track = el('div', 'stage-bar');
-  track.appendChild(el('div', 'stage-fill'));
+  const track = el('div', {class: 'stage-bar'});
+  track.appendChild(el('div', {class: 'stage-fill'}));
   return track;
 };
 
@@ -174,18 +168,18 @@ export const stages = {
     stagesEl.style.display = 'block';
 
     for (const g of groups) {
-      const box = el('div', 'stage-group');
-      const head = el('div', 'stage-group-head');
-      head.appendChild(el('span', 'stage-group-name', g.label));
-      const pct = el('span', 'stage-group-pct', '0%');
+      const box = el('div', {class: 'stage-group'});
+      const head = el('div', {class: 'stage-group-head'});
+      head.appendChild(el('span', {class: 'stage-group-name', text: g.label}));
+      const pct = el('span', {class: 'stage-group-pct', text: '0%'});
       head.appendChild(pct);
       const track = bar();
       box.append(head, track);
       for (const p of phases.filter(x => x.group === g.key)) {
-        const row = el('div', 'stage-line pending');
-        const mark = el('span', 'stage-mark', MARK.pending);
-        const name = el('span', 'stage-name', p.label);
-        const detail = el('span', 'stage-detail', '');
+        const row = el('div', {class: 'stage-line pending'});
+        const mark = el('span', {class: 'stage-mark', text: MARK.pending});
+        const name = el('span', {class: 'stage-name', text: p.label});
+        const detail = el('span', {class: 'stage-detail', text: ''});
         const lineBar = bar();
         row.append(mark, name, detail, lineBar);
         row.title = p.label;

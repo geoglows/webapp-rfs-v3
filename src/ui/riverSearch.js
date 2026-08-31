@@ -1,3 +1,4 @@
+import {el} from "../shared/dom.js";
 import {dataProgress, t} from "../i18n/i18n";
 import {resolve} from "../shared/data/riverIndex";
 import {load as loadNames, search as searchNames} from "../shared/data/riverNames";
@@ -123,13 +124,6 @@ function createRiverSearch({onFound, onClear, locateOnPick = true, requireLocati
     }).catch((e) => console.warn(`[names] the river names could not be loaded: ${e.message}`));
   }
 
-  const el = (tag, cls, text) => {
-    const n = document.createElement(tag);
-    if (cls) n.className = cls;
-    if (text != null) n.textContent = text;
-    return n;
-  };
-
   /**
    * The line under a name that says which river this one is.
    *
@@ -188,9 +182,9 @@ function createRiverSearch({onFound, onClear, locateOnPick = true, requireLocati
   function renderResults(rivers) {
     shown = rivers;
     results.replaceChildren(...rivers.map((river) => {
-      const row = el("button", "search-hit");
+      const row = el("button", {class: "search-hit"});
       row.type = "button";
-      row.append(el("b", null, river.name), el("span", "hint", describe(river)));
+      row.append(el("b", {text: river.name}), el("span", {class: "hint", text: describe(river)}));
       row.addEventListener("click", () => void pick(river));
       return row;
     }));

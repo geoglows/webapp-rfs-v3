@@ -1,3 +1,4 @@
+import {el} from "../../shared/dom.js";
 /**
  * What one clicked reach actually says.
  *
@@ -11,13 +12,6 @@
  * Everything is built as nodes. The values come out of the tiles, so none of them gets to be markup.
  */
 import {compact, fieldInfo, roleRank} from './streamAttributes.js';
-
-const el = (tag, cls, text) => {
-  const n = document.createElement(tag);
-  if (cls) n.className = cls;
-  if (text != null) n.textContent = text;
-  return n;
-};
 
 const isNum = v => typeof v === 'number' && isFinite(v);
 
@@ -40,10 +34,10 @@ function valueOf(name, v, info) {
 function row(name, v) {
   const info = fieldInfo(name, typeof v === 'string' ? 'string' : 'number');
   const {text, title} = valueOf(name, v, info);
-  const r = el('div', `river-row river-${info.role}`);
-  const key = el('span', 'river-k', info.label);
+  const r = el('div', {class: `river-row river-${info.role}`});
+  const key = el('span', {class: 'river-k', text: info.label});
   key.title = info.note ? `${name} — ${info.note}` : name;
-  const val = el('span', 'river-v', text);
+  const val = el('span', {class: 'river-v', text: text});
   val.title = title;
   r.append(key, val);
   return r;

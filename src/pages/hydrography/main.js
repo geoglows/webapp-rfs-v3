@@ -1,3 +1,4 @@
+import {el} from '../../shared/dom.js';
 import './style.css';
 import {Popup} from 'maplibre-gl';
 import {URLS, V3_BASE} from './config.js';
@@ -635,28 +636,22 @@ window.addEventListener('storage', e => {
  * MODES. Its card is edged in a name colour rather than the selection orange for the same reason.
  */
 function paintNames() {
-  const el = (tag, cls, text) => {
-    const n = document.createElement(tag);
-    if (cls) n.className = cls;
-    if (text != null) n.textContent = text;
-    return n;
-  };
   const row = (swatches, label) => {
-    const r = el('div', 'legend-item');
+    const r = el('div', {class: 'legend-item'});
     for (const c of swatches) {
-      const sw = el('span', 'swatch');
+      const sw = el('span', {class: 'swatch'});
       sw.style.background = c;
       r.append(sw);
     }
-    r.append(el('span', null, label));
+    r.append(el('span', {text: label}));
     return r;
   };
   const n = riverNames();
   if (!n) {
     $('names-count').textContent = '';
-    $('names-body').replaceChildren(el('div', 'names-hint', namesError
+    $('names-body').replaceChildren(el('div', {class: 'names-hint', text: namesError
       ? `The names table could not be read: ${namesError}`
-      : 'Loading the river names…'));
+      : 'Loading the river names…'}));
     return;
   }
   $('names-count').textContent = fmt(n.riverCount);

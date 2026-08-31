@@ -1,3 +1,4 @@
+import {el} from '../../shared/dom.js';
 import {compact, orderVisibilityWarning} from './streamAttributes.js';
 import {
   BASE_LAYER_ID,
@@ -17,19 +18,6 @@ import {
   styleJson,
   ZOOM_STEPS,
 } from './streamStyle.js';
-
-const el = (tag, props = {}, kids = []) => {
-  const n = document.createElement(tag);
-  for (const [k, v] of Object.entries(props)) {
-    if (k === 'class') n.className = v;
-    else if (k === 'text') n.textContent = v;
-    else if (k === 'html') n.innerHTML = v;
-    else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
-    else if (v != null && v !== false) n.setAttribute(k, v === true ? '' : String(v));
-  }
-  for (const kid of [].concat(kids)) if (kid) n.appendChild(kid);
-  return n;
-};
 
 const select = (options, value, onchange, cls = '') => {
   const s = el('select', {class: cls, onchange});
