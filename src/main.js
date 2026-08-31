@@ -16,7 +16,7 @@ import {createFloodController} from "./map/flood-maps/floodController";
 import {build, status} from "./shared/data/riverIndex";
 import {dropLegacyDatabase} from "./shared/data/db.js";
 import {watch as watchRiverNames} from "./shared/data/riverNames";
-import {hydrateIcons} from "./icons/icons";
+import {hydrateIcons} from "./shared/icons/icons";
 import {createChartsDock} from "./docks/charts.js";
 import {createBookmarksDock, createSavedRiversDock} from "./docks/bookmarks.js";
 import {onSavedRiversChange, savedRiverIds} from "./shared/data/savedRivers.js";

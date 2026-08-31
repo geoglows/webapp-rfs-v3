@@ -18,7 +18,7 @@ import {renderAoi} from './aoiPanel.js';
 import {renderPicks} from './picksPanel.js';
 import {downloadGeometry} from './geometry.js';
 import {fmt, progress, progressHistory, stageHistory, stages} from './ui.js';
-import {heroIcon} from './icons.js';
+import {heroIcon} from '../../shared/icons/icons.js';
 import {initMapControls, syncLayerPicker} from './mapControls.js';
 import {initSettings, onSetting} from './settings.js';
 import {createDataSettings} from './dataSettings.js';

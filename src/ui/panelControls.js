@@ -1,6 +1,6 @@
 import {t} from "../i18n/i18n";
 import {getSetting, setSetting} from "../settings/settings.js";
-import {calciteIcon} from "../icons/calcite.js";
+import {calciteIcon} from "../shared/icons/calcite.js";
 
 const $ = (id) => document.getElementById(id);
 

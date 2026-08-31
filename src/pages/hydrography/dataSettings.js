@@ -1,4 +1,4 @@
-import {heroIcon, iconButton} from './icons.js';
+import {heroIcon, iconButton} from '../../shared/icons/icons.js';
 import {byKey, removeAll, surveyAll} from './datasets.js';
 import {dataProgress, mb} from './ui.js';
 

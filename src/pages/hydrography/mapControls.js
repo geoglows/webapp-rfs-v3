@@ -13,7 +13,7 @@
  */
 import {BASEMAPS, currentBasemap, layersPresent, layersVisible, setBasemap, setLayersVisible,
   setStreamsVisible, streamLayerIds} from './map.js';
-import {calciteIcon} from './icons.js';
+import {calciteIcon} from '../../shared/icons/calcite.js';
 
 const LAYERS = [
   {

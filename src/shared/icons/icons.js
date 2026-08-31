@@ -1,4 +1,4 @@
-import {t} from "../i18n/i18n";
+import {t} from "../../i18n/i18n";
 import informationCircle from "heroicons/24/outline/information-circle.svg?raw";
 import questionMarkCircle from "heroicons/24/outline/question-mark-circle.svg?raw";
 import cog6Tooth from "heroicons/24/outline/cog-6-tooth.svg?raw";
@@ -16,6 +16,9 @@ import backspace from "heroicons/24/outline/backspace.svg?raw";
 import trash from "heroicons/24/outline/trash.svg?raw";
 import mapPin from "heroicons/24/outline/map-pin.svg?raw";
 import xMark from "heroicons/24/outline/x-mark.svg?raw";
+import magnifyingGlass from "heroicons/24/outline/magnifying-glass.svg?raw";
+import chevronDown from "heroicons/24/outline/chevron-down.svg?raw";
+import chevronRight from "heroicons/24/outline/chevron-right.svg?raw";
 
 const ICONS = {
   "information-circle": informationCircle,
@@ -34,7 +37,10 @@ const ICONS = {
   backspace,
   trash,
   "map-pin": mapPin,
-  "x-mark": xMark
+  "x-mark": xMark,
+  "magnifying-glass": magnifyingGlass,
+  "chevron-down": chevronDown,
+  "chevron-right": chevronRight
 };
 
 function heroIcon(name) {

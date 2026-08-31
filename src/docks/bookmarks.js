@@ -1,5 +1,5 @@
 import {t} from "../i18n/i18n.js";
-import {heroIcon} from "../icons/icons.js";
+import {heroIcon} from "../shared/icons/icons.js";
 import {travelToRiver} from "../map/framing.js";
 import {listSavedRivers, onSavedRiversChange, removeSavedRiver} from "../shared/data/savedRivers.js";
 import {closeDock, isDockOpen, openDock} from "./dock.js";
