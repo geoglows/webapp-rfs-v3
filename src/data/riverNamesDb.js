@@ -1,6 +1,9 @@
 /**
  * IndexedDB storage for the river names table, and the clock it expires on.
  *
+ * TWIN FILE: webapp-rfs-hydrography/src/riverNamesDb.js. Both apps read this record out of the same
+ * database, so the keys and SCHEMA_VERSION below are a contract between them, not a private detail.
+ *
  * Small enough — a few hundred rows — to be one record holding a plain array, so unlike the river
  * ID lookup there is nothing to gain from a typed-array layout and nothing expensive about reading
  * it. It still gets the same shadow meta record, for the same reason: the Settings row and the
@@ -29,7 +32,7 @@ const META_KEY = "riverNames:meta";
 // The version of the cached table, as the date it was last invalidated: yyyymmdd, with .0, .1, .2
 // appended when more than one revision lands in a day. Bump it when the record layout changes, so
 // a cache written by an older build is discarded rather than read into fields that have moved.
-const SCHEMA_VERSION = "20260830.0";
+const SCHEMA_VERSION = "20260830.1";
 
 // The day of the month a cached copy stops being fresh on, at 00:00 UTC.
 const EXPIRY_DAY = 5;
@@ -52,7 +55,7 @@ function nextExpiry(from) {
     : Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, EXPIRY_DAY);
 }
 
-/** The rows and everything else. */
+/** The published file and everything the cache knows about it. */
 const readRecord = () => runTransaction("readonly", (store) => store.get(RECORD_KEY));
 
 /** The record's descriptive fields without its rows: what's cached, from where, when, until when. */
@@ -63,7 +66,7 @@ const readMeta = () => runTransaction("readonly", (store) => store.get(META_KEY)
  * beside it — the two cannot describe different things, and cannot half-commit.
  */
 function writeRecord(record) {
-  const {rivers, ...meta} = record;
+  const {payload, ...meta} = record;
   return runTransaction("readwrite", (store) => {
     store.put(meta, META_KEY);
     return store.put(record, RECORD_KEY);
@@ -71,7 +74,7 @@ function writeRecord(record) {
 }
 
 /**
- * Move the expiry forward without rewriting the rows. This is what a "not modified" answer earns:
+ * Move the expiry forward without rewriting the payload. This is what a "not modified" answer earns:
  * the copy on the device is the current one, so it should not be asked about again until the next
  * boundary.
  */
@@ -104,8 +107,8 @@ function isUsableMeta(meta, source) {
 /** The above plus the rows actually being there and being as many as the record claims. */
 function isUsable(record, source) {
   return isUsableMeta(record, source)
-    && Array.isArray(record.rivers)
-    && record.rivers.length === record.n;
+    && Array.isArray(record.payload?.rivers)
+    && record.payload.rivers.length === record.n;
 }
 
 /** Whether the copy is still inside its window, i.e. whether there is any reason to ask the server. */

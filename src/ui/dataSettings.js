@@ -7,6 +7,9 @@ const $ = (id) => document.getElementById(id);
 const megabytes = (bytes) => `${(bytes / 1e6).toFixed(1)} MB`;
 
 /**
+ * TWIN FILE: webapp-rfs-hydrography/src/dataSettings.js — the same list, with its strings inline
+ * there because that app has no i18n.
+ *
  * The Settings data list: one row per entry in the dataset registry — name, size once held, a
  * download button and a trash button — over a pair of sweeping actions.
  *

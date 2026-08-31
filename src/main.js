@@ -10,6 +10,7 @@ import {Streams} from "./map/Streams.js";
 import {focusRiver, frameRiverExtent, nearestFeature, snapToFeature, travelToRiver} from "./map/framing";
 import {createFloodController} from "./map/flood-maps/floodController";
 import {build, status} from "./data/riverIndex";
+import {dropLegacyDatabase} from "./data/db.js";
 import {watch as watchRiverNames} from "./data/riverNames";
 import {hydrateIcons} from "./icons/icons";
 import {createChartsDock} from "./docks/charts.js";
@@ -206,6 +207,9 @@ map.on("error", (e) => {
 
 // ═══════════════════════════════════════════════════════════════════════════
 hydrateIcons()
+// The caches moved to a database shared with the hydrography explorer; the one this app used alone
+// is dead weight on any device that ever searched by ID.
+dropLegacyDatabase();
 initSettings();
 onSetting("legend", (on) => {
   $("legend-overlay").classList.toggle("hidden", !on);

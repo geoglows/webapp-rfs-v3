@@ -13,6 +13,9 @@ import {
 } from "./riverNamesDb.js";
 
 /**
+ * TWIN FILE: webapp-rfs-hydrography/src/riverNamesData.js — the same module under a name that does
+ * not collide with the explorer's own riverNames.js, which is the colouring it paints from.
+ *
  * The river names, from the app side: keep a copy on the device, keep it current, and search it.
  *
  * `group=0/riverNames.json` is a hand curated table of the rivers people actually look for — a few
@@ -43,6 +46,10 @@ const CHECK_INTERVAL_MS = 60 * 60 * 1000;
 
 // The table, once read out of IndexedDB, with the search keys folded onto each row.
 let loaded = null;
+// The published file as it stands, kept beside the prepared rows. This app searches the rows; the
+// explorer next door paints its named spans from `bounds`/`stops`/`palette`, which sit beside them
+// in the same file — so what is cached is the file, and each app takes the half it reads.
+let raw = null;
 let loading = null;
 let refreshing = null;
 let watching = false;
@@ -79,7 +86,7 @@ async function status() {
  * only when someone edits a name, so most revalidations are a 304 and a new expiry date rather
  * than another download.
  *
- * Resolves to the rows when they changed and null when the server said they had not.
+ * Resolves to the payload when it changed and null when the server said it had not.
  */
 async function fetchTable(etag) {
   const res = await fetch(SOURCE(), etag ? {headers: {"If-None-Match": etag}} : undefined);
@@ -103,9 +110,9 @@ async function fetchTable(etag) {
     fetchedAt: at,
     checkedAt: at,
     expiresAt: nextExpiry(at),
-    rivers: data.rivers
+    payload: data
   });
-  return data.rivers;
+  return data;
 }
 
 /**
@@ -121,12 +128,14 @@ function load() {
   loading = (async () => {
     const record = await readRecord().catch(() => null);
     if (isUsable(record, SOURCE())) {
-      loaded = prepare(record.rivers);
+      raw = record.payload;
+      loaded = prepare(raw.rivers);
       if (!isFresh(record)) void refresh();
       return loaded;
     }
     // No cache to be told about, so the server has nothing to answer "not modified" to.
-    loaded = prepare(await fetchTable(null));
+    raw = await fetchTable(null);
+    loaded = prepare(raw.rivers);
     return loaded;
   })();
   const finish = () => {
@@ -155,9 +164,10 @@ function refresh({force = false} = {}) {
     if (!held && !force) return false;
     if (held && !force && isFresh(meta)) return false;
     try {
-      const rivers = await fetchTable(held ? meta.etag : null);
-      if (rivers) {
-        loaded = prepare(rivers);
+      const data = await fetchTable(held ? meta.etag : null);
+      if (data) {
+        raw = data;
+        loaded = prepare(data.rivers);
         return true;
       }
       // Unchanged: the same table, good for another month.
@@ -221,9 +231,16 @@ function search(query, {limit = 25} = {}) {
   return hits.slice(0, limit).map((h) => h.river);
 }
 
+/**
+ * The published file itself, for a reader that wants a part of it this module does not search —
+ * the explorer's span colouring. Null until load() has resolved.
+ */
+const payload = () => raw;
+
 /** Drop this thread's copy of the table. For whoever erased the record underneath us. */
 function forget() {
   loaded = null;
+  raw = null;
 }
 
 async function clear() {
@@ -231,4 +248,4 @@ async function clear() {
   forget();
 }
 
-export {SOURCE, clear, forget, load, refresh, search, status, watch};
+export {SOURCE, clear, forget, load, payload, refresh, search, status, watch};

@@ -2,6 +2,8 @@ import {getConfig, urls} from "riverforecastsystem/v3";
 import {deleteRecord, isUsable, isUsableMeta, readMeta, readRecord} from "./riverIndexDb.js";
 
 /**
+ * TWIN FILE: webapp-rfs-hydrography/src/riverIndex.js — the same module, keep the two in step.
+ *
  * The riverId -> riverIndex lookup, from the app side: start the build, report on it, answer
  * lookups against it.
  *
