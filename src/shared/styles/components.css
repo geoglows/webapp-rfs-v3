@@ -558,15 +558,18 @@ input[aria-invalid="true"] {
     border-radius: 0;
 }
 
-.progress-track.indeterminate .progress-fill {
+.indeterminate .progress-fill {
     width: 100%;
-    background: repeating-linear-gradient(90deg,
-    var(--accent-dim) 0 10px, var(--accent) 10px 20px);
+    transition: none;
+    background: repeating-linear-gradient(115deg,
+    var(--accent-dim) 0 12px, var(--surface2) 12px 24px);
+    background-size: 200% 100%;
     animation: progress-stripe 1s linear infinite;
 }
 
 @keyframes progress-stripe {
-    to { background-position: 20px 0; }
+    from { background-position: 0 0; }
+    to { background-position: -48px 0; }
 }
 
 /* ── MapLibre's own chrome ──

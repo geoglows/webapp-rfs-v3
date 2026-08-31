@@ -124,8 +124,8 @@ let nodes = new Map();
 let groupNodes = new Map();
 
 const bar = () => {
-  const track = el('div', {class: 'stage-bar'});
-  track.appendChild(el('div', {class: 'stage-fill'}));
+  const track = el('div', {class: 'stage-bar progress-track'});
+  track.appendChild(el('div', {class: 'stage-fill progress-fill'}));
   return track;
 };
 

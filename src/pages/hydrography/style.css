@@ -343,21 +343,6 @@ input[type=checkbox] {
     flex-shrink: 0
 }
 
-#progress-bar {
-    height: 6px;
-    background: var(--surface2);
-    border-radius: 3px;
-    overflow: hidden
-}
-
-#progress-fill {
-    height: 100%;
-    width: 0%;
-    border-radius: 3px;
-    background: linear-gradient(90deg, var(--accent-dim), var(--accent));
-    transition: width .18s linear
-}
-
 #progress-detail {
     margin-top: 6px;
     font-family: var(--mono);
@@ -367,34 +352,13 @@ input[type=checkbox] {
     font-variant-numeric: tabular-nums
 }
 
-#progress.done #progress-fill {
-    background: linear-gradient(90deg, var(--success), var(--success-bright))
-}
-
-#progress.done #progress-pct {
+#progress.done #progress.done #progress-pct {
     color: var(--success)
 }
 
 /* Indeterminate: one synchronous call that has either returned or not. A stripe that is honestly
    "still working" beats a percentage invented to keep the bar moving. */
-#progress.indeterminate #progress-fill {
-    width: 100%;
-    transition: none;
-    background: repeating-linear-gradient(115deg, var(--accent-dim) 0 12px, var(--surface2) 12px 24px);
-    background-size: 200% 100%;
-    animation: progress-stripe 1s linear infinite
-}
-
-@keyframes progress-stripe {
-    from {
-        background-position: 0 0
-    }
-    to {
-        background-position: -48px 0
-    }
-}
-
-/* ── the staged export block ───────────────────────────────────────────────
+#progress.indeterminate /* ── the staged export block ───────────────────────────────────────────────
    Two bars — bytes off the wire, and work done on them — with the phases of each listed under it.
    The whole plan is on screen from the start: pending phases sit greyed out, the running one is the
    only line that moves, and finished ones keep the number they finished with. That is the point of
@@ -437,24 +401,9 @@ input[type=checkbox] {
 
 .stage-bar {
     height: 5px;
-    background: var(--surface2);
-    border-radius: 3px;
-    overflow: hidden
 }
 
-.stage-fill {
-    height: 100%;
-    width: 0%;
-    border-radius: 3px;
-    background: linear-gradient(90deg, var(--accent-dim), var(--accent));
-    transition: width .18s linear
-}
-
-.stage-group.done .stage-fill {
-    background: linear-gradient(90deg, var(--success), var(--success-bright))
-}
-
-/* One phase. The 2px rule under each line is that phase's own progress — enough to see movement
+.stage-group.done /* One phase. The 2px rule under each line is that phase's own progress — enough to see movement
    without turning seven lines into seven full-weight bars.
 
    The name column is max-content: a phase whose name is clipped is a phase you cannot identify,
@@ -501,14 +450,11 @@ input[type=checkbox] {
 }
 
 .stage-line .stage-bar {
-    grid-column: 2/4;
-    height: 2px;
-    margin-top: 3px;
-    background: var(--border-soft)
+    height: 5px;
 }
 
 .stage-line.pending .stage-bar, .stage-line.skipped .stage-bar {
-    visibility: hidden
+    height: 5px;
 }
 
 .stage-line.active {
@@ -531,12 +477,7 @@ input[type=checkbox] {
     color: var(--success)
 }
 
-.stage-line.done .stage-fill {
-    background: var(--success);
-    opacity: .55
-}
-
-.stage-line.skipped {
+.stage-line.done .stage-line.skipped {
     opacity: .45
 }
 
@@ -548,20 +489,9 @@ input[type=checkbox] {
     color: var(--danger-text)
 }
 
-.stage-line.failed .stage-fill {
-    background: var(--danger);
-    width: 100%
-}
-
-/* One synchronous call that has either returned or not — a stripe says so; a percentage would be
+.stage-line.failed /* One synchronous call that has either returned or not — a stripe says so; a percentage would be
    invented. Same reasoning as the single bar's indeterminate state. */
-.stage-line.indeterminate .stage-fill {
-    width: 100%;
-    transition: none;
-    background: repeating-linear-gradient(115deg, var(--accent-dim) 0 10px, transparent 10px 20px);
-    background-size: 200% 100%;
-    animation: progress-stripe 1s linear infinite
-}/* The eyebrow over a block of controls — the same one RFS v3 puts over each of its sections. */ #legend-overlay h2 {
+.stage-line.indeterminate /* The eyebrow over a block of controls — the same one RFS v3 puts over each of its sections. */ #legend-overlay h2 {
     color: var(--text-dim);
     margin-bottom: 10px;
 }
