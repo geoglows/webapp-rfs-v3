@@ -1,6 +1,6 @@
-import {build, cancel, clear, isBuilding, status} from './riverIndex.js';
-import {clearAll} from './db.js';
-import * as names from './riverNamesData.js';
+import {build, cancel, clear, isBuilding, status} from '../../shared/data/riverIndex.js';
+import {clearAll} from '../../shared/data/db.js';
+import * as names from '../../shared/data/riverNames.js';
 
 /**
  * TWIN FILE: webapp-rfs-v3/src/data/datasets.js — the same registry over the same two caches. Only

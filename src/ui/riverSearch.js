@@ -1,7 +1,7 @@
 import {dataProgress, t} from "../i18n/i18n";
-import {resolve} from "../data/riverIndex";
-import {load as loadNames, search as searchNames} from "../data/riverNames";
-import {locate} from "../data/riverLocation";
+import {resolve} from "../shared/data/riverIndex";
+import {load as loadNames, search as searchNames} from "../shared/data/riverNames";
+import {locate} from "../shared/data/riverLocation";
 
 const $ = (id) => document.getElementById(id);
 
@@ -37,8 +37,7 @@ const TYPING_MS = 120;
  * onClear() takes that highlight back off. It needs asking for: the painted river stays after this
  * dialog closes, which is the point of painting it, so nothing else in the app is going to notice
  * that the user is done with it.
- */
-/**
+ *
  * The two options exist because the hydrography explorer asks this dialog a different question.
  *
  * `locateOnPick` — a named river's row already carries everything that page needs (the span is the

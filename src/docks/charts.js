@@ -1,7 +1,7 @@
 import {dataProgress, getLanguage, t} from "../i18n/i18n.js";
-import {resolve} from "../data/riverIndex.js";
-import {locate} from "../data/riverLocation.js";
-import {getSavedRiver, onSavedRiversChange, removeSavedRiver, saveRiver} from "../data/savedRivers.js";
+import {resolve} from "../shared/data/riverIndex.js";
+import {locate} from "../shared/data/riverLocation.js";
+import {getSavedRiver, onSavedRiversChange, removeSavedRiver, saveRiver} from "../shared/data/savedRivers.js";
 import {heroIcon} from "../icons/icons.js";
 import {askRiverName} from "../ui/saveRiverName.js";
 import {getSetting} from "../settings/settings.js";

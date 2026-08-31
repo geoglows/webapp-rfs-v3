@@ -19,8 +19,8 @@ import {initMapControls, syncLayerPicker} from './mapControls.js';
 import {initSettings, onSetting} from './settings.js';
 import {createDataSettings} from './dataSettings.js';
 import {createRiverSearch} from './riverSearch.js';
-import {watch as watchRiverNames} from './riverNamesData.js';
-import {dropLegacyDatabase} from './db.js';
+import {watch as watchRiverNames} from '../../shared/data/riverNames.js';
+import {dropLegacyDatabase} from '../../shared/data/db.js';
 
 let sel = null;
 /** The whole watershed record of the reach last clicked, whatever the method made of it. */

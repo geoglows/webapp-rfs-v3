@@ -1,7 +1,7 @@
 import "./auth.js";  // must be first: registers the auth listener before anything else runs
 import "./settings/rfsConfig.js"
 import {initLanguagePicker, initSettings, initThemeToggle, onSetting} from "./settings/settings.js";
-import {startUserSync} from "./data/userSync.js";
+import {startUserSync} from "./shared/data/userSync.js";
 
 import {map} from "./map/map";
 import {applyBasemap, defaultBasemap} from "./map/basemaps";
@@ -9,13 +9,13 @@ import {addRasterLayer, applyStreamsVisibility} from "./map/layers";
 import {Streams} from "./map/Streams.js";
 import {focusRiver, frameRiverExtent, nearestFeature, snapToFeature, travelToRiver} from "./map/framing";
 import {createFloodController} from "./map/flood-maps/floodController";
-import {build, status} from "./data/riverIndex";
-import {dropLegacyDatabase} from "./data/db.js";
-import {watch as watchRiverNames} from "./data/riverNames";
+import {build, status} from "./shared/data/riverIndex";
+import {dropLegacyDatabase} from "./shared/data/db.js";
+import {watch as watchRiverNames} from "./shared/data/riverNames";
 import {hydrateIcons} from "./icons/icons";
 import {createChartsDock} from "./docks/charts.js";
 import {createBookmarksDock, createSavedRiversDock} from "./docks/bookmarks.js";
-import {onSavedRiversChange, savedRiverIds} from "./data/savedRivers.js";
+import {onSavedRiversChange, savedRiverIds} from "./shared/data/savedRivers.js";
 import {closeAllDocks} from "./docks/dock.js";
 import {createHelpDock} from "./docks/help.js";
 import {createPanelControls} from "./ui/panelControls";

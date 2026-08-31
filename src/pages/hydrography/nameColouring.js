@@ -25,7 +25,7 @@
  * river; what a slot looks like is this app's business, which is what lets the palette be redrawn
  * without regenerating anything.
  */
-import {load as loadNamesTable, payload} from './riverNamesData.js';
+import {load as loadNamesTable, payload} from '../../shared/data/riverNames.js';
 /**
  * Four of a six-colour set specified by hand — the palette as of commit c3084fb. The other two are
  * spoken for: the blue is the rivers' own colour, which is what unnamed water keeps below, and the

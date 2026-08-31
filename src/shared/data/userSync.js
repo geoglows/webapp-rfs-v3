@@ -12,7 +12,7 @@
  * Signed out, the device keeps a copy of its own for the anonymous user — and only until someone
  * signs in, at which point it is replaced rather than merged into their account.
  */
-import {rfs, subscribeAuth, userId} from "../auth.js";
+import {rfs, subscribeAuth, userId} from "../../auth.js";
 import {
   clearSavedRivers,
   listSavedRiversForSync,
@@ -20,7 +20,7 @@ import {
   onSavedRiversChange,
   replaceFromSync
 } from "./savedRivers.js";
-import {applyPreferences, getPreferences, onPreferencesChange, preferencesSavedAt, resetPreferences} from "../settings/settings.js";
+import {applyPreferences, getPreferences, onPreferencesChange, preferencesSavedAt, resetPreferences} from "../../settings/settings.js";
 
 const LAST_USER_KEY = "rfs-sync-user";
 const PREFS_SYNCED_KEY = "rfs-prefs-synced";

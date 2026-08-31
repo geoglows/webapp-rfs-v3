@@ -1,6 +1,6 @@
-import {resolve} from './riverIndex.js';
-import {load as loadNames, search as searchNames} from './riverNamesData.js';
-import {locate} from './riverLocation.js';
+import {resolve} from '../../shared/data/riverIndex.js';
+import {load as loadNames, search as searchNames} from '../../shared/data/riverNames.js';
+import {locate} from '../../shared/data/riverLocation.js';
 import {dataProgress} from './ui.js';
 
 const $ = id => document.getElementById(id);
