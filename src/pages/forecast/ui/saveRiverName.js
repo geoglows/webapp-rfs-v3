@@ -1,4 +1,4 @@
-import {t} from "../shared/i18n/i18n.js";
+import {t} from "../../../shared/i18n/i18n.js";
 
 const $ = (id) => document.getElementById(id);
 

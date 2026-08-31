@@ -1,6 +1,6 @@
 import {heroIcon} from "../icons/icons.js"
 import {setLanguage} from "../i18n/i18n.js";
-import {wireMenu} from "../../map/menu.js";
+import {wireMenu} from "../ui/menu.js";
 // When this bundle was made — stampBuildDate() in vite.config.js writes the module.
 import BUILD_DATE from "virtual:build-date";
 

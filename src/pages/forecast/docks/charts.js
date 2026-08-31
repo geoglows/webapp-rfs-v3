@@ -1,10 +1,10 @@
-import {dataProgress, getLanguage, t} from "../shared/i18n/i18n.js";
-import {resolve} from "../shared/data/riverIndex.js";
-import {locate} from "../shared/data/riverLocation.js";
-import {getSavedRiver, onSavedRiversChange, removeSavedRiver, saveRiver} from "../shared/data/savedRivers.js";
-import {heroIcon} from "../shared/icons/icons.js";
+import {dataProgress, getLanguage, t} from "../../../shared/i18n/i18n.js";
+import {resolve} from "../../../shared/data/riverIndex.js";
+import {locate} from "../../../shared/data/riverLocation.js";
+import {getSavedRiver, onSavedRiversChange, removeSavedRiver, saveRiver} from "../savedRivers.js";
+import {heroIcon} from "../../../shared/icons/icons.js";
 import {askRiverName} from "../ui/saveRiverName.js";
-import {getSetting} from "../shared/settings/settings.js";
+import {getSetting} from "../../../shared/settings/settings.js";
 import {closeDock, isDockOpen, onDockClosed, openDock} from "./dock.js";
 
 const $ = (id) => document.getElementById(id);

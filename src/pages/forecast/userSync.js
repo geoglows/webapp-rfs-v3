@@ -12,7 +12,7 @@
  * Signed out, the device keeps a copy of its own for the anonymous user — and only until someone
  * signs in, at which point it is replaced rather than merged into their account.
  */
-import {rfs, subscribeAuth, userId} from "../../auth.js";
+import {rfs, subscribeAuth, userId} from "./auth.js";
 import {
   clearSavedRivers,
   listSavedRiversForSync,

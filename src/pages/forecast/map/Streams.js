@@ -1,5 +1,5 @@
 import {urls} from "riverforecastsystem/v3";
-import {SAVED_RIVERS} from "../shared/settings/settings.js";
+import {SAVED_RIVERS} from "../../../shared/settings/settings.js";
 
 // The inspect and saved-river highlights address reaches by riverId — the charts dock and the saved
 // list are keyed on it. flood-maps/selection.js has helpers of the same shape keyed on riverIndex;

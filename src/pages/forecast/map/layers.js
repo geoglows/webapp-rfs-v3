@@ -1,6 +1,6 @@
-import {calciteIcon} from "../shared/icons/calcite.js";
-import {t} from "../shared/i18n/i18n";
-import {wireMenu} from "./menu";
+import {calciteIcon} from "../../../shared/icons/calcite.js";
+import {t} from "../../../shared/i18n/i18n";
+import {wireMenu} from "../../../shared/ui/menu.js";
 
 const LAYERS = [
   {layerId: "streams", labelKey: "layers.streams", on: true},

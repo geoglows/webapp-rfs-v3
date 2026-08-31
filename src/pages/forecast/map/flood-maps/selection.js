@@ -1,5 +1,5 @@
 import {floodNetwork} from "./network";
-import {MAX_FLOOD_REACHES, MIN_FLOOD_MAPS_ZOOM} from "../../shared/settings/settings.js";
+import {MAX_FLOOD_REACHES, MIN_FLOOD_MAPS_ZOOM} from "../../../../shared/settings/settings.js";
 
 // Reaches are addressed by riverIndex everywhere in flood mapping — the streams tiles carry it as a
 // property, the flood stores key their river directories on it, and the network graph's edges are
