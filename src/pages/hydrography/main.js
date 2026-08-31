@@ -18,9 +18,9 @@ import {renderAoi} from './aoiPanel.js';
 import {renderPicks} from './picksPanel.js';
 import {downloadGeometry} from './geometry.js';
 import {fmt, progress, progressHistory, stageHistory, stages} from './ui.js';
-import {heroIcon} from '../../shared/icons/icons.js';
+import {heroIcon, hydrateIcons} from '../../shared/icons/icons.js';
 import {initMapControls, syncLayerPicker} from './mapControls.js';
-import {initSettings, initThemeToggle, onSetting} from '../../shared/settings/settings.js';
+import {initLanguagePicker, initSettings, initThemeToggle, onSetting} from '../../shared/settings/settings.js';
 import {createDataSettings} from '../../shared/ui/dataSettings.js';
 import {createRiverSearch} from '../../shared/ui/riverSearch.js';
 import {watch as watchRiverNames} from '../../shared/data/riverNames.js';
@@ -595,7 +595,11 @@ $('btn-geoparquet').addEventListener('click', () => {
 // prefers-color-scheme once, and swaps the button's sun/moon once. This page used to keep its own
 // copy against the raw `rfs-theme` key — the same key the forecast page had already migrated off
 // and was deleting on every visit, which is why a theme picked here did not survive one.
+hydrateIcons();
 initThemeToggle();
+// The same picker the forecast page has, driven by the same shared code. Not awaited: index.html
+// ships English, and the chosen dictionary replaces it when it lands.
+initLanguagePicker(() => paintNames());
 
 // ── the river names section ──────────────────────────────────────────────────
 /**
@@ -754,7 +758,6 @@ initMapControls();
 // The cog beside the theme button. Wired before anything subscribes, so that onSetting() below
 // hands out the stored value rather than the fallback.
 initSettings();
-$('btn-settings').replaceChildren(heroIcon('cog-6-tooth'));
 // What the two apps have cached on this device, and the buttons to fetch or erase it.
 createDataSettings();
 onSetting('legend', on => $('legend-overlay').classList.toggle('hidden', !on));
@@ -764,7 +767,6 @@ onSetting('legend', on => $('legend-overlay').classList.toggle('hidden', !on));
 // searches: both apps keep them in the one IndexedDB database, so a lookup downloaded in either is
 // read by the other. dropLegacyDatabase() reclaims the space the viewer used before that was true.
 dropLegacyDatabase();
-$('btn-search').replaceChildren(heroIcon('magnifying-glass'));
 createRiverSearch({
   onFound: goToRiver,
   onClear: () => clearSelection(),

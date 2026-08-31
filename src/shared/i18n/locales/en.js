@@ -72,6 +72,7 @@ export default {
   "legend.returnPeriod": "Forecast return period",
   // settings modal
   "settings.display": "Display",
+  "settings.mapLegend": "Show the map legend",
   "settings.shadedWarningLevels": "Shade warning levels on the forecast chart",
   "settings.savedHighlight": "Outline my saved rivers on the map",
   "settings.data": "Downloaded Data",
@@ -95,6 +96,8 @@ export default {
   "settings.data.failed": "Failed",
   "settings.build": "Build",
   // river ID search
+  "search.label": "Find a river by name or ID",
+  "search.aria": "Find a river by name or ID",
   "search.heading": "Find a river",
   "search.nameLabel": "River name",
   "search.namePlaceholder": "e.g. Colorado",

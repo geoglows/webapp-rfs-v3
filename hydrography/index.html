@@ -16,10 +16,24 @@
     <h1>RFS Hydrography Explorer</h1>
     <div class="row">
       <!-- off until the map is up: a river found before there is a map to paint it on is not found -->
-      <button aria-label="Find a river by name or ID" class="btn icon" disabled id="btn-search"
+      <button aria-label="Find a river by name or ID" class="btn icon" data-icon-name="magnifying-glass" disabled id="btn-search"
+              data-i18n-title="search.label" data-i18n-aria-label="search.aria"
               title="Find a river by name or ID"></button>
-      <button class="btn icon" id="btn-theme" title="Toggle light / dark theme"></button>
-      <button class="btn icon" id="btn-settings" title="Settings"></button>
+      <!-- The same picker, the same classes and the same ids as the forecast page: one
+           initLanguagePicker() in shared/settings drives both, and LANGUAGES is read off these
+           buttons, so the two headers stay one control rather than two that resemble each other. -->
+      <div class="anchor">
+        <button id="btn-language" class="btn icon" data-icon-name="language" data-i18n-title="lang.title"
+                data-i18n-aria-label="lang.aria" title="Language" aria-label="Change language"
+                aria-haspopup="true" aria-expanded="false"></button>
+        <div id="lang-menu" class="card menu hidden" role="menu">
+          <button class="opt" role="menuitemradio" data-lang="en">English</button>
+          <button class="opt" role="menuitemradio" data-lang="es">Español</button>
+          <button class="opt" role="menuitemradio" data-lang="fr">Français</button>
+        </div>
+      </div>
+      <button class="btn icon" id="btn-theme" data-i18n-title="theme.toggle" title="Toggle light / dark theme"></button>
+      <button class="btn icon" id="btn-settings" data-icon-name="cog-6-tooth" data-i18n-title="settings.label" title="Settings"></button>
     </div>
   </header>
   <div id="layers-card">
@@ -180,29 +194,30 @@
 <div class="backdrop hidden" id="search-modal">
   <div aria-labelledby="search-modal-title" aria-modal="true" class="card modal entry" role="dialog">
     <div class="modal-head">
-      <h3 id="search-modal-title">Find a river</h3>
-      <button aria-label="Close" class="btn sm" data-close="search-modal">✕</button>
+      <h3 id="search-modal-title" data-i18n="search.heading">Find a river</h3>
+      <button aria-label="Close" data-i18n-aria-label="common.close" class="btn sm" data-close="search-modal">✕</button>
     </div>
     <div class="modal-body">
       <form autocomplete="off" class="field" id="search-name-form">
-        <label for="search-river-name">River name</label>
+        <label for="search-river-name" data-i18n="search.nameLabel">River name</label>
         <div class="row">
           <input aria-autocomplete="list" aria-controls="search-results" aria-expanded="false"
-                 id="search-river-name" placeholder="e.g. Colorado" role="combobox" type="text"/>
-          <button class="btn primary" type="submit">Search</button>
-          <button class="btn" id="search-clear" type="button"
+                 id="search-river-name" placeholder="e.g. Colorado" data-i18n-placeholder="search.namePlaceholder" role="combobox" type="text"/>
+          <button class="btn primary" type="submit" data-i18n="search.submit">Search</button>
+          <button class="btn" id="search-clear" type="button" data-i18n="search.clear"
+                  data-i18n-title="search.clearHint"
                   title="Remove the highlighted river from the map">Clear</button>
         </div>
       </form>
-      <div aria-label="Matching rivers" class="search-results hidden" id="search-results"
+      <div aria-label="Matching rivers" data-i18n-aria-label="search.results" class="search-results hidden" id="search-results"
            role="listbox"></div>
       <div aria-live="polite" class="hint status" id="search-name-status" role="status"></div>
 
       <form autocomplete="off" class="field search-second" id="search-id-form">
-        <label for="search-river-id">River ID</label>
+        <label for="search-river-id" data-i18n="search.idLabel">River ID</label>
         <div class="row">
-          <input id="search-river-id" inputmode="numeric" placeholder="e.g. 760021611" type="text"/>
-          <button class="btn primary" type="submit">Search</button>
+          <input id="search-river-id" inputmode="numeric" placeholder="e.g. 760021611" data-i18n-placeholder="search.idPlaceholder" type="text"/>
+          <button class="btn primary" type="submit" data-i18n="search.submit">Search</button>
         </div>
       </form>
       <div aria-live="polite" class="hint status" id="search-id-status" role="status"></div>
@@ -212,31 +227,28 @@
 <div class="backdrop hidden" id="settings-modal">
   <div aria-labelledby="settings-modal-title" aria-modal="true" class="card modal" role="dialog">
     <div class="modal-head">
-      <h3 id="settings-modal-title">Settings</h3>
-      <button aria-label="Close" class="btn sm" data-close="settings-modal">✕</button>
+      <h3 id="settings-modal-title" data-i18n="settings.label">Settings</h3>
+      <button aria-label="Close" data-i18n-aria-label="common.close" class="btn sm" data-close="settings-modal">✕</button>
     </div>
     <div class="modal-body">
-      <h4>Display</h4>
+      <h4 data-i18n="settings.display">Display</h4>
       <label class="row">
         <input id="set-legend" type="checkbox"/>
-        <span>Show the map legend</span>
+        <span data-i18n="settings.mapLegend">Show the map legend</span>
       </label>
       <!-- stamped at build time by stampBuildDate() in vite.config.js; filled in initSettings() -->
-      <h4>Downloaded Data</h4>
-      <p class="hint">
-        This site keeps local copies of some datasets for better performance. They are shared with
-        the RFS v3 hydroviewer, can be redownloaded at any time, and are safe to delete.
-      </p>
+      <h4 data-i18n="settings.data">Downloaded Data</h4>
+      <p class="hint" data-i18n="settings.data.hint">This site keeps local copies of some datasets for better performance. They are shared with the RFS v3 hydroviewer, can be redownloaded at any time, and are safe to delete.</p>
       <!-- rows built by createDataSettings() in src/dataSettings.js, from the registry in datasets.js -->
       <div class="col" id="data-list"></div>
       <div class="col data-foot">
         <div class="hint status" id="data-foot-status"></div>
         <div class="row wrap">
-          <button class="btn" id="btn-download-all">Download everything</button>
-          <button class="btn" id="btn-delete-all">Delete everything</button>
+          <button class="btn" id="btn-download-all" data-i18n="settings.data.downloadAll">Download everything</button>
+          <button class="btn" id="btn-delete-all" data-i18n="settings.data.deleteAll">Delete everything</button>
         </div>
       </div>
-      <p class="hint build-stamp">Build <span id="build-date"></span></p>
+      <p class="hint build-stamp"><span data-i18n="settings.build">Build</span> <span id="build-date"></span></p>
     </div>
   </div>
 </div>
