@@ -4,7 +4,7 @@ import {URLS, V3_BASE} from './config.js';
 import {upstreamRange} from './data.js';
 import {applyHighlight, applyInlets, applyPicks, applyStreamStyle, archive, clearHighlight, currentSelection, fitRiverBounds, flyToPick, hoverRegions, initMap, map, regionsAt, setSelectionHighlightVisible, streamLayerIds,} from './map.js';
 import {compileLayers} from './streamStyle.js';
-import {loadRiverNames, nameAt, namesStyle, PALETTE, riverNames, UNNAMED} from './riverNames.js';
+import {loadRiverNames, nameAt, namesStyle, PALETTE, riverNames, UNNAMED} from './nameColouring.js';
 import {loadStreamAttributes} from './streamAttributes.js';
 import {createStylePanel} from './stylePanel.js';
 import {renderRiverAttributes} from './riverPanel.js';
