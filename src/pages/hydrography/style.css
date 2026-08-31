@@ -401,9 +401,7 @@ input[type=checkbox] {
 
 .stage-bar {
     height: 5px;
-}
-
-.stage-group.done /* One phase. The 2px rule under each line is that phase's own progress — enough to see movement
+}/* One phase. The 2px rule under each line is that phase's own progress — enough to see movement
    without turning seven lines into seven full-weight bars.
 
    The name column is max-content: a phase whose name is clipped is a phase you cannot identify,
@@ -487,9 +485,7 @@ input[type=checkbox] {
 
 .stage-line.failed .stage-mark, .stage-line.failed .stage-detail {
     color: var(--danger-text)
-}
-
-.stage-line.failed /* One synchronous call that has either returned or not — a stripe says so; a percentage would be
+}/* One synchronous call that has either returned or not — a stripe says so; a percentage would be
    invented. Same reasoning as the single bar's indeterminate state. */
 .stage-line.indeterminate /* The eyebrow over a block of controls — the same one RFS v3 puts over each of its sections. */ #legend-overlay h2 {
     color: var(--text-dim);
@@ -776,7 +772,9 @@ input[aria-invalid=true] {
     flex-direction: column;
     padding: 13px 18px 10px;
     border-top: 1px solid var(--border)
-}#selectors-card > h2 {
+}
+
+#selectors-card > h2 {
     display: flex;
     align-items: center;
     gap: 8px;
@@ -912,7 +910,9 @@ input[aria-invalid=true] {
 #styling-card {
     padding: 13px 18px 10px;
     border-top: 1px solid var(--border)
-}#styling-card > h2 {
+}
+
+#styling-card > h2 {
     display: flex;
     align-items: center;
     gap: 8px;
@@ -924,7 +924,9 @@ input[aria-invalid=true] {
    both, so the two read as parts of the block rather than as two blocks. */
 #names-card {
     margin-bottom: 10px
-}#names-card h3, #style-card h3 {
+}
+
+#names-card h3, #style-card h3 {
     display: flex;
     align-items: center;
     gap: 8px;
@@ -1110,64 +1112,11 @@ input[aria-invalid=true] {
     color: var(--selected-text)
 }
 
-/* ── the multi-select collection ───────────────────────────────────────────
-   Same folding card as the two below it. It is always in the column, empty or not, because the
-   mode switch in its heading is how the feature is found; the list under it is the working set,
-   newest first, and scrolls on its own however long it gets. */
-/* The mode switch reads as a switch: it says what it is, not what a click would do, and it is lit
-   while it is on — because with it on, an ordinary click means something else. */
-/* ── the method switches ───────────────────────────────────────────────────
-   One switch at the head of each of the three selection methods, and they are one control between
-   them: turning one on turns the others off. So all three are drawn in the accent, on and off
-   alike, and the difference between them is whether the accent is the fill or the outline. A switch
-   in the theme's ordinary button colours would read as three unrelated buttons that happen to say
-   On and Off.
-
-   They say what they are, not what a click would do — the one reading On is the method a click on
-   the map belongs to. */
-.btn.sm.mode {
-    width: auto;
-    padding: 0 8px;
-    font-family: var(--mono);
-    font-size: 10px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: .6px;
-    color: var(--accent);
-    border-color: var(--accent)
-}
-
-.btn.sm.mode:hover:not(:disabled) {
-    color: var(--accent);
-    background: var(--accent-soft)
-}
-
-.btn.sm.mode.on {
-    color: var(--on-accent);
-    background: var(--accent);
-    border-color: var(--accent)
-}
-
-.btn.sm.mode.on:hover:not(:disabled) {
-    color: var(--on-accent);
-    background: var(--accent);
-    filter: brightness(1.08)
-}
-
 #picks-body {
     display: flex;
     flex-direction: column;
     font-size: 11px;
     line-height: 1.5
-}
-
-.mini.danger {
-    color: var(--danger-text)
-}
-
-.mini.danger:hover:not(:disabled) {
-    color: var(--danger-text);
-    border-color: var(--danger)
 }
 
 .picks-empty {
@@ -1216,14 +1165,7 @@ input[aria-invalid=true] {
     display: block;
     color: var(--text-faint);
     font-size: 9.5px
-}
-
-.pick-row .mini {
-    font-family: var(--mono);
-    padding: 1px 5px
-}
-
-/* ── the clicked reach ─────────────────────────────────────────────────────
+}/* ── the clicked reach ─────────────────────────────────────────────────────
    Same shape as the styling section below it — an eyebrow that folds the body away — because it is
    the same kind of thing: a block you open when you want it and leave shut when you do not. It is
    always on the page, empty until a river is clicked, and it never grows past a third of the
@@ -1236,7 +1178,9 @@ input[aria-invalid=true] {
 #layers-card {
     flex: 0 0 auto;
     padding: 13px 18px 12px
-}#layers-card h2 {
+}
+
+#layers-card h2 {
     display: flex;
     align-items: center;
     gap: 8px;
@@ -1280,7 +1224,9 @@ input[aria-invalid=true] {
     flex-direction: column;
     padding: 13px 18px 10px;
     border-top: 1px solid var(--border)
-}#river-card h2 {
+}
+
+#river-card h2 {
     display: flex;
     align-items: center;
     gap: 8px;
@@ -1442,26 +1388,6 @@ input[aria-invalid=true] {
     letter-spacing: 0
 }
 
-.mini {
-    padding: 2px 6px;
-    font-size: 10px;
-    font-weight: 600;
-    background: var(--surface2);
-    color: var(--text-dim);
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    line-height: 1.5
-}
-
-.mini:hover:not(:disabled) {
-    color: var(--accent);
-    border-color: var(--accent)
-}
-
-.mini:disabled {
-    opacity: .3
-}
-
 .mini.x {
     color: var(--text-dim);
     padding: 2px 5px
@@ -1500,26 +1426,6 @@ input[aria-invalid=true] {
 
 .style-toolbar select.preset {
     flex: 1
-}
-
-button.seg {
-    padding: 3px 7px;
-    font-size: 10px;
-    font-weight: 600;
-    background: var(--surface2);
-    color: var(--text-dim);
-    border: 1px solid var(--border);
-    border-radius: 4px
-}
-
-button.seg.on {
-    background: var(--accent);
-    color: var(--on-accent);
-    border-color: var(--accent)
-}
-
-button.seg:disabled {
-    opacity: .35
 }
 
 /* The attribute menu — the tiles' own field list, with what each one ranges over. Open by default,
@@ -1831,30 +1737,3 @@ button.seg:disabled {
     border-top: 1px solid var(--border)
 }
 
-.style-footer button {
-    flex: 1;
-    padding: 6px 8px;
-    font-size: 10.5px;
-    background: var(--bg);
-    color: var(--text-dim);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    font-weight: 600
-}
-
-.style-footer button:hover {
-    color: var(--accent);
-    border-color: var(--accent)
-}
-
-.style-footer button.primary {
-    background: var(--accent);
-    color: var(--on-accent);
-    border-color: var(--accent);
-    flex: 1.6
-}
-
-.style-footer button.primary:hover {
-    color: var(--on-accent);
-    filter: brightness(1.08)
-}

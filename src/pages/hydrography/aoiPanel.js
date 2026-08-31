@@ -29,9 +29,9 @@ function inletRow(inlet, {onRemove, onZoom}) {
   );
   row.append(el('span', {class: 'pick-n', text: '↧'}), main);
   if (inlet.lon != null && inlet.lat != null) {
-    row.append(button({class: 'mini', text: '⤢', title: `Centre the map on ${inlet.outletId}`, onclick: () => onZoom(inlet)}));
+    row.append(button({class: 'btn mini', text: '⤢', title: `Centre the map on ${inlet.outletId}`, onclick: () => onZoom(inlet)}));
   }
-  row.append(button({class: 'mini danger', text: '×', title: `Put ${inlet.outletId} and the ground above it back in the AOI`, onclick: () => onRemove(inlet)}));
+  row.append(button({class: 'btn mini danger', text: '×', title: `Put ${inlet.outletId} and the ground above it back in the AOI`, onclick: () => onRemove(inlet)}));
   return row;
 }
 

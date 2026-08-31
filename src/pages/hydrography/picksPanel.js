@@ -27,9 +27,9 @@ function pickRow(p, i, total, {onRemove, onZoom}) {
   box.append(id, meta);
   row.append(n, box);
   if (p.lon != null && p.lat != null) {
-    row.append(button({class: 'mini', text: '⤢', title: `Centre the map on ${p.outletId}`, onclick: () => onZoom(p)}));
+    row.append(button({class: 'btn mini', text: '⤢', title: `Centre the map on ${p.outletId}`, onclick: () => onZoom(p)}));
   }
-  row.append(button({class: 'mini danger', text: '×', title: `Take ${p.outletId} off the list`, onclick: () => onRemove(p)}));
+  row.append(button({class: 'btn mini danger', text: '×', title: `Take ${p.outletId} off the list`, onclick: () => onRemove(p)}));
   return row;
 }
 

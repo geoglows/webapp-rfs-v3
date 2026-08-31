@@ -79,7 +79,7 @@ export function createStylePanel({mount, onChange, selection, pmtiles}) {
       el('div', {class: 'attr-top'}, [
         el('span', {class: 'attr-label', text: a.label}),
         el('button', {
-          class: 'mini', title: `Add an attribute styling rule for reaches matching a condition on ${a.name}`,
+          class: 'btn mini', title: `Add an attribute styling rule for reaches matching a condition on ${a.name}`,
           onclick: () => {
             spec.rules.unshift(newRule({
               name: a.label, conditions: [newCondition(a)],
@@ -89,7 +89,7 @@ export function createStylePanel({mount, onChange, selection, pmtiles}) {
           text: '+ rule',
         }),
         el('button', {
-          class: 'mini', title: `Add a global visibility filter — draw only the reaches matching a condition on ${a.name}`,
+          class: 'btn mini', title: `Add a global visibility filter — draw only the reaches matching a condition on ${a.name}`,
           onclick: () => {
             spec.filter.conditions.push(newCondition(a));
             restructured();
@@ -168,7 +168,7 @@ export function createStylePanel({mount, onChange, selection, pmtiles}) {
         }));
       }
     }
-    row.appendChild(el('button', {class: 'mini x', text: '✕', title: 'Remove condition', onclick: onRemove}));
+    row.appendChild(el('button', {class: 'btn mini x', text: '✕', title: 'Remove condition', onclick: onRemove}));
     return row;
   }
 
@@ -181,7 +181,7 @@ export function createStylePanel({mount, onChange, selection, pmtiles}) {
     })));
     box.appendChild(el('div', {class: 'conds-foot'}, [
       el('button', {
-        class: 'mini add', text: addLabel,
+        class: 'btn mini add', text: addLabel,
         onclick: () => {
           list.push(newCondition(attributes.find(a => a.role === 'measure') ?? attributes[0]));
           restructured();
@@ -190,7 +190,7 @@ export function createStylePanel({mount, onChange, selection, pmtiles}) {
       ...(list.length > 1 ? [
         el('span', {class: 'stops-label', text: 'MATCH'}),
         ...MATCH_MODES.map(m => el('button', {
-          class: `seg${(owner.match ?? 'all') === m.mode ? ' on' : ''}`, text: m.label, title: m.hint,
+          class: `btn seg${(owner.match ?? 'all') === m.mode ? ' on' : ''}`, text: m.label, title: m.hint,
           onclick: () => {
             owner.match = m.mode;
             restructured();
@@ -218,7 +218,7 @@ export function createStylePanel({mount, onChange, selection, pmtiles}) {
         text: stops.length > 1 ? `${stops.length} zoom stops` : 'constant'
       }),
       el('button', {
-        class: 'mini add', text: '+ zoom', title: 'Add a stop at another zoom',
+        class: 'btn mini add', text: '+ zoom', title: 'Add a stop at another zoom',
         onclick: () => {
           const last = stops[stops.length - 1] ?? {zoom: 0, value: STOP_INPUT[prop].type === 'color' ? COLORS.stream : 1};
           const next = ZOOM_STEPS.find(z => z > last.zoom) ?? ZOOM_STEPS[ZOOM_STEPS.length - 1];
@@ -245,7 +245,7 @@ export function createStylePanel({mount, onChange, selection, pmtiles}) {
         }),
         stops.length > 1
           ? el('button', {
-            class: 'mini x', text: '✕', title: 'Remove stop',
+            class: 'btn mini x', text: '✕', title: 'Remove stop',
             onclick: () => {
               stops.splice(i, 1);
               restructured();
@@ -317,21 +317,21 @@ export function createStylePanel({mount, onChange, selection, pmtiles}) {
         },
       }),
       el('button', {
-        class: 'mini', text: '▲', title: 'Higher priority', disabled: i === 0,
+        class: 'btn mini', text: '▲', title: 'Higher priority', disabled: i === 0,
         onclick: () => {
           spec.rules.splice(i - 1, 0, spec.rules.splice(i, 1)[0]);
           restructured();
         }
       }),
       el('button', {
-        class: 'mini', text: '▼', title: 'Lower priority', disabled: i === spec.rules.length - 1,
+        class: 'btn mini', text: '▼', title: 'Lower priority', disabled: i === spec.rules.length - 1,
         onclick: () => {
           spec.rules.splice(i + 1, 0, spec.rules.splice(i, 1)[0]);
           restructured();
         }
       }),
       el('button', {
-        class: 'mini x', text: '✕', title: 'Delete rule',
+        class: 'btn mini x', text: '✕', title: 'Delete rule',
         onclick: () => {
           spec.rules.splice(i, 1);
           collapsed.delete(rule.id);
@@ -339,7 +339,7 @@ export function createStylePanel({mount, onChange, selection, pmtiles}) {
         }
       }),
       el('button', {
-        class: 'mini caret', text: open ? '▾' : '▸', title: open ? 'Collapse' : 'Expand',
+        class: 'btn mini caret', text: open ? '▾' : '▸', title: open ? 'Collapse' : 'Expand',
         onclick: () => {
           if (open) collapsed.add(rule.id); else collapsed.delete(rule.id);
           render();
@@ -378,7 +378,7 @@ export function createStylePanel({mount, onChange, selection, pmtiles}) {
   function toolbar() {
     const sel = selection();
     const scopeBtn = (mode, label, title) => el('button', {
-      class: `seg${spec.scope === mode ? ' on' : ''}`, text: label, title,
+      class: `btn seg${spec.scope === mode ? ' on' : ''}`, text: label, title,
       disabled: mode === 'selection' && !sel,
       onclick: () => {
         spec.scope = mode;
@@ -401,7 +401,7 @@ export function createStylePanel({mount, onChange, selection, pmtiles}) {
             restructured();
           }, 'preset'),
         el('button', {
-          class: 'mini', text: '+ rule', title: 'Add an empty rule',
+          class: 'btn mini', text: '+ rule', title: 'Add an empty rule',
           onclick: () => {
             spec.rules.unshift(newRule({name: `Rule ${spec.rules.length + 1}`}));
             restructured();
@@ -434,10 +434,10 @@ export function createStylePanel({mount, onChange, selection, pmtiles}) {
       onchange: e => loadFile(e.target.files?.[0])
     });
     return el('div', {class: 'style-footer'}, [
-      el('button', {class: 'primary', text: 'Download JSON', onclick: download}),
-      el('button', {text: 'Load', title: 'Read a style JSON back in', onclick: () => file.click()}),
+      el('button', {class: 'btn seg primary', text: 'Download JSON', onclick: download}),
+      el('button', {class: 'btn seg', text: 'Load', title: 'Read a style JSON back in', onclick: () => file.click()}),
       el('button', {
-        text: 'Reset', title: 'Back to the v3 default',
+        class: 'btn seg', text: 'Reset', title: 'Back to the v3 default',
         onclick: () => {
           spec = defaultSpec();
           collapsed.clear();
