@@ -1,8 +1,16 @@
-import maplibregl from 'maplibre-gl';
+import {addProtocol, Map as MaplibreMap, NavigationControl, ScaleControl, setWorkerUrl} from 'maplibre-gl';
 import {PMTiles, Protocol} from 'pmtiles';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import {MAX_ZOOM, URLS} from './config.js';
 import {BASE_LAYER_ID, COLORS, compileLayers, defaultSpec, inRangeExpr} from './streamStyle.js';
+
+// MapLibre 6 ships its worker as a separate module and locates it by resolving
+// ./maplibre-gl-worker.mjs against its own import.meta.url. That finds it inside node_modules under
+// `vite dev` and finds nothing in a build, where the library is bundled into assets/ and has no
+// such sibling — a map that never finishes loading its first tile. Handing it the URL Vite emits
+// removes the guess. Same reason, same line, as webapp-rfs-v3/src/map/map.js.
+setWorkerUrl(maplibreWorkerUrl);
 
 const TILE_SETS = {
   'gray-light': {
@@ -205,7 +213,7 @@ export async function initMap() {
   const protocol = new Protocol({metadata: true});
   archive = new PMTiles(URLS.streamsPmtiles);
   protocol.add(archive);
-  maplibregl.addProtocol('pmtiles', protocol.tile);
+  addProtocol('pmtiles', protocol.tile);
 
   const [groupsMd, catchmentsMd, basinsMd] = await Promise.all([
     openArchive(protocol, URLS.groupsPmtiles, 'groups.pmtiles'),
@@ -229,7 +237,7 @@ export async function initMap() {
   for (const l of streamLayers) applied.set(l.id, l);
   layerOrder = streamLayers.map(l => l.id);
 
-  map = new maplibregl.Map({
+  map = new MaplibreMap({
     container: 'map',
     hash: 'map',
     center: [0, 20],
@@ -395,8 +403,8 @@ export async function initMap() {
   northUp();
   // Zoom top left, the app's own pickers top right, the scale bar bottom left. The credits stay
   // where MapLibre puts them, along the bottom right, and the legend sits above them.
-  map.addControl(new maplibregl.NavigationControl({showCompass: false}), 'top-left');
-  map.addControl(new maplibregl.ScaleControl({unit: 'metric'}), 'bottom-left');
+  map.addControl(new NavigationControl({showCompass: false}), 'top-left');
+  map.addControl(new ScaleControl({unit: 'metric'}), 'bottom-left');
   await ready(map);
   return map;
 }

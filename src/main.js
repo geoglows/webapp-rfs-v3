@@ -1,5 +1,5 @@
 import './style.css';
-import maplibregl from 'maplibre-gl';
+import {Popup} from 'maplibre-gl';
 import {URLS, V3_BASE} from './config.js';
 import {upstreamRange} from './data.js';
 import {applyHighlight, applyInlets, applyPicks, applyStreamStyle, archive, clearHighlight, currentSelection, fitRiverBounds, flyToPick, hoverRegions, initMap, map, regionsAt, setSelectionHighlightVisible, streamLayerIds,} from './map.js';
@@ -543,7 +543,7 @@ function showRegions(e) {
     row.append(dot, k, v);
     body.append(row);
   }
-  regionPopup = new maplibregl.Popup({className: 'region-popup', maxWidth: '280px'})
+  regionPopup = new Popup({className: 'region-popup', maxWidth: '280px'})
     .setLngLat(e.lngLat)
     .setDOMContent(body)
     .addTo(map);
