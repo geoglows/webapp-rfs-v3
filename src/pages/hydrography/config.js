@@ -1,19 +1,14 @@
-import {configure, getConfig, urls} from 'riverforecastsystem/v3';
+import {urls} from 'riverforecastsystem/v3';
 
-const absolute = value => (/^[a-z][a-z0-9+.-]*:/i.test(value) ? value : new URL(value, document.baseURI).href);
-
-// Build-time only. The data root is not readable off the query string: a link that repoints the
-// whole app at another origin is a link that can be handed to someone, and every byte the map then
-// draws — tiles, metadata, river names — would come from wherever the sender chose.
-const resolveBase = () => {
-  const configured = import.meta.env.VITE_V3_BASE;
-  return configured ? absolute(configured) : undefined;
-};
-
-const resolved = resolveBase();
-if (resolved) configure({v3Base: resolved});
-
-export const V3_BASE = getConfig().v3Base;
+// The data root is settled once for both pages, in the shared module — importing it here is what
+// runs configure() before the urls.* reads below. It used to resolve against document.baseURI,
+// which cannot survive two pages at different depths; see the comment there.
+//
+// Still build-time only. The data root is not readable off the query string: a link that repoints
+// the whole app at another origin is a link that can be handed to someone, and every byte the map
+// then draws — tiles, metadata, river names — would come from wherever the sender chose.
+export {V3_BASE} from '../../settings/rfsConfig.js';
+import {V3_BASE} from '../../settings/rfsConfig.js';
 
 const group = g => urls.hydrographyGroup({group: g});
 

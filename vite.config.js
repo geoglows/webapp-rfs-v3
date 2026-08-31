@@ -3,6 +3,8 @@ import {createReadStream, existsSync, realpathSync, statSync} from "node:fs";
 import {extname, join, normalize, sep} from "node:path";
 import {fileURLToPath} from "node:url";
 
+const entry = (p) => fileURLToPath(new URL(p, import.meta.url));
+
 // ./data is a symlink to wherever the v3 artifacts actually live. Serving it from the Vite server
 // is the point: PMTiles, the metadata parquets and the zarr chunks are all read by byte range — so
 // one server does the app and the data, with no second process and no CORS. The artifacts are
@@ -129,6 +131,31 @@ const serveData = () => {
   };
 };
 
+/**
+ * Serve /hydrography/ as /hydrography/index.html on the dev and preview servers.
+ *
+ * A multi-page build emits the second entry at dist/hydrography/index.html, and the deployed URL
+ * for it is a directory URL — so without this, the sub-page is reachable in production (where
+ * CloudFront resolves the directory index) but 404s locally, which is exactly backwards for
+ * catching problems. Lifted from apps.geoglows/vite.config.js, which solves the same thing for its
+ * own /profile/, /terms/ and /licenses/ pages.
+ */
+const cleanUrls = () => {
+  const rewrite = (dir) => (req, res, next) => {
+    const [pathname, search] = req.url.split("?");
+    const page = `${pathname.replace(/\/$/, "")}/index.html`;
+    if (!pathname.includes(".") && existsSync(entry(`./${dir}${page}`))) {
+      req.url = search ? `${page}?${search}` : page;
+    }
+    next();
+  };
+  return {
+    name: "clean-urls",
+    configureServer: (server) => void server.middlewares.use(rewrite(".")),
+    configurePreviewServer: (server) => void server.middlewares.use(rewrite("dist"))
+  };
+};
+
 // The moment this bundle was made, printed at the bottom of the Settings modal. A deployment is a
 // static site with no version anywhere in it, so a bug report can otherwise only say "the site" —
 // the stamp says which build. It is a module rather than a `define` because a define is not
@@ -150,7 +177,7 @@ const stampBuildDate = () => {
 // The portal builds every app with `vite build --base="$BASE/"` (see apps.geoglows
 // scripts/build-local.sh), so `base` is left at the default here and supplied on the command line.
 export default defineConfig({
-  plugins: [serveData(), stampBuildDate()],
+  plugins: [serveData(), stampBuildDate(), cleanUrls()],
   resolve: {
     dedupe: ["chart.js", "chartjs-adapter-date-fns", "chartjs-chart-matrix", "chartjs-plugin-zoom", "date-fns", "numcodecs"]
   },
@@ -167,7 +194,17 @@ export default defineConfig({
   worker: {format: "es"},
   build: {
     target: ["es2020", "safari14"],
+    // hyparquet + its compressors ride in the hydrography page's geometry worker, and are only
+    // pulled when someone asks for a download.
+    chunkSizeWarningLimit: 1500,
+    // Two pages, one base, one asset directory — which is the point: maplibre and the riverId
+    // lookup worker are emitted once and shared, where two separate apps shipped a copy each.
+    // `rolldownOptions`, not `rollupOptions`: Vite 8 is rolldown-backed and deprecates the latter.
     rolldownOptions: {
+      input: {
+        forecast: entry("./index.html"),
+        hydrography: entry("./hydrography/index.html")
+      },
       output: {
         codeSplitting: {
           groups: [{name: "maplibre", test: /node_modules[/\\]maplibre-gl[/\\]/}]
