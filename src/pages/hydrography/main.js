@@ -1,4 +1,7 @@
 import {el} from '../../shared/dom.js';
+import '../../shared/styles/tokens.css';
+import '../../shared/styles/base.css';
+import '../../shared/styles/components.css';
 import './style.css';
 import {Popup} from 'maplibre-gl';
 import {URLS, V3_BASE} from './config.js';

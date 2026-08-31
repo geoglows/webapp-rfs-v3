@@ -84,12 +84,6 @@ body {
     transition: flex-basis .3s ease; /* the width change when a dock opens */
 }
 
-#map {
-    flex: 1 1 auto;
-    min-width: 0;
-    position: relative;
-}
-
 /* Everything under the banner: the scrolling controls and, when one is open, the dock that shares
    the height with them. Repeats the column #panel already is, so the two split the space left over
    by the header. */
@@ -114,36 +108,6 @@ body {
     gap: var(--gap, 8px);
 }
 
-.col {
-    display: flex;
-    flex-direction: column;
-    gap: var(--gap, 8px);
-}
-
-.wrap {
-    flex-wrap: wrap;
-}
-
-.between {
-    justify-content: space-between;
-}
-
-.grow {
-    flex: 1 1 auto;
-    min-width: 0;
-}
-
-/* A wrapped row of buttons shares its width out evenly — the flood actions, the settings footer. */
-.wrap > .btn {
-    flex: 1 1 auto;
-}
-
-/* A field sharing its line with its own submit (river ID search, name-this-river). */
-.row > input:not([type="checkbox"]) {
-    flex: 1 1 auto;
-    min-width: 0;
-}
-
 /* ── Type ── */
 h1 {
     font-family: var(--mono);
@@ -152,51 +116,17 @@ h1 {
     letter-spacing: 1px;
     line-height: 1.25;
     color: var(--accent);
-}
-
-/* Every heading below the app title is one of these: a small mono eyebrow over a block of controls
-   or of prose. h2 titles a panel section, h4 a run of settings or paragraphs inside a modal. */
-h2, h4 {
-    font-family: var(--mono);
-    font-size: 12px;
-    font-weight: 600;
+}/* Every heading below the app title is one of these: a small mono eyebrow over a block of controls or of prose. h2 titles a panel section, h4 a run of settings or paragraphs inside a modal. */ h2, h4 {
     color: var(--text-dim);
-    text-transform: uppercase;
-    letter-spacing: .8px;
-}
-
-section h2 {
-    text-align: center;
-}
-
-/* the title of a modal or of a dock */
-h3 {
+}/* the title of a modal or of a dock */ h3 {
     flex: 0 0 auto;
-    font-family: var(--mono);
-    font-size: 15px;
-    font-weight: 700;
     color: var(--accent);
-}
-
-.hint {
-    font-size: 13.5px;
-    color: var(--text-dim);
-    line-height: 1.5;
-    margin-top: 7px;
 }
 
 /* a hint that is a rejection rather than an aside — see say() in ui/riverSearch.js */
 .hint.error {
     color: var(--danger);
     font-weight: 600;
-}
-
-/* A line rewritten as something proceeds: download progress, a search result, a depth readout. Its
-   height is held so the box around it does not resize as the text comes and goes. */
-.status {
-    margin: 0;
-    min-height: 1.2em;
-    font-variant-numeric: tabular-nums;
 }
 
 .warning {
@@ -229,67 +159,6 @@ h3 {
     transition: .12s;
 }
 
-.btn svg {
-    width: var(--icon, 22px);
-    height: var(--icon, 22px);
-}
-
-/* The square ones: an icon in the middle and no label, sized by --size. */
-.btn.icon, .btn.sm, .btn.map, .btn.round {
-    width: var(--size);
-    height: var(--size);
-    padding: 0;
-    flex: 0 0 auto;
-}
-
-.btn.icon {
-    --size: 36px;
-    color: var(--text-dim);
-}
-
-/* inline with a heading (the dock's save-this-river heart) or in a modal head (the close ✕) */
-.btn.sm {
-    --size: 28px;
-    --icon: 18px;
-    color: var(--text-dim);
-}
-
-/* a button that is a table row's action rather than a block's: as wide as its label */
-.btn.auto {
-    width: auto;
-    height: auto;
-    padding: 4px 12px;
-    font-size: 13px;
-}
-
-/* the charts dock's tabs, sharing the width between them */
-.btn.tab {
-    flex: 1;
-    padding: 7px 4px;
-    font-size: 14px;
-    color: var(--text-dim);
-}
-
-/* floating over the map, so it carries a surface and a shadow the panel's buttons don't need */
-.btn.map {
-    --size: 44px;
-    --icon: 26px;
-    background: var(--surface);
-    box-shadow: 0 2px 10px rgba(var(--shadow-color), .4);
-}
-
-.btn.map svg {
-    fill: currentColor;
-}
-
-/* the play buttons — the only round ones, and the only ones that answer a hover with movement */
-.btn.round {
-    --size: 42px;
-    font-size: 17px;
-    border-radius: 50%;
-    transition: transform .1s;
-}
-
 /* Colours and states come after the sizes, so that a size variant setting its own colour (.icon,
    .tab) doesn't outrank the state that should be showing. */
 .btn.primary {
@@ -298,23 +167,9 @@ h3 {
     border-color: var(--accent);
 }
 
-.btn:hover:not(:disabled), .chart-btn:hover {
-    color: var(--accent);
-    border-color: var(--accent);
-}
-
 .btn.primary:hover:not(:disabled) {
     color: var(--on-accent);
     filter: brightness(1.08);
-}
-
-.btn.round:hover:not(:disabled) {
-    transform: scale(1.06);
-}
-
-.btn.active {
-    color: var(--accent);
-    border-color: var(--accent);
 }
 
 /* An on/off button that fills when it is on rather than only outlining: flood mapping mode changes
@@ -324,62 +179,10 @@ h3 {
     background: var(--accent);
 }
 
-/* the delete half of a pair — the other half being a download, which is not destructive */
-.btn.danger:hover:not(:disabled) {
-    color: var(--danger);
-    border-color: var(--danger);
-}
-
-/* Saved, in the same pink the map outlines saved reaches with — the filled heart and the outline on
-   the river are one state, so they are one colour. */
-.btn.saved, .btn.saved:hover:not(:disabled) {
-    color: var(--saved);
-    border-color: var(--saved);
-}
-
-.btn:disabled {
-    opacity: .4;
-    cursor: not-allowed;
-}
-
-/* ── Fields ── */
-select, input:not([type="range"], [type="checkbox"]) {
-    width: 100%;
-    padding: 7px 9px;
-    font-size: 15px;
-    color: var(--text);
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    cursor: pointer;
-}
-
-select:hover:not(:disabled), input:hover:not(:disabled) {
-    border-color: var(--accent);
-}
-
 /* e.g. locked while flood mapping mode owns the stream rendering */
 select:disabled, input:disabled {
     opacity: .45;
     cursor: not-allowed;
-}
-
-input[type="range"] {
-    width: 100%;
-    height: 4px;
-    accent-color: var(--accent);
-    cursor: pointer;
-}
-
-input[type="checkbox"] {
-    width: 15px;
-    height: 15px;
-    accent-color: var(--accent);
-    cursor: pointer;
-}
-
-input[aria-invalid="true"] {
-    border-color: var(--danger);
 }
 
 /* a caption over the input it names */
@@ -390,80 +193,10 @@ input[aria-invalid="true"] {
     margin-bottom: 6px;
 }
 
-/* the live value beside a slider's caption */
-.field label em {
-    font-style: normal;
-    color: var(--accent);
-    font-variant-numeric: tabular-nums;
-}
-
-/* ── Surfaces · anything that floats over the map or the page ── */
-.card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    box-shadow: 0 8px 28px rgba(var(--shadow-color), .5);
-}
-
-.backdrop {
-    position: fixed;
-    inset: 0;
-    z-index: 1000;
-    background: rgba(2, 6, 16, .6);
-    backdrop-filter: blur(2px);
-    display: grid;
-    place-items: center;
-}
-
-.modal {
-    max-height: 80vh;
-    display: flex;
-    flex-direction: column;
-}
-
-/* one-line entry forms — find a river by ID, name a saved river — where the input shares its row
-   with a submit button and the field needs room to read what was typed */
-.modal.entry {
-    width: min(540px, calc(100vw - 32px));
-    /* short enough that dead centre reads as low on the page, so sit it about a third of the way down */
-    align-self: start;
-    margin-top: min(22vh, 180px);
-}
-
-/* text-heavy modals — Settings, whose rows wrap badly at the entry width */
-.modal.wide {
-    width: min(680px, calc(100vw - 40px));
-    max-height: 88vh;
-}
-
-/* Shared by the modals and by the docks, which are the same panel opened into the left column
-   instead of over the page. */
-.modal-head {
-    flex: 0 0 auto;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    padding: 12px 16px;
-    border-bottom: 1px solid var(--border);
-    background: var(--surface2);
-    border-radius: var(--radius) var(--radius) 0 0;
-}
-
-.modal-body {
-    flex: 1 1 auto;
-    overflow-y: auto;
-    padding: 6px 16px 14px;
-}
-
 /* Headings are the break between runs of settings or of paragraphs; the first has nothing above it
    to be separated from. */
 .modal-body h4 {
     margin: 22px 0 8px;
-}
-
-.modal-body h4:first-child {
-    margin-top: 6px;
 }
 
 .modal-body p {
@@ -679,18 +412,6 @@ input[aria-invalid="true"] {
     position: relative;
 }
 
-.menu {
-    position: absolute;
-    /* open to the left of the button — the map's pickers sit at the right edge of the viewport */
-    top: 0;
-    right: calc(100% + 8px);
-    min-width: 190px;
-    padding: 5px;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-}
-
 /* The language menu opens inside #panel, which is overflow:hidden, so placeMenu() in map/menu.js
    puts it in viewport coordinates instead. What is left here is a resting place for the first frame
    and the stacking order; it is display:none until it has been placed. */
@@ -715,33 +436,6 @@ input[aria-invalid="true"] {
 .opt:hover {
     color: var(--text);
     background: var(--bg);
-}
-
-.opt.active {
-    color: var(--accent);
-    border-color: var(--accent);
-    font-weight: 600;
-}
-
-/* the box in front of a layer that can be on at the same time as the others */
-.check {
-    flex: 0 0 auto;
-    width: 16px;
-    height: 16px;
-    border: 1.5px solid var(--border);
-    border-radius: 4px;
-    background: var(--bg);
-    position: relative;
-    transition: .12s;
-}
-
-.opt:hover .check {
-    border-color: var(--accent);
-}
-
-.opt[aria-checked="true"] .check {
-    background: var(--accent);
-    border-color: var(--accent);
 }
 
 /* the tick, drawn only when checked */
@@ -780,22 +474,6 @@ input[aria-invalid="true"] {
 
 #legend-overlay h2 {
     margin-bottom: 8px;
-}
-
-.legend-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 5px;
-    font-size: 14px;
-    color: var(--text-dim);
-}
-
-.swatch {
-    width: 22px;
-    height: 4px;
-    border-radius: 2px;
-    flex: 0 0 auto;
 }
 
 /* The forecast animation player. One layout at two sizes: over the map along the bottom, and again
@@ -915,26 +593,9 @@ input[aria-invalid="true"] {
     gap: 10px;
 }
 
-.data-size {
-    color: var(--text-dim);
-    font-variant-numeric: tabular-nums;
-    font-size: 14px;
-}
-
 /* progress and errors belong under the row they describe, not beside it */
 .data-row .status {
     grid-column: 1 / -1;
-}
-
-.data-row .status:empty {
-    display: none;
-}
-
-.data-foot {
-    margin-top: 10px;
-    padding-top: 10px;
-    border-top: 1px solid var(--border);
-    --gap: 6px;
 }
 
 /* ── Charts · the dock's own states, and what the charts library's markup expects ── */
@@ -1177,43 +838,8 @@ body.help-open #scroll > section:not(#hydrology-section, #flood-section) {
 }
 
 @keyframes spotlight-pulse {
-    0%, 100% {
-        outline-color: var(--spot);
-        box-shadow:
-            0 0 0 6px var(--spot),
-            0 0 20px 14px color-mix(in srgb, var(--spot) 85%, transparent),
-            0 0 48px 30px color-mix(in srgb, var(--spot) 55%, transparent),
-            0 0 90px 52px color-mix(in srgb, var(--spot) 28%, transparent),
-            0 0 150px 80px color-mix(in srgb, var(--spot) 12%, transparent);
-    }
-    50% {
-        outline-color: var(--spot-dim);
-        box-shadow:
-            0 0 0 6px var(--spot-dim),
-            0 0 24px 18px color-mix(in srgb, var(--spot-dim) 80%, transparent),
-            0 0 58px 38px color-mix(in srgb, var(--spot-dim) 45%, transparent),
-            0 0 110px 64px color-mix(in srgb, var(--spot-dim) 22%, transparent),
-            0 0 180px 100px color-mix(in srgb, var(--spot-dim) 9%, transparent);
-    }
-}
-
-@keyframes spotlight-pulse-inset {
-    0%, 100% {
-        outline-color: var(--spot);
-        box-shadow:
-            inset 0 0 0 8px var(--spot),
-            inset 0 0 40px 20px color-mix(in srgb, var(--spot) 80%, transparent),
-            inset 0 0 100px 50px color-mix(in srgb, var(--spot) 45%, transparent),
-            inset 0 0 200px 90px color-mix(in srgb, var(--spot) 18%, transparent);
-    }
-    50% {
-        outline-color: var(--spot-dim);
-        box-shadow:
-            inset 0 0 0 8px var(--spot-dim),
-            inset 0 0 48px 26px color-mix(in srgb, var(--spot-dim) 75%, transparent),
-            inset 0 0 120px 64px color-mix(in srgb, var(--spot-dim) 38%, transparent),
-            inset 0 0 240px 110px color-mix(in srgb, var(--spot-dim) 14%, transparent);
-    }
+    0%, 100% { box-shadow: 0 0 0 3px var(--spot), 0 0 18px 6px var(--spot-dim); }
+    50% { box-shadow: 0 0 0 5px var(--spot), 0 0 26px 10px var(--spot-dim); }
 }
 
 .spotlight {
@@ -1230,12 +856,6 @@ body.help-open #scroll > section:not(#hydrology-section, #flood-section) {
 #map.spotlight {
     outline-offset: -4px;
     animation-name: spotlight-pulse-inset;
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .spotlight {
-        animation-duration: 0s;
-    }
 }
 
 /* wide layout: lay the hydrology controls out in a row so they use the extra width and free up
@@ -1311,7 +931,6 @@ body.dock-open #player {
     border-top: 1px solid var(--border);
 }
 
-
 /* The list a name search fills. Capped rather than allowed to grow the modal: a query like "san"
    matches a dozen rivers, and a dialog that resizes under the person typing into it is worse than
    one that scrolls. */
@@ -1341,15 +960,6 @@ body.dock-open #player {
 
 .search-hit:last-child {
     border-bottom: 0;
-}
-
-.search-hit:hover,
-.search-hit:focus-visible {
-    background: var(--surface);
-}
-
-.search-hit b {
-    display: block;
 }
 
 /* The disambiguating line — country, what it flows into, the system it belongs to. Dimmer than the

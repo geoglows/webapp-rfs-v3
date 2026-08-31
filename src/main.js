@@ -1,3 +1,7 @@
+import "./shared/styles/tokens.css";
+import "./shared/styles/base.css";
+import "./shared/styles/components.css";
+import "./style.css";
 import "./auth.js";  // must be first: registers the auth listener before anything else runs
 import "./settings/rfsConfig.js"
 import {initLanguagePicker, initSettings, initThemeToggle, onSetting} from "./settings/settings.js";

@@ -1,0 +1,132 @@
+/* ── Tokens ───────────────────────────────────────────────────────────────
+   One palette for both pages, so the forecast viewer and the hydrography explorer sit next to each
+   other in the GEOGLOWS portal as one product rather than two that happen to share a subject.
+
+   The first block is what the tokens mean in the dark theme, and doubles as the fallback for a
+   document that has never had data-theme set on it. The theme is chosen by the header's sun/moon
+   button and remembered per device; both pages read the same key.
+
+   Three scales below are new. Before them the two stylesheets between them used 26 distinct
+   font-size values (including half-pixels like 9.5 and 13.5) — now seven — 11 distinct border-radii, and wrote
+   the panel width as a literal 380px into three unrelated rules. Every one of those is now a step
+   on a scale, which is most of what "simpler" turned out to mean here. */
+:root, :root[data-theme="dark"] {
+    /* Ground and surfaces */
+    --bg: #0a0e17;
+    --surface: #111827;
+    --surface2: #1e293b;
+    --border: #334155;
+    /* A hairline separating two parts of one block rather than two blocks — the rule inside a
+       style rule, the line between attributes in the field list. */
+    --border-soft: rgba(51, 65, 85, .6);
+
+    /* Type, in three ranks: body, then labels and units, then counts and ranges. */
+    --text: #e2e8f0;
+    --text-dim: #94a3b8;
+    --text-faint: #64748b;
+
+    /* Accent */
+    --accent: #38bdf8;
+    --accent-dim: #0ea5e9;
+    --accent-soft: rgba(56, 189, 248, .14);
+    --on-accent: #04121b;
+
+    /* Status */
+    --success: #10b981;
+    --danger: #ef4444;
+    --danger-text: #fca5a5;
+    --warn: #f59e0b;
+    --warn-text: #fcd34d;
+
+    /* Chrome incidentals */
+    --saved: #ff4fa3;
+    --swatch-ring: rgba(255, 255, 255, .15);
+    --shadow-color: 0, 0, 0;
+
+    /* The map's own colours. These are data, not chrome: a stream is the same blue in both themes,
+       because it is the same stream, and the legend swatch beside it has to be the colour the line
+       on the map actually is. --stream is overwritten at runtime by the styling panel's base
+       colour, which is why the legend follows a restyle. Only --selected-text is themed: it is the
+       one of the pair that has to hold as type at 11px rather than as a line on a map. */
+    --stream: #3B82F6;
+    --upstream: #F5A623;
+    --selected: #B45309;
+    --selected-text: #FBBF24;
+    --group: #A78BFA;
+    --basin: #14b8a6;
+    --catchment: #D55E00;
+    --inlet: #34d399;
+    --outlet: #f472b6;
+    --corridor: #fbbf24;
+
+    /* PUBLIC CONTRACT — do not rename. The riverforecastsystem package ships no CSS of its own and
+       reads these to theme the charts it renders. They look unused to a static scan. They are not. */
+    --rfs-chart-axis: var(--text-dim);
+    --rfs-chart-text: var(--text);
+    --rfs-chart-grid: rgba(148, 163, 184, .12);
+
+    /* Type scale */
+    --fs-2xs: 10px;
+    --fs-xs: 11px;
+    --fs-sm: 12px;
+    --fs-md: 13px;
+    --fs-base: 14px;
+    --fs-lg: 15px;
+    --fs-xl: 21px;
+
+    /* Radius scale */
+    --r-sm: 4px;
+    --r-md: 6px;
+    --r-lg: 8px;
+
+    /* Space, control sizing, layout */
+    --gap: 8px;
+    --pad: 12px;
+    --size: 36px;
+    --icon: 20px;
+    --panel-w: 380px;
+
+    --mono: "JetBrains Mono", ui-monospace, monospace;
+    font-family: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+}
+
+/* Light theme — set by the header's sun/moon button. */
+:root[data-theme="light"] {
+    --bg: #eef2f7;
+    --surface: #ffffff;
+    --surface2: #f1f5f9;
+    --border: #cbd5e1;
+    --border-soft: rgba(148, 163, 184, .55);
+
+    /* Black for both of the top two ranks, which is the forecast page's long-standing decision:
+       on a light ground a "dimmed" grey is just lower contrast, not hierarchy. The third rank
+       stays grey — it carries counts and units, where the drop really is a drop in importance
+       rather than a drop in legibility. */
+    --text: #000000;
+    --text-dim: #000000;
+    --text-faint: #64748b;
+
+    --accent: #0284c7;
+    --accent-dim: #0369a1;
+    --accent-soft: rgba(2, 132, 199, .12);
+    --on-accent: #ffffff;
+
+    --success: #059669;
+    --danger: #dc2626;
+    --danger-text: #b91c1c;
+    --warn: #f59e0b;
+    --warn-text: #b45309;
+
+    --saved: #db2777;
+    --swatch-ring: rgba(15, 23, 42, .2);
+    --shadow-color: 100, 116, 139;
+
+    --selected-text: #B45309;
+    --inlet: #059669;
+    --outlet: #db2777;
+    --corridor: #d97706;
+
+    --rfs-chart-axis: var(--text);
+    --rfs-chart-text: var(--text);
+    --rfs-chart-grid: rgba(15, 23, 42, .14);
+}

@@ -98,12 +98,6 @@ body {
     display: flex
 }
 
-#map {
-    flex: 1 1 auto;
-    min-width: 0;
-    position: relative
-}
-
 /* ── the control column ────────────────────────────────────────────────────
    Everything you operate the map with is in one column down the left: the layer and basemap
    switches, what the last click selected, the styling editor, and the export run.
@@ -172,16 +166,6 @@ body {
     gap: var(--gap, 8px)
 }
 
-.col {
-    display: flex;
-    flex-direction: column;
-    gap: var(--gap, 8px)
-}
-
-.wrap {
-    flex-wrap: wrap
-}
-
 /* A wrapped row of buttons shares its width out evenly — the settings footer's sweeping pair. */
 .wrap > .btn {
     flex: 1 1 auto
@@ -191,12 +175,6 @@ body {
    .col a flex column — and would otherwise outrank this. */
 .hidden, [hidden] {
     display: none !important
-}
-
-.hint {
-    font-size: 13.5px;
-    color: var(--text-dim);
-    line-height: 1.5
 }
 
 /* ── sections ──────────────────────────────────────────────────────────────
@@ -226,22 +204,12 @@ body {
     transition: .12s
 }
 
-.btn svg {
-    width: var(--icon, 22px);
-    height: var(--icon, 22px)
-}
-
 /* The square ones: an icon in the middle and no label, sized by --size. */
 .btn.icon, .btn.sm, .btn.map {
     width: var(--size);
     height: var(--size);
     padding: 0;
     flex: 0 0 auto
-}
-
-.btn.icon {
-    --size: 36px;
-    color: var(--text-dim)
 }
 
 /* Inline with a heading — the styling section's fold arrow. */
@@ -276,11 +244,6 @@ body {
     filter: brightness(1.08)
 }
 
-.btn:disabled {
-    opacity: .4;
-    cursor: not-allowed
-}
-
 /* The export is the thing the app is for, and the only button that does any work, so it takes the
    accent and the width of the row; Clear is the plain one beside it. */
 #btn-geoparquet {
@@ -300,20 +263,6 @@ select, input:not([type=range], [type=checkbox], [type=color]) {
     border: 1px solid var(--border);
     border-radius: 6px;
     cursor: pointer
-}
-
-select:hover:not(:disabled), input:hover:not(:disabled) {
-    border-color: var(--accent)
-}
-
-select:focus, input:focus {
-    outline: none;
-    border-color: var(--accent)
-}
-
-select:disabled, input:disabled {
-    opacity: .45;
-    cursor: not-allowed
 }
 
 input[type=checkbox] {
@@ -442,17 +391,6 @@ input[type=checkbox] {
     }
     to {
         background-position: -48px 0
-    }
-}
-
-@media (prefers-reduced-motion: reduce) {
-    #progress.indeterminate #progress-fill {
-        animation: none;
-        opacity: .6
-    }
-
-    #progress-fill {
-        transition: none
     }
 }
 
@@ -623,28 +561,9 @@ input[type=checkbox] {
     background: repeating-linear-gradient(115deg, var(--accent-dim) 0 10px, transparent 10px 20px);
     background-size: 200% 100%;
     animation: progress-stripe 1s linear infinite
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .stage-line.indeterminate .stage-fill {
-        animation: none;
-        opacity: .6
-    }
-
-    .stage-fill {
-        transition: none
-    }
-}
-
-/* The eyebrow over a block of controls — the same one RFS v3 puts over each of its sections. */
-#legend-overlay h2 {
-    font-size: 12px;
-    font-weight: 600;
+}/* The eyebrow over a block of controls — the same one RFS v3 puts over each of its sections. */ #legend-overlay h2 {
     color: var(--text-dim);
-    text-transform: uppercase;
-    letter-spacing: .8px;
     margin-bottom: 10px;
-    font-family: var(--mono)
 }
 
 /* ── what floats over the map ──────────────────────────────────────────────
@@ -691,13 +610,6 @@ input[type=checkbox] {
     place-items: center
 }
 
-.modal {
-    width: min(560px, calc(100vw - 40px));
-    max-height: 85vh;
-    display: flex;
-    flex-direction: column
-}
-
 /* One-line entry forms — find a river by name or ID — where the input shares its row with a submit
    button. Short enough that dead centre reads as low on the page, so it sits about a third of the
    way down. Same placement and width as the same dialog in RFS v3. */
@@ -724,26 +636,9 @@ input[type=checkbox] {
     font-weight: 700
 }
 
-.modal-body {
-    flex: 1 1 auto;
-    overflow-y: auto;
-    padding: 6px 16px 14px
-}
-
-/* Each heading is the break between two runs of settings; the first has nothing above it to be
-   separated from. */
-.modal-body h4 {
-    font-family: var(--mono);
-    font-size: 12px;
-    font-weight: 600;
+/* Each heading is the break between two runs of settings;the first has nothing above it to be separated from. */ .modal-body h4 {
     color: var(--text-dim);
-    text-transform: uppercase;
-    letter-spacing: .8px;
-    margin: 20px 0 6px
-}
-
-.modal-body h4:first-child {
-    margin-top: 12px
+    margin: 20px 0 6px;
 }
 
 /* A checkbox and the sentence it switches, the whole row clickable because it is a label. */
@@ -773,32 +668,9 @@ input[type=checkbox] {
     gap: 10px
 }
 
-.data-size {
-    color: var(--text-dim);
-    font-variant-numeric: tabular-nums;
-    font-size: 14px
-}
-
 /* progress and errors belong under the row they describe, not beside it */
 .data-row .status {
     grid-column: 1 / -1
-}
-
-.data-row .status:empty {
-    display: none
-}
-
-.data-foot {
-    margin-top: 10px;
-    padding-top: 10px;
-    border-top: 1px solid var(--border);
-    --gap: 6px
-}
-
-/* the delete half of a pair — the other half being a download, which is not destructive */
-.btn.danger:hover:not(:disabled) {
-    color: var(--danger-text);
-    border-color: var(--danger)
 }
 
 /* The last line of the settings dialog: which build is running. Quiet on purpose — it is there to
@@ -820,10 +692,6 @@ input[type=checkbox] {
     font-size: 14.5px;
     font-weight: 600;
     margin-bottom: 6px
-}
-
-.field + .field {
-    margin-top: 14px
 }
 
 input[aria-invalid=true] {
@@ -889,14 +757,6 @@ input[aria-invalid=true] {
     border-bottom: 0
 }
 
-.search-hit:hover, .search-hit:focus-visible {
-    background: var(--surface)
-}
-
-.search-hit b {
-    display: block
-}
-
 /* The disambiguating line — country, what it flows into, the system it belongs to. Dimmer than the
    name because it is read only when two rows share one. */
 .search-hit .hint {
@@ -919,17 +779,6 @@ input[aria-invalid=true] {
     position: relative
 }
 
-.menu {
-    position: absolute;
-    top: 0;
-    right: calc(100% + 8px);
-    min-width: 200px;
-    padding: 5px;
-    display: flex;
-    flex-direction: column;
-    gap: 2px
-}
-
 /* One row of a menu — a layer to switch on, a basemap to switch to. Cut from .btn, then flattened:
    inside a card it is the row that has to read as pressable, not its border. */
 .opt {
@@ -949,11 +798,6 @@ input[aria-invalid=true] {
     transition: .12s
 }
 
-.opt:hover:not(:disabled) {
-    color: var(--text);
-    background: var(--bg)
-}
-
 /* The basemap in use. Only the basemap menu has one — the layer rows say on and off with the box. */
 .opt.active {
     color: var(--accent);
@@ -967,52 +811,6 @@ input[aria-invalid=true] {
     display: flex;
     flex-direction: column;
     gap: 7px
-}
-
-.legend-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 14px;
-    color: var(--text-dim)
-}
-
-.swatch {
-    width: 20px;
-    height: 3px;
-    border-radius: 2px;
-    flex-shrink: 0
-}
-
-.swatch.stream {
-    background: var(--stream)
-}
-
-.swatch.upstream {
-    background: var(--upstream)
-}
-
-.swatch.outlet {
-    background: var(--selected)
-}
-
-.swatch.catchment {
-    height: 12px;
-    border-radius: 2px;
-    border: 1px solid var(--swatch-ring);
-    background: rgba(213, 94, 0, .45)
-}
-
-.swatch.poly {
-    height: 12px;
-    border-radius: 2px;
-    border: 1px solid var(--group);
-    background: rgba(167, 139, 250, .18)
-}
-
-.swatch.poly.basin {
-    border-color: var(--basin);
-    background: rgba(20, 184, 166, .18)
 }
 
 /* ── the selection actions ─────────────────────────────────────────────────
@@ -1048,20 +846,13 @@ input[aria-invalid=true] {
     flex-direction: column;
     padding: 13px 18px 10px;
     border-top: 1px solid var(--border)
-}
-
-#selectors-card > h2 {
+}#selectors-card > h2 {
     display: flex;
     align-items: center;
     gap: 8px;
     margin-bottom: 8px;
     flex-shrink: 0;
-    font-size: 12px;
-    font-weight: 600;
     color: var(--text-dim);
-    text-transform: uppercase;
-    letter-spacing: .8px;
-    font-family: var(--mono)
 }
 
 /* Pulled out to the card's padding, so a row's hover and its lit edge run the full width of the
@@ -1191,38 +982,24 @@ input[aria-invalid=true] {
 #styling-card {
     padding: 13px 18px 10px;
     border-top: 1px solid var(--border)
-}
-
-#styling-card > h2 {
+}#styling-card > h2 {
     display: flex;
     align-items: center;
     gap: 8px;
     margin-bottom: 10px;
-    font-size: 12px;
-    font-weight: 600;
     color: var(--text-dim);
-    text-transform: uppercase;
-    letter-spacing: .8px;
-    font-family: var(--mono)
 }
 
 /* A subsection of it: no rule, no padding of its own, and a quieter heading than the one over
    both, so the two read as parts of the block rather than as two blocks. */
 #names-card {
     margin-bottom: 10px
-}
-
-#names-card h3, #style-card h3 {
+}#names-card h3, #style-card h3 {
     display: flex;
     align-items: center;
     gap: 8px;
     margin-bottom: 8px;
-    font-size: 11px;
-    font-weight: 600;
     color: var(--text-faint);
-    text-transform: uppercase;
-    letter-spacing: .8px;
-    font-family: var(--mono)
 }
 
 #names-card h3 .title {
@@ -1529,19 +1306,12 @@ input[aria-invalid=true] {
 #layers-card {
     flex: 0 0 auto;
     padding: 13px 18px 12px
-}
-
-#layers-card h2 {
+}#layers-card h2 {
     display: flex;
     align-items: center;
     gap: 8px;
     margin-bottom: 9px;
-    font-size: 12px;
-    font-weight: 600;
     color: var(--text-dim);
-    text-transform: uppercase;
-    letter-spacing: .8px;
-    font-family: var(--mono)
 }
 
 #layers-card h2 .title {
@@ -1580,20 +1350,13 @@ input[aria-invalid=true] {
     flex-direction: column;
     padding: 13px 18px 10px;
     border-top: 1px solid var(--border)
-}
-
-#river-card h2 {
+}#river-card h2 {
     display: flex;
     align-items: center;
     gap: 8px;
     margin-bottom: 8px;
     flex-shrink: 0;
-    font-size: 12px;
-    font-weight: 600;
     color: var(--text-dim);
-    text-transform: uppercase;
-    letter-spacing: .8px;
-    font-family: var(--mono)
 }
 
 #river-card h2 .title {
@@ -1913,20 +1676,13 @@ button.seg:disabled {
     border-top: 1px solid var(--border)
 }
 
-/* Title and hint share a line while both fit; a long title takes the line and drops the hint under
-   it, right-aligned, rather than squeezing both into a ragged two-line block. */
-.style-section h3 {
+/* Title and hint share a line while both fit;a long title takes the line and drops the hint under it, right-aligned, rather than squeezing both into a ragged two-line block. */ .style-section h3 {
     display: flex;
     align-items: baseline;
     gap: 6px;
     flex-wrap: wrap;
-    font-size: 10px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: .7px;
     color: var(--text-dim);
-    font-family: var(--mono);
-    margin-bottom: 6px
+    margin-bottom: 6px;
 }
 
 .style-section h3 .hint {
