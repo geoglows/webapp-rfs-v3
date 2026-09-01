@@ -244,10 +244,41 @@ const shareBlosc = ({worker = false} = {}) => {
   };
 };
 
+/**
+ * List both loopback spellings — `http://localhost:<port>/` and `http://127.0.0.1:<port>/` — under
+ * "Local" for the dev and preview servers.
+ *
+ * Vite prints exactly one, and which one depends on how Node happens to order the DNS answers for
+ * `localhost` on this machine. That matters here because the Supabase project's redirect allowlist
+ * is matched on the literal origin in the address bar: sign in from a spelling that is not on the
+ * list and the OAuth callback dumps you on the project's Site URL instead of back in the app. With
+ * both printed, whichever the allowlist has is one click away.
+ *
+ * Both servers are bound to 127.0.0.1 (below) rather than the default `localhost`, which Node
+ * resolves to whichever address comes first — on a machine that answers `::1` first, the IPv4
+ * spelling would connect to nothing. Browsers fall back from `::1` to `127.0.0.1` for `localhost`
+ * themselves, so both printed URLs work. A `--host` on the command line still overrides this.
+ */
+const listLoopbackUrls = () => {
+  const patch = (server) => {
+    const printUrls = server.printUrls;
+    server.printUrls = () => {
+      const local = server.resolvedUrls?.local ?? [];
+      for (const url of [...local]) {
+        const alt = url.includes("//127.0.0.1:") ? url.replace("//127.0.0.1:", "//localhost:")
+          : url.includes("//localhost:") ? url.replace("//localhost:", "//127.0.0.1:") : null;
+        if (alt && !local.includes(alt)) local.push(alt);
+      }
+      printUrls();
+    };
+  };
+  return {name: "list-loopback-urls", configureServer: patch, configurePreviewServer: patch};
+};
+
 // The portal builds every app with `vite build --base="$BASE/"` (see apps.geoglows
 // scripts/build-local.sh), so `base` is left at the default here and supplied on the command line.
 export default defineConfig({
-  plugins: [serveData(), stampBuildDate(), shareBlosc()],
+  plugins: [serveData(), stampBuildDate(), shareBlosc(), listLoopbackUrls()],
   resolve: {
     dedupe: ["chart.js", "chartjs-adapter-date-fns", "chartjs-chart-matrix", "chartjs-plugin-zoom", "date-fns", "numcodecs"]
   },
@@ -278,7 +309,9 @@ export default defineConfig({
     }
   },
   server: {
+    host: "127.0.0.1",
     allowedHosts: [".ngrok-free.app", ".ngrok.app", ".ngrok.io", "tunnel.hales.app"],
     watch: {ignored: ["**/data/**"]}
-  }
+  },
+  preview: {host: "127.0.0.1"}
 });

@@ -109,8 +109,6 @@
   "explorer.count.streams": "Ríos en la selección actual",
   "explorer.count.picks": "Puntos de salida de cuenca recogidos",
   "explorer.count.inlets": "Entradas recortadas del área de interés",
-  "explorer.legend.selected": "Ríos seleccionados",
-  "explorer.legend.endpoints": "Entrada / salida seleccionada",
   "explorer.readout.reach": "tramo",
   "explorer.readout.outlet": "salida",
   "explorer.readout.trimmed": "recortados",

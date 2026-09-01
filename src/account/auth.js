@@ -9,6 +9,13 @@ export const auth = bootstrapAuth({
   supabaseUrl: import.meta.env.VITE_SUPABASE_URL,
   supabasePublishableKey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
   portalUrl: import.meta.env.VITE_PORTAL_URL,
+  // Bound how hard the page tries to reach the account service: 2 attempts, 10s each, within 60s,
+  // then give up (retry icon in the navbar) and recheck on focus no sooner than every 5 minutes.
+  connect: {attempts: 2, timeoutMs: 10_000, giveUpMs: 60_000, recheckAfterMs: 300_000},
+  onConnectState: ({phase, reason, attempt, error}) => {
+    if (phase === "connected") return;
+    console.debug(`[auth] ${phase} (${reason}, attempt ${attempt})`, error ?? "");
+  },
   onAuthChange: (state) => listeners.forEach((fn) => fn(state))
 });
 

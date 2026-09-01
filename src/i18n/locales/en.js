@@ -142,8 +142,6 @@ export default {
   "explorer.count.streams": "Streams in the current selection",
   "explorer.count.picks": "Watershed outlets collected",
   "explorer.count.inlets": "Inlets trimmed off the area of interest",
-  "explorer.legend.selected": "Selected streams",
-  "explorer.legend.endpoints": "Selected inlet / outlet",
   "explorer.readout.reach": "reach",
   "explorer.readout.outlet": "outlet",
   "explorer.readout.trimmed": "trimmed",

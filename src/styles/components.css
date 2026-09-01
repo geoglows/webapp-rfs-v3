@@ -512,8 +512,6 @@ input[aria-invalid="true"] {
 }
 
 .swatch.stream { background: var(--stream); }
-.swatch.upstream { background: var(--upstream); }
-.swatch.outlet { background: var(--selected); }
 
 /* The area swatches are the line colour at a wash, taken from the token rather than restated as a
    literal rgba() — which is how three of these drifted out of step with the map in the first place. */

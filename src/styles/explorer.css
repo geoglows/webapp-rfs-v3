@@ -224,15 +224,15 @@
     color: var(--danger-text)
 }
 
-/* The layer legend and the selection colours, under the forecast scale. Same stack as
-   #legend-items above them, and each block is only there while it has something to say. */
-#layer-legend-items, #selection-legend {
+/* The layer legend, under the forecast scale. Same stack as #legend-items above it, and only
+   there while it has something to say. */
+#layer-legend-items {
     display: flex;
     flex-direction: column;
     gap: 7px
 }
 
-#layer-legend-items:not(:empty), #selection-legend {
+#layer-legend-items:not(:empty) {
     margin-top: 9px
 }
 

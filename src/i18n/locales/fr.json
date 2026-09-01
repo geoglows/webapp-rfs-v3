@@ -109,8 +109,6 @@
   "explorer.count.streams": "Cours d'eau dans la sélection actuelle",
   "explorer.count.picks": "Exutoires de bassin collectés",
   "explorer.count.inlets": "Entrées retirées de la zone d'intérêt",
-  "explorer.legend.selected": "Cours d'eau sélectionnés",
-  "explorer.legend.endpoints": "Entrée / exutoire sélectionné",
   "explorer.readout.reach": "tronçon",
   "explorer.readout.outlet": "exutoire",
   "explorer.readout.trimmed": "retirés",

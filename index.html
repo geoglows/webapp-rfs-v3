@@ -3,16 +3,6 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <!-- The two origins the first screen waits on whatever this deployment is configured to draw:
-       the app's own data, and the Esri tile service every basemap but streetsOSM and topoUsgs
-       reads (VITE_MAP_DEFAULT_BASEMAP picks which). Warming the sockets here takes the
-       handshakes off a chain the browser cannot otherwise start early — a vector basemap names
-       its tile service in a style document it has to fetch first.
-
-       Deliberately not listing www.arcgis.com / basemaps.arcgis.com, which only the `environment`
-       basemap uses: a preconnect the page then never uses is a socket held open against the
-       requests it was meant to help, and this list cannot see which basemap was configured. Keep
-       it to origins every build hits, and keep it short — four is the practical ceiling. -->
   <link rel="preconnect" href="https://cdn.apps.geoglows.org" crossorigin/>
   <link rel="preconnect" href="https://services.arcgisonline.com"/>
   <title>%VITE_APP_TITLE%</title>
@@ -509,10 +499,6 @@
     <div id="legend-items"></div>
   </div>
   <div id="layer-legend-items"></div>
-  <div id="selection-legend" data-tool="hydrography">
-    <div class="legend-item"><span class="swatch upstream"></span><span data-i18n="explorer.legend.selected">Selected streams</span></div>
-    <div class="legend-item"><span class="swatch outlet"></span><span data-i18n="explorer.legend.endpoints">Selected inlet / outlet</span></div>
-  </div>
 </div>
 <div id="player" class="card player map-overlay" data-tool="forecast">
   <div id="progress-bar"></div>
