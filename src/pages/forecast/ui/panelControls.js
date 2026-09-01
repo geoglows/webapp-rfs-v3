@@ -1,8 +1,8 @@
 import {t} from "../../../shared/i18n/i18n";
 import {getSetting, setSetting} from "../../../shared/settings/settings.js";
 import {calciteIcon} from "../../../shared/icons/calcite.js";
+import {$} from "../../../shared/dom.js";
 
-const $ = (id) => document.getElementById(id);
 
 /**
  * The left panel's own controls: forecast-date picker, stream styleset, the bottom player's

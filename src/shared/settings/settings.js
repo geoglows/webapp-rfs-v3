@@ -3,8 +3,8 @@ import {setLanguage} from "../i18n/i18n.js";
 import {wireMenu} from "../ui/menu.js";
 // When this bundle was made — stampBuildDate() in vite.config.js writes the module.
 import BUILD_DATE from "virtual:build-date";
+import {$} from "../dom.js";
 
-const $ = (id) => document.getElementById(id);
 
 // env vars are strings so we can't check for truthiness straight up
 const ON = new Set(["true", "1", "yes", "on"]);

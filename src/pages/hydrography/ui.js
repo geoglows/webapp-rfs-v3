@@ -1,5 +1,34 @@
-import {el} from "../../shared/dom.js";
-const $ = id => document.getElementById(id);
+import {$, el} from "../../shared/dom.js";
+import {heroIcon} from "../../shared/icons/icons.js";
+import {t} from "../../shared/i18n/i18n.js";
+
+/**
+ * A folding section of the column: the layer switches, the river attributes, the river names, the
+ * styling editor.
+ *
+ * There were four of these written out longhand, differing only in a string, and every one of them
+ * did the same three things — put a class on #panel that the stylesheet folds the section with,
+ * swap the chevron so it points where the click will take you, and retitle the button to say so.
+ * `key` names all three: the class is `${key}-collapsed` and the button is `#${key}-collapse`.
+ *
+ * The tooltip is written as `data-i18n-title` as well as set directly, so a language change
+ * repaints it in whichever direction the fold is currently pointing.
+ */
+export function createCollapsible(key, {collapsed = false} = {}) {
+  const panel = $('panel');
+  const btn = $(`${key}-collapse`);
+  const cls = `${key}-collapsed`;
+  const set = fold => {
+    const titleKey = fold ? 'explorer.fold.expand' : 'explorer.fold.collapse';
+    panel.classList.toggle(cls, fold);
+    btn.replaceChildren(heroIcon(fold ? 'chevron-right' : 'chevron-down'));
+    btn.setAttribute('data-i18n-title', titleKey);
+    btn.title = t(titleKey);
+  };
+  btn.addEventListener('click', () => set(!panel.classList.contains(cls)));
+  set(collapsed);
+  return {set, collapsed: () => panel.classList.contains(cls)};
+}
 
 const stagesEl = $('stages');
 const progressEl = $('progress');
@@ -8,35 +37,7 @@ const pctEl = $('progress-pct');
 const fillEl = $('progress-fill');
 const detailEl = $('progress-detail');
 
-export const fmt = n => n.toLocaleString();
-export const mb = b => `${(b / 1e6).toFixed(2)} MB`;
-
-// The phases a cached dataset's build reports, in the order it reports them. RFS v3 says the same
-// words for the same downloads, which is the point: they are the same downloads.
-const DATA_PHASES = {
-  download: 'Downloading',
-  sort: 'Building lookup',
-  verify: 'Verifying',
-  store: 'Saving',
-};
-
-/**
- * "Downloading 42%" — one build's progress as a line of text. Watched from two places now, the
- * search box and the Settings row, so it reads the same in both. A percentage rather than a count:
- * the download reports per chunk over hundreds of chunks, and nothing else stays legible at that
- * rate.
- */
-export function dataProgress({phase, done, total}) {
-  const pct = total ? Math.round((done / total) * 100) : 0;
-  return `${DATA_PHASES[phase] ?? 'Starting…'} ${pct}%`;
-}
-
 /** Elapsed/remaining seconds as m:ss, which reads faster than "97.4 s" at a glance. */
-export const clock = s => {
-  if (!isFinite(s) || s < 0) return '';
-  const m = Math.floor(s / 60);
-  return m ? `${m}:${String(Math.round(s % 60)).padStart(2, '0')}` : `${s.toFixed(s < 10 ? 1 : 0)}s`;
-};
 
 let hideTimer = null;
 
@@ -169,7 +170,7 @@ export const stages = {
 
     for (const g of groups) {
       const box = el('div', {class: 'stage-group'});
-      const head = el('div', {class: 'stage-group-head'});
+      const head = el('div', {class: 'stage-group-head eyebrow'});
       head.appendChild(el('span', {class: 'stage-group-name', text: g.label}));
       const pct = el('span', {class: 'stage-group-pct', text: '0%'});
       head.appendChild(pct);

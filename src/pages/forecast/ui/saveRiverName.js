@@ -1,6 +1,6 @@
 import {t} from "../../../shared/i18n/i18n.js";
+import {$} from "../../../shared/dom.js";
 
-const $ = (id) => document.getElementById(id);
 
 /**
  * The name a river is saved under, asked for in a modal rather than a `prompt()` — the browser

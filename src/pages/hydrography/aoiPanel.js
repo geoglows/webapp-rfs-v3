@@ -1,4 +1,4 @@
-import {el, button} from "../../shared/dom.js";
+import {button, el, fmt} from "../../shared/dom.js";
 /**
  * The AOI subsetter's readout: where the outlet is, what the inlets took off, and how much is left.
  *
@@ -9,7 +9,8 @@ import {el, button} from "../../shared/dom.js";
  * Built as nodes; the ids come out of the tiles, so nothing from the data becomes markup.
  */
 import {inletCut} from './aoi.js';
-import {fmt} from './ui.js';
+import {t, tf, tn} from '../../shared/i18n/i18n.js';
+
 
 /** How many reaches this inlet is keeping out, on its own terms — before any overlap with others. */
 const cutSize = inlet => {
@@ -23,15 +24,15 @@ function inletRow(inlet, {onRemove, onZoom}) {
   main.append(
     el('span', {class: 'pick-id', text: String(inlet.outletId)}),
     el('span', {class: 'pick-meta', text: [
-      `−${fmt(cutSize(inlet))} reaches`,
+      `−${tn('explorer.picks.reaches', cutSize(inlet))}`,
       inlet.strahlerOrder != null ? `ord ${inlet.strahlerOrder}` : null,
     ].filter(Boolean).join(' · ')}),
   );
   row.append(el('span', {class: 'pick-n', text: '↧'}), main);
   if (inlet.lon != null && inlet.lat != null) {
-    row.append(button({class: 'btn mini', text: '⤢', title: `Centre the map on ${inlet.outletId}`, onclick: () => onZoom(inlet)}));
+    row.append(button({class: 'btn mini', text: '⤢', title: tf('explorer.picks.centre', {id: inlet.outletId}), onclick: () => onZoom(inlet)}));
   }
-  row.append(button({class: 'btn mini danger', text: '×', title: `Put ${inlet.outletId} and the ground above it back in the AOI`, onclick: () => onRemove(inlet)}));
+  row.append(button({class: 'btn mini danger', text: '×', title: tf('explorer.aoi.removeInlet', {id: inlet.outletId}), onclick: () => onRemove(inlet)}));
   return row;
 }
 
@@ -41,26 +42,26 @@ export function renderAoi(mount, state, {onRemove, onZoom}) {
   const out = [];
 
   if (!outlet) {
-    out.push(el('div', {class: 'picks-empty', text: 'Click the outlet of your area of interest.'}));
+    out.push(el('div', {class: 'picks-empty', text: t('explorer.aoi.pickOutlet')}));
     mount.replaceChildren(...out);
     return;
   }
 
   const head = el('div', {class: 'aoi-head'});
   head.append(
-    el('span', {class: 'aoi-k', text: 'outlet'}),
+    el('span', {class: 'aoi-k', text: t('explorer.readout.outlet')}),
     el('span', {class: 'aoi-outlet', text: String(outlet.outletId)}),
-    el('span', {class: 'pick-meta', text: `${fmt(count)} of ${fmt(outlet.count)} reaches kept`}),
+    el('span', {class: 'pick-meta', text: tf('explorer.aoi.kept', {n: fmt(count), total: fmt(outlet.count)})}),
   );
   out.push(head);
 
   if (!inlets.length) {
-    out.push(el('div', {class: 'picks-empty', text: 'No inlets yet — the AOI is the whole watershed.'}));
+    out.push(el('div', {class: 'picks-empty', text: t('explorer.aoi.noInlets')}));
   } else {
     const rows = el('div', {class: 'picks-list'});
     for (const inlet of inlets) rows.append(inletRow(inlet, {onRemove, onZoom}));
     out.push(rows);
-    out.push(el('div', {class: 'picks-empty', text: `${fmt(inlets.length)} inlet${inlets.length === 1 ? '' : 's'} · ${fmt(trimmed)} reaches trimmed off.`}));
+    out.push(el('div', {class: 'picks-empty', text: `${tn('explorer.aoi.inlets', inlets.length)} · ${tf('explorer.aoi.trimmed', {n: fmt(trimmed)})}`}));
   }
 
   mount.replaceChildren(...out);

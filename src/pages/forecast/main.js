@@ -7,9 +7,9 @@ import "../../shared/settings/rfsConfig.js"
 import {initLanguagePicker, initSettings, initThemeToggle, onSetting} from "../../shared/settings/settings.js";
 import {startUserSync} from "./userSync.js";
 
-import {map} from "./map/map";
-import {applyBasemap, defaultBasemap} from "./map/basemaps";
-import {addRasterLayer, applyStreamsVisibility} from "./map/layers";
+import {initMap} from "./map/map";
+import {initBasemapPicker} from "../../shared/map/basemaps.js";
+import {addRasterLayer, applyStreamsVisibility, initLayerPicker} from "./map/layers";
 import {Streams} from "./map/Streams.js";
 import {focusRiver, frameRiverExtent, nearestFeature, snapToFeature, travelToRiver} from "./map/framing";
 import {createFloodController} from "./map/flood-maps/floodController";
@@ -25,8 +25,9 @@ import {createHelpDock} from "./docks/help.js";
 import {createPanelControls} from "./ui/panelControls";
 import {createDataSettings} from "../../shared/ui/dataSettings";
 import {createRiverSearch} from "../../shared/ui/riverSearch";
+import {wireModals} from "../../shared/ui/modals.js";
+import {$} from "../../shared/dom.js";
 
-const $ = (id) => document.getElementById(id);
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Shared state · read by more than one feature, so it lives here
@@ -42,19 +43,15 @@ function newestForecastExpected() {
 let currentForecastDate = "2026-07-10" // newestForecastExpected();;
 let mapLoaded = false;
 
-// ═══════════════════════════════════════════════════════════════════════════
-// Features
-// ═══════════════════════════════════════════════════════════════════════════
-const streams = new Streams(map);
-
-const flood = createFloodController({
-  map,
-  streams,
-  getForecastDate: () => currentForecastDate,
-  isMapLoaded: () => mapLoaded
-});
-
-const chartsDock = createChartsDock({map, streams, getForecastDate: () => currentForecastDate});
+// The map and everything built on it. Assigned by boot() once initMap() has resolved — the map is
+// no longer made at import time, so the features that need one cannot be either. Everything above
+// boot() reads these rather than closing over them, and the header chrome that is wired before the
+// map exists (theme, language, the Settings modal) reaches them with `?.`.
+let map = null;
+let streams = null;
+let flood = null;
+let chartsDock = null;
+let panelControls = null;
 
 // Which selection the camera belongs to, so a move waiting on the panel can tell it has been
 // overtaken by a later one.
@@ -95,30 +92,6 @@ const goToRiver = (river, named) => {
     : {move: travelToRiver});
 };
 
-// A saved river arrives whole: id, position on the zarr riverId axis, and outlet coordinate. The
-// two lists are the same table over different rows — the app's defaults, and the user's own.
-createBookmarksDock({map, onSelectRiver: goToRiver});
-createSavedRiversDock({map, onSelectRiver: goToRiver});
-createHelpDock({map});
-
-// The pink outline on saved reaches. Set now for what was saved in an earlier session and again on
-// every change; the map re-applies it as tiles arrive, so nothing here waits for the map to load.
-streams.setSavedRivers(savedRiverIds());
-onSavedRiversChange((saved) => streams.setSavedRivers(saved.map((e) => e.riverId)));
-
-// The Settings data list. Constructed here rather than with the rest of the modal chrome because
-// the background prefetch below has to be able to tell it to re-read — a download the panel didn't
-// start still belongs on its row.
-const dataSettings = createDataSettings();
-
-const panelControls = createPanelControls({
-  streams,
-  onForecastDateChange: (date) => {
-    currentForecastDate = date;
-    flood.onForecastDateChange();
-  }
-});
-
 // ═══════════════════════════════════════════════════════════════════════════
 // Background work · started once the app is up, never waited on
 // ═══════════════════════════════════════════════════════════════════════════
@@ -153,14 +126,92 @@ async function prefetchRiverIndex() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// Map lifecycle · app layers, click handling, and load wiring
+// Chrome · wired before the map, because none of it waits on one
 // ═══════════════════════════════════════════════════════════════════════════
-map.on("load", async () => {
+hydrateIcons()
+// The caches moved to a database shared with the hydrography explorer; the one this app used alone
+// is dead weight on any device that ever searched by ID.
+dropLegacyDatabase();
+initSettings();
+
+// The Settings data list. Constructed here rather than with the rest of the modal chrome because
+// the background prefetch below has to be able to tell it to re-read — a download the panel didn't
+// start still belongs on its row.
+const dataSettings = createDataSettings();
+
+// The text that walking [data-i18n] cannot reach: the slider and legend buttons, whose labels
+// depend on their state, and the charts, whose axis titles are drawn into a canvas. Both are the
+// map's, so both are absent until boot() has built them — a language switched before then is
+// simply the language they are built in.
+initLanguagePicker(() => {
+  panelControls?.updateSliderVisibility();
+  panelControls?.updateLegendButton();
+  chartsDock?.rerenderCharts();
+});
+
+// Charts bake their axis/text/grid colors at construction, so any on screen need repainting.
+initThemeToggle(() => chartsDock?.restyleCharts());
+
+// Escape closes the docks too, which is this page's own — the dialogs are the shared part.
+wireModals({onEscape: () => map && closeAllDocks(map)});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Boot · the map, the features built on it, and the click handling
+// ═══════════════════════════════════════════════════════════════════════════
+async function boot() {
+  map = await initMap();
+
+  // The pickers that float over the map. They were called from map/map.js while the map was an
+  // import-time singleton; they are UI, they need a map to act on, and this is where both are true.
+  initBasemapPicker(map);
+  initLayerPicker(map);
+
+  streams = new Streams(map);
+
+  flood = createFloodController({
+    map,
+    streams,
+    getForecastDate: () => currentForecastDate,
+    isMapLoaded: () => mapLoaded
+  });
+
+  chartsDock = createChartsDock({map, streams, getForecastDate: () => currentForecastDate});
+
+  // A saved river arrives whole: id, position on the zarr riverId axis, and outlet coordinate. The
+  // two lists are the same table over different rows — the app's defaults, and the user's own.
+  createBookmarksDock({map, onSelectRiver: goToRiver});
+  createSavedRiversDock({map, onSelectRiver: goToRiver});
+  createHelpDock({map});
+
+  // The pink outline on saved reaches. Set now for what was saved in an earlier session and again on
+  // every change; the map re-applies it as tiles arrive, so nothing here waits for the map to load.
+  streams.setSavedRivers(savedRiverIds());
+  onSavedRiversChange((saved) => streams.setSavedRivers(saved.map((e) => e.riverId)));
+
+  panelControls = createPanelControls({
+    streams,
+    onForecastDateChange: (date) => {
+      currentForecastDate = date;
+      flood.onForecastDateChange();
+    }
+  });
+
+  onSetting("legend", (on) => {
+    $("legend-overlay").classList.toggle("hidden", !on);
+    panelControls.updateLegendButton();
+  });
+  onSetting("shadedWarningLevels", () => chartsDock.rerenderCharts());
+  // Fires before the layer is built, so Streams holds the answer and builds the layer with it.
+  onSetting("savedHighlight", (on) => streams.setSavedHighlightVisible(on));
+
+  // A searched river arrives resolved to the same three things a saved one carries — id, index, and
+  // where it is — so it is gone to the same way.
+  createRiverSearch({onFound: goToRiver, onClear: () => streams.setNamedRiver(null)});
+
   streams.addStreamsLayer();
   applyStreamsVisibility(map);
   addRasterLayer(map);
   flood.onMapLoad();
-  void applyBasemap(map, defaultBasemap());  // Allow the basemaps to continue to load async
   console.log("Basemap + streams loaded.");
   mapLoaded = true;
   map.on("click", (e) => {
@@ -199,62 +250,11 @@ map.on("load", async () => {
   // Not a prefetch: the names are fetched when the search box is first opened, and this only keeps
   // whatever copy the device has from going stale under a session left open past the 5th.
   watchRiverNames();
-});
-// MapLibre flattens every failure into a generic `error` event, so a bad tile fetch arrives as
-// nothing but "Bad response code: 404". The source id and url live on the event, not the message —
-// log them too, otherwise the console says something went wrong without saying what.
-map.on("error", (e) => {
-  if (!e?.error) return;
-  const where = e.sourceId ? ` [${e.sourceId}]` : "";
-  console.error(`map${where}: ${e.error.message}`, e.error.url ?? "");
-});
 
-// ═══════════════════════════════════════════════════════════════════════════
-hydrateIcons()
-// The caches moved to a database shared with the hydrography explorer; the one this app used alone
-// is dead weight on any device that ever searched by ID.
-dropLegacyDatabase();
-initSettings();
-onSetting("legend", (on) => {
-  $("legend-overlay").classList.toggle("hidden", !on);
-  panelControls.updateLegendButton();
-});
-onSetting("shadedWarningLevels", () => chartsDock.rerenderCharts());
-// Fires now, before the map has loaded, so Streams holds the answer and builds the layer with it.
-onSetting("savedHighlight", (on) => streams.setSavedHighlightVisible(on));
-// The text that walking [data-i18n] cannot reach: the slider and legend buttons, whose labels
-// depend on their state, and the charts, whose axis titles are drawn into a canvas.
-initLanguagePicker(() => {
-  panelControls.updateSliderVisibility();
-  panelControls.updateLegendButton();
-  chartsDock.rerenderCharts();
-});
-
-// Charts bake their axis/text/grid colors at construction, so any on screen need repainting.
-initThemeToggle(() => chartsDock.restyleCharts());
-
-// Sign-in pulls the profile's preferences and saved rivers and pushes this device's; from then on
-// every local edit is mirrored. Started after every subscriber above is wired, so a pulled
-// preference reaches the map, the charts and the checkboxes.
-startUserSync();
-
-const openModal = (id) => $(id).classList.remove("hidden");
-const closeModal = (id) => $(id).classList.add("hidden");
-
-// A searched river arrives resolved to the same three things a saved one carries — id, index, and
-// where it is — so it is gone to the same way.
-createRiverSearch({onFound: goToRiver, onClear: () => streams.setNamedRiver(null)});
-
-$("btn-settings").addEventListener("click", () => openModal("settings-modal"));
-document.querySelectorAll("[data-close]").forEach((el) => el.addEventListener("click", () => closeModal(el.dataset.close)));
-for (const id of ["settings-modal", "search-modal"]) {
-  $(id).addEventListener("click", (e) => {
-    if (e.target === $(id)) closeModal(id);
-  });
+  // Sign-in pulls the profile's preferences and saved rivers and pushes this device's; from then on
+  // every local edit is mirrored. Started after every subscriber above is wired, so a pulled
+  // preference reaches the map, the charts and the checkboxes.
+  startUserSync();
 }
 
-document.addEventListener("keydown", (e) => {
-  if (e.key !== "Escape") return;
-  document.querySelectorAll(".backdrop").forEach((m) => m.classList.add("hidden"));
-  closeAllDocks(map);
-});
+void boot();

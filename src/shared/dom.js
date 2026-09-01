@@ -48,5 +48,16 @@ export const button = ({class: cls, text, title, onclick, ...rest}) =>
 /** `document.getElementById`, which twelve modules had each defined for themselves. */
 export const $ = (id) => document.getElementById(id);
 
-/** Bytes as megabytes, for the download sizes both pages report. */
+/**
+ * Bytes as megabytes, for the download sizes both pages report.
+ *
+ * One decimal, everywhere. There were three of these and two precisions, which is how the same
+ * cached dataset came to read "38.1 MB" on the Settings row and "38.20 MB" in the explorer's
+ * column. The worker in pages/hydrography/geomWorker.js keeps its own: it reports a bare number
+ * that its callers put units on, and a worker that imports nothing is a worker that cannot break
+ * on a DOM module.
+ */
 export const mb = (bytes) => `${(bytes / 1e6).toFixed(1)} MB`;
+
+/** A count with the locale's thousands separators — every reach total either page prints. */
+export const fmt = (n) => n.toLocaleString();

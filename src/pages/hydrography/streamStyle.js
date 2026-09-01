@@ -1,5 +1,6 @@
 import {MAX_ZOOM, MIN_ZOOM, ZOOM_STEP} from './config.js';
 import {compact} from './streamAttributes.js';
+import {t, tf} from '../../shared/i18n/i18n.js';
 
 export const SOURCE = 'streams';
 export const SOURCE_LAYER = 'streams';
@@ -49,10 +50,12 @@ export const NUMBER_OPS = [
   {op: '>=', label: '≥'}, {op: '>', label: '>'},
   {op: '<=', label: '≤'}, {op: '<', label: '<'},
   {op: '==', label: '='}, {op: '!=', label: '≠'},
-  {op: 'between', label: 'in range', arity: 2},
+  {op: 'between', get label() { return t('explorer.op.inRange'); }, arity: 2},
 ];
 export const STRING_OPS = [
-  {op: '==', label: 'is'}, {op: '!=', label: 'is not'}, {op: 'in', label: 'is one of', list: true},
+  {op: '==', get label() { return t('explorer.op.is'); }},
+  {op: '!=', get label() { return t('explorer.op.isNot'); }},
+  {op: 'in', get label() { return t('explorer.op.isOneOf'); }, list: true},
 ];
 export const opsFor = type => (type === 'string' ? STRING_OPS : NUMBER_OPS);
 
@@ -87,8 +90,8 @@ export function conditionExpr(c) {
 }
 
 export const MATCH_MODES = [
-  {mode: 'all', label: 'AND', hint: 'every condition must hold'},
-  {mode: 'any', label: 'OR', hint: 'any one condition is enough'},
+  {mode: 'all', get label() { return t('explorer.match.all'); }, get hint() { return t('explorer.match.all.hint'); }},
+  {mode: 'any', get label() { return t('explorer.match.any'); }, get hint() { return t('explorer.match.any.hint'); }},
 ];
 
 export const conditionsExpr = (list, match = 'all') => {
@@ -176,7 +179,7 @@ export const newRule = ({name, conditions = [], match = 'all', color, minZoom = 
 
 /** The base block is the catch-all: no conditions, and it draws whatever no rule claimed. */
 const defaultBase = () => ({
-  name: 'All other streams',
+  name: t('explorer.style.base'),
   color: [stop(0, COLORS.stream)],
   width: [stop(3, 0.7), stop(9, 1.4), stop(14, 3)],
   opacity: [stop(3, 0.85), stop(9, 1)],
@@ -186,7 +189,7 @@ const defaultBase = () => ({
 
 export const defaultSpec = () => ({
   version: SPEC_VERSION,
-  name: 'RFS v3 default',
+  name: t('explorer.style.default'),
   scope: 'all',
   filter: {match: 'all', conditions: []},
   base: defaultBase(),
@@ -271,7 +274,7 @@ export function compileLayers(spec, {highlight = false, selection = null, names 
     BASE_LAYER_ID,
     spec.base ?? defaultBase(),
     allOf(globalFilter, ...ruleFilters.map(not)),
-    {'rfs:rule': spec.base?.name ?? 'All other streams'},
+    {'rfs:rule': spec.base?.name ?? t('explorer.style.base')},
   )];
   rules.forEach((r, i) => layers.push(layer(
     ruleLayerId(i),
@@ -336,8 +339,8 @@ const num = (v, fallback = null) => (isFinite(Number(v)) ? Number(v) : fallback)
 
 export function parseStyleJson(obj) {
   const notes = [];
-  if (!obj || typeof obj !== 'object') throw new Error('not a JSON object');
-  if (obj.format && obj.format !== SPEC_FORMAT) notes.push(`format "${obj.format}" is not ${SPEC_FORMAT} — read anyway`);
+  if (!obj || typeof obj !== 'object') throw new Error(t('explorer.style.note.notJson'));
+  if (obj.format && obj.format !== SPEC_FORMAT) notes.push(tf('explorer.style.note.format', {format: obj.format, expected: SPEC_FORMAT}));
 
   const readStops = (prop, stops, fallback) => {
     if (!Array.isArray(stops) || !stops.length) return fallback;
@@ -348,8 +351,8 @@ export function parseStyleJson(obj) {
       return {zoom: snapZoom(z), value: s?.value};
     });
     const out = normalizeStops(prop, list);
-    if (snapped) notes.push(`${snapped} ${prop} stop(s) snapped to the nearest ${ZOOM_STEP} zoom`);
-    if (out.length < list.length) notes.push(`${list.length - out.length} duplicate ${prop} stop(s) dropped`);
+    if (snapped) notes.push(tf('explorer.style.note.snapped', {n: snapped, prop, step: ZOOM_STEP}));
+    if (out.length < list.length) notes.push(tf('explorer.style.note.duplicate', {n: list.length - out.length, prop}));
     return out;
   };
 
@@ -359,7 +362,7 @@ export function parseStyleJson(obj) {
       if (b[key] == null) return null;
       const z = num(b[key]);
       if (z == null) return null;
-      if (!isGridZoom(z)) notes.push(`${key} ${z} snapped to ${snapZoom(z)}`);
+      if (!isGridZoom(z)) notes.push(tf('explorer.style.note.zoomSnapped', {key, from: z, to: snapZoom(z)}));
       return snapZoom(z);
     };
     return {
@@ -382,7 +385,7 @@ export function parseStyleJson(obj) {
     }))
     .filter(c => {
       const ok = c.attribute && opsFor(c.type).some(o => o.op === c.op) && conditionExpr(c) != null;
-      if (!ok) notes.push(`dropped an unusable condition on "${c.attribute || '(no attribute)'}"`);
+      if (!ok) notes.push(tf('explorer.style.note.badCondition', {attribute: c.attribute || t('explorer.style.note.noAttribute')}));
       return ok;
     });
 
@@ -392,12 +395,12 @@ export function parseStyleJson(obj) {
   const base = defaultSpec();
   const spec = {
     version: SPEC_VERSION,
-    name: typeof obj.name === 'string' ? obj.name : 'Loaded style',
+    name: typeof obj.name === 'string' ? obj.name : t('explorer.style.loaded'),
     scope: obj.scope?.mode === 'selection' || obj.scope === 'selection' ? 'selection' : 'all',
     filter: {match: readMatch(obj.filter?.match), conditions: readConditions(obj.filter?.conditions)},
     base: readBlock(obj.base, base.base),
     rules: (Array.isArray(obj.rules) ? obj.rules : []).map((r, i) => ({
-      ...readBlock(r, {...base.base, name: `Rule ${i + 1}`}),
+      ...readBlock(r, {...base.base, name: tf('explorer.style.rule', {n: i + 1})}),
       id: `r${++ruleSeq}`,
       enabled: r?.enabled !== false,
       match: readMatch(r?.match),
@@ -411,22 +414,22 @@ export function parseStyleJson(obj) {
 export const PRESETS = [
   {
     id: 'default',
-    label: 'v3 default',
-    hint: 'what the map draws with no rules at all',
+    labelKey: 'explorer.preset.default',
+    hintKey: 'explorer.preset.default.hint',
     needs: [],
     build: () => defaultSpec(),
   },
   {
     id: 'order-ramp',
-    label: 'Order ramp',
-    hint: 'four bands of Strahler order, each entering at its own zoom',
+    labelKey: 'explorer.preset.orderRamp',
+    hintKey: 'explorer.preset.orderRamp.hint',
     needs: ['strahlerOrder'],
     build: () => {
       const spec = defaultSpec();
-      spec.name = 'Strahler order ramp';
+      spec.name = t('explorer.preset.orderRamp.name');
       spec.base = {
         ...defaultBase(),
-        name: 'Headwaters (order < 4)',
+        name: t('explorer.preset.orderRamp.headwaters'),
         color: [stop(0, '#94c5e8')],
         width: [stop(9, 0.6), stop(14, 1.6)],
         opacity: [stop(9, 0.7), stop(11, 0.95)],
@@ -435,20 +438,20 @@ export const PRESETS = [
       };
       spec.rules = [
         newRule({
-          name: 'Major rivers (order ≥ 8)',
+          name: t('explorer.preset.orderRamp.major'),
           conditions: [{attribute: 'strahlerOrder', type: 'number', op: '>=', value: 8}],
           color: '#0b3d91',
           width: [stop(3, 1.4), stop(6.5, 2.4), stop(10, 4), stop(14, 7)],
         }),
         newRule({
-          name: 'Large rivers (order 6–7)',
+          name: t('explorer.preset.orderRamp.large'),
           conditions: [{attribute: 'strahlerOrder', type: 'number', op: 'between', value: 6, value2: 7}],
           color: '#1d6fd0',
           width: [stop(4.5, 1), stop(9, 2), stop(14, 4.5)],
           minZoom: 4.5,
         }),
         newRule({
-          name: 'Tributaries (order 4–5)',
+          name: t('explorer.preset.orderRamp.tributaries'),
           conditions: [{attribute: 'strahlerOrder', type: 'number', op: 'between', value: 4, value2: 5}],
           color: '#4a9fe0',
           width: [stop(7, 0.8), stop(9.5, 1.5), stop(14, 2.8)],
@@ -460,16 +463,16 @@ export const PRESETS = [
   },
   {
     id: 'big-rivers',
-    label: 'Big rivers only',
-    hint: 'a global visibility filter — everything below order 6 is dropped, not dimmed',
+    labelKey: 'explorer.preset.bigRivers',
+    hintKey: 'explorer.preset.bigRivers.hint',
     needs: ['strahlerOrder'],
     build: () => {
       const spec = defaultSpec();
-      spec.name = 'Big rivers only';
+      spec.name = t('explorer.preset.bigRivers.name');
       spec.filter = {match: 'all', conditions: [{attribute: 'strahlerOrder', type: 'number', op: '>=', value: 6}]};
       spec.base = {
         ...defaultBase(),
-        name: 'Order ≥ 6',
+        name: t('explorer.preset.bigRivers.base'),
         color: [stop(0, '#0f3f73')],
         width: [stop(2, 0.8), stop(6.5, 1.8), stop(11, 3.5), stop(14, 6)],
         opacity: [stop(0, 1)],
@@ -479,15 +482,15 @@ export const PRESETS = [
   },
   {
     id: 'by-area',
-    label: 'By contributing area',
-    hint: 'three bands of drainage area, coloured warm to cool',
+    labelKey: 'explorer.preset.byArea',
+    hintKey: 'explorer.preset.byArea.hint',
     needs: ['DSContArea'],
     build: () => {
       const spec = defaultSpec();
-      spec.name = 'Contributing area bands';
+      spec.name = t('explorer.preset.byArea.name');
       spec.base = {
         ...defaultBase(),
-        name: 'Under 1 G m²',
+        name: t('explorer.preset.byArea.small'),
         color: [stop(0, '#9fc7e8')],
         width: [stop(7, 0.6), stop(14, 2)],
         opacity: [stop(7, 0.75), stop(10, 1)],

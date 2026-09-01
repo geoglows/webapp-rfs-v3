@@ -3,17 +3,24 @@
 <head>
   <meta charset="utf-8"/>
   <meta content="width=device-width, initial-scale=1" name="viewport"/>
-  <title>RFS Hydrography Explorer</title>
+  <title data-i18n="explorer.title">RFS Hydrography Explorer</title>
   <meta content="Explore the GEOGLOWS River Forecast System v3 hydrography." name="description"/>
   <link href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230d1520'/%3E%3Cg fill='none' stroke='%234A90E2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M30 20L25 18.7L16.5 15.2' stroke-width='3.8'/%3E%3Cpath d='M16.5 15.2L11 9.5L7 6.5' stroke-width='2.6'/%3E%3Cpath d='M16.5 15.2L12 21.5L9.5 25.5' stroke-width='2.6'/%3E%3Cpath d='M11 9.5L4.5 9.5' stroke-width='1.7'/%3E%3Cpath d='M12 21.5L5.5 19.5' stroke-width='1.7'/%3E%3Cpath d='M25 18.7L22.8 12' stroke-width='1.7'/%3E%3Cpath d='M21.3 17L19 22.5' stroke-width='1.7'/%3E%3C/g%3E%3C/svg%3E" rel="icon"/>
 </head>
 <body>
-<div id="sidebar">
+
+<!-- The control column is structurally identical to the forecast page's: same #panel id, same
+     <header> over <main>, same pinned-header/scrolling-body split, and therefore the same CSS,
+     which now lives in shared/styles/components.css rather than being written twice at two
+     different widths. What is inside the column is this page's own. -->
+<div id="panel">
   <header>
-    <a href="/" title="GEOGLOWS apps">
-      <img alt="GEOGLOWS" height="60" src="https://cdn.apps.geoglows.org/static/images/geoglows-logo-nav.webp" width="354"/>
-    </a>
-    <h1>RFS Hydrography Explorer</h1>
+    <div class="brand">
+      <a href="/" data-i18n-title="common.portal" title="GEOGLOWS apps">
+        <img alt="GEOGLOWS" height="60" src="https://cdn.apps.geoglows.org/static/images/geoglows-logo-nav.webp" width="354"/>
+      </a>
+    </div>
+    <h1 data-i18n="explorer.title">RFS Hydrography Explorer</h1>
     <div class="row">
       <!-- off until the map is up: a river found before there is a map to paint it on is not found -->
       <button aria-label="Find a river by name or ID" class="btn icon" data-icon-name="magnifying-glass" disabled id="btn-search"
@@ -36,137 +43,157 @@
       <button class="btn icon" id="btn-settings" data-icon-name="cog-6-tooth" data-i18n-title="settings.label" title="Settings"></button>
     </div>
   </header>
-  <div id="layers-card">
-    <h2>
-      <span class="title">Layers</span>
-      <button class="btn sm" id="layers-collapse" title="Collapse the layer list"></button>
-    </h2>
-    <!-- rows built by initLayerPicker() in src/mapControls.js -->
-    <div id="layers-body"></div>
-  </div>
+  <main>
+    <div id="scroll">
+      <div id="layers-card">
+        <h2>
+          <span class="title" data-i18n="explorer.heading.layers">Layers</span>
+          <button class="btn sm" id="layers-collapse" data-i18n-title="explorer.fold.collapse"
+                  title="Collapse this section"></button>
+        </h2>
+        <!-- rows built by initLayerPicker() in src/pages/hydrography/mapControls.js -->
+        <div id="layers-body"></div>
+      </div>
 
-  <!-- SELECTION METHODS · four rows, one per answer a click can give. They are not four features
-       that stack, so they read as one list you choose from: the row that is On is what a click on
-       the map means. Download, copy and clear sit above the four, because they act on whichever
-       method is on rather than on one of them; whatever the chosen method has to show — the reach,
-       the count, the collection, the inlets — is shown under all four, in the one place, so the
-       list never moves as you switch between them. -->
-  <div id="selectors-card">
-    <h2><span class="title">River Selection Explorer</span></h2>
+      <!-- SELECTION METHODS · four rows, one per answer a click can give. They are not four features
+           that stack, so they read as one list you choose from: the row that is On is what a click on
+           the map means. Download, copy and clear sit above the four, because they act on whichever
+           method is on rather than on one of them; whatever the chosen method has to show — the reach,
+           the count, the collection, the inlets — is shown under all four, in the one place, so the
+           list never moves as you switch between them. -->
+      <div id="selectors-card">
+        <h2><span class="title" data-i18n="explorer.heading.selection">River Selection Explorer</span></h2>
 
-    <!-- One word each, so the three sit on one line. What each one actually does is in its
-         title — the download in particular is two GeoParquet files, not one. -->
-    <div id="selection-actions">
-      <button class="btn primary" disabled id="btn-geoparquet"
-              title="Download GeoParquet: two files, the selected reaches and the catchment polygon each of them drains.">
-        Download
-      </button>
-      <button class="btn" disabled id="btn-copy"
-              title="Copy the outlet riverIds the current method is holding, one per line.">
-        Copy
-      </button>
-      <button class="btn" disabled id="btn-clear"
-              title="Empty whatever the current method is holding.">Clear</button>
+        <!-- One word each, so the three sit on one line. What each one actually does is in its
+             title — the download in particular is two GeoParquet files, not one. -->
+        <div id="selection-actions">
+          <button class="btn primary" disabled id="btn-geoparquet"
+                  data-i18n="explorer.action.download" data-i18n-title="explorer.action.download.about"
+                  title="Download GeoParquet: two files, the selected reaches and the catchment polygon each of them drains.">
+            Download
+          </button>
+          <button class="btn" disabled id="btn-copy"
+                  data-i18n="explorer.action.copy" data-i18n-title="explorer.action.copy.about"
+                  title="Copy the outlet riverIds the current method is holding, one per line.">
+            Copy
+          </button>
+          <button class="btn" disabled id="btn-clear"
+                  data-i18n="explorer.action.clear" data-i18n-title="explorer.action.clear.about"
+                  title="Empty whatever the current method is holding.">Clear</button>
+        </div>
+
+        <div id="selector-rows">
+          <div class="selector-head eyebrow" id="river-select-head" data-i18n-title="explorer.mode.river.about"
+               title="One click selects just the reach it lands on. Press R.">
+            <button class="btn sm mode" id="river-select-mode" tabindex="-1">On</button>
+            <span class="title" data-i18n="explorer.mode.river">River Select</span>
+            <span class="clarify" data-i18n="explorer.mode.river.clarify">(1 River)</span>
+            <span id="river-select-count" data-i18n-title="explorer.count.reach"
+                  title="The reach you clicked"></span>
+          </div>
+
+          <div class="selector-head eyebrow" id="watershed-head" data-i18n-title="explorer.mode.watershed.about"
+               title="One click selects every reach that drains to the reach it lands on. Press W.">
+            <button class="btn sm mode" id="watershed-mode" tabindex="-1">Off</button>
+            <span class="title" data-i18n="explorer.mode.watershed">Watershed Select</span>
+            <span class="clarify" data-i18n="explorer.mode.watershed.clarify">(1 River + Upstreams)</span>
+            <span id="watershed-count" data-i18n-title="explorer.count.streams"
+                  title="Streams in the current selection"></span>
+          </div>
+
+          <div class="selector-head eyebrow" id="picks-head" data-i18n-title="explorer.mode.multi.about"
+               title="Collect a watershed outlet on every click, instead of selecting one at a time. Shift-click a river to collect one without leaving the method you are in, or press M.">
+            <button class="btn sm mode" id="picks-mode" tabindex="-1">Off</button>
+            <span class="title" data-i18n="explorer.mode.multi">Multi Select</span>
+            <span class="clarify" data-i18n="explorer.mode.multi.clarify">(Multiple Watersheds)</span>
+            <span id="picks-count" data-i18n-title="explorer.count.picks"
+                  title="Watershed outlets collected">0</span>
+          </div>
+
+          <div class="selector-head eyebrow" id="aoi-head" data-i18n-title="explorer.mode.aoi.about"
+               title="Cut an area of interest out of a watershed: click its outlet, then click each inlet to drop it and everything that drains into it. Press A.">
+            <button class="btn sm mode" id="aoi-mode" tabindex="-1">Off</button>
+            <span class="title" data-i18n="explorer.mode.aoi">AOI Subsetter</span>
+            <span class="clarify" data-i18n="explorer.mode.aoi.clarify">(Rivers between 2+ points)</span>
+            <span id="aoi-count" data-i18n-title="explorer.count.inlets"
+                  title="Inlets trimmed off the area of interest">0</span>
+          </div>
+        </div>
+
+        <!-- One readout under the four rows: only the chosen method's block is in the page. -->
+        <div id="selector-body">
+          <div id="river-select-body">
+            <div id="river-select-info"></div>
+          </div>
+          <div id="watershed-body">
+            <div id="selection-info"></div>
+          </div>
+          <div id="picks-body"></div>
+          <div id="aoi-body"></div>
+        </div>
+      </div>
+
+      <div id="river-card">
+        <h2>
+          <span class="title" data-i18n="explorer.heading.riverAttributes">River attributes</span>
+          <span id="river-card-name"></span>
+          <span id="river-card-id" data-i18n-title="explorer.riverCard.id"
+                title="The riverId of the reach you clicked"></span>
+          <button class="btn sm" id="river-collapse" data-i18n-title="explorer.fold.collapse"
+                  title="Collapse this section"></button>
+        </h2>
+        <div id="river-body"></div>
+      </div>
+
+      <!-- STYLING OPTIONS · the two things that change how the network is drawn, under one heading:
+           colouring it by the river names table, and the rule editor that draws everything else. -->
+      <div id="styling-card">
+        <h2><span class="title" data-i18n="explorer.heading.styling">Styling Options</span></h2>
+
+        <div id="names-card">
+          <h3>
+            <button class="btn sm mode names" id="names-mode" data-i18n-title="explorer.names.about"
+                    title="Colour the network by the river names table: named reaches take a colour, everything no name covers goes grey. Press N.">
+              Off
+            </button>
+            <span class="title" data-i18n="explorer.heading.names">River names</span>
+            <span id="names-count" data-i18n-title="explorer.names.count"
+                  title="Named rivers in the table"></span>
+            <button class="btn sm" id="names-collapse" data-i18n-title="explorer.fold.collapse"
+                    title="Collapse this section"></button>
+          </h3>
+          <div id="names-body"></div>
+        </div>
+
+        <div id="style-card">
+          <h3>
+            <span class="title" data-i18n="explorer.heading.streamStyle">Stream styling</span>
+            <span id="style-zoom" data-i18n-title="explorer.style.zoom"
+                  title="Current map zoom — every stop below sits on a half-zoom step">z2.0</span>
+            <button class="btn sm" id="style-collapse" data-i18n-title="explorer.fold.collapse"
+                    title="Collapse this section"></button>
+          </h3>
+          <div id="style-body"></div>
+        </div>
+      </div>
     </div>
 
-    <div id="selector-rows">
-      <div class="selector-head" id="river-select-head"
-           title="One click selects just the reach it lands on. Press R.">
-        <button class="btn sm mode" id="river-select-mode" tabindex="-1">On</button>
-        <span class="title">River Select</span>
-        <span class="clarify">(1 River)</span>
-        <span id="river-select-count" title="The reach you clicked"></span>
+    <!-- Pinned under the scrolling body rather than at the end of it: an export reporting its
+         progress should not scroll away while it runs. -->
+    <div id="panel-foot">
+      <div id="progress">
+        <div id="progress-head">
+          <span id="progress-phase"></span>
+          <span id="progress-pct"></span>
+        </div>
+        <div id="progress-bar" class="progress-track">
+          <div id="progress-fill" class="progress-fill"></div>
+        </div>
+        <div id="progress-detail"></div>
       </div>
-
-      <div class="selector-head" id="watershed-head"
-           title="One click selects every reach that drains to the reach it lands on. Press W.">
-        <button class="btn sm mode" id="watershed-mode" tabindex="-1">Off</button>
-        <span class="title">Watershed Select</span>
-        <span class="clarify">(1 River + Upstreams)</span>
-        <span id="watershed-count" title="Streams in the current selection"></span>
-      </div>
-
-      <div class="selector-head" id="picks-head"
-           title="Collect a watershed outlet on every click, instead of selecting one at a time. Shift-click a river to collect one without leaving the method you are in, or press M.">
-        <button class="btn sm mode" id="picks-mode" tabindex="-1">Off</button>
-        <span class="title">Multi Select</span>
-        <span class="clarify">(Multiple Watersheds)</span>
-        <span id="picks-count" title="Watershed outlets collected">0</span>
-      </div>
-
-      <div class="selector-head" id="aoi-head"
-           title="Cut an area of interest out of a watershed: click its outlet, then click each inlet to drop it and everything that drains into it. Press A.">
-        <button class="btn sm mode" id="aoi-mode" tabindex="-1">Off</button>
-        <span class="title">AOI Subsetter</span>
-        <span class="clarify">(Rivers between 2+ points)</span>
-        <span id="aoi-count" title="Inlets trimmed off the area of interest">0</span>
-      </div>
+      <div id="stages"></div>
     </div>
-
-    <!-- One readout under the four rows: only the chosen method's block is in the page. -->
-    <div id="selector-body">
-      <div id="river-select-body">
-        <div id="river-select-info"></div>
-      </div>
-      <div id="watershed-body">
-        <div id="selection-info"></div>
-      </div>
-      <div id="picks-body"></div>
-      <div id="aoi-body"></div>
-    </div>
-  </div>
-
-  <div id="river-card">
-    <h2>
-      <span class="title">River attributes</span>
-      <span id="river-card-name"></span>
-      <span id="river-card-id" title="The riverId of the reach you clicked"></span>
-      <button class="btn sm" id="river-collapse" title="Collapse the river attributes panel"></button>
-    </h2>
-    <div id="river-body"></div>
-  </div>
-
-  <!-- STYLING OPTIONS · the two things that change how the network is drawn, under one heading:
-       colouring it by the river names table, and the rule editor that draws everything else. -->
-  <div id="styling-card">
-    <h2><span class="title">Styling Options</span></h2>
-
-    <div id="names-card">
-      <h3>
-        <button class="btn sm mode names" id="names-mode"
-                title="Colour the network by the river names table: named reaches take a colour, everything no name covers goes grey. Press N.">
-          Off
-        </button>
-        <span class="title">River names</span>
-        <span id="names-count" title="Named rivers in the table"></span>
-        <button class="btn sm" id="names-collapse" title="Collapse the river names panel"></button>
-      </h3>
-      <div id="names-body"></div>
-    </div>
-
-    <div id="style-card">
-      <h3>
-        <span class="title">Stream styling</span>
-        <span id="style-zoom" title="Current map zoom — every stop below sits on a half-zoom step">z2.0</span>
-        <button class="btn sm" id="style-collapse" title="Collapse the styling panel"></button>
-      </h3>
-      <div id="style-body"></div>
-    </div>
-  </div>
-
-  <div id="sidebar-foot">
-    <div id="progress">
-      <div id="progress-head">
-        <span id="progress-phase"></span>
-        <span id="progress-pct"></span>
-      </div>
-      <div id="progress-bar" class="progress-track">
-        <div id="progress-fill" class="progress-fill"></div>
-      </div>
-      <div id="progress-detail"></div>
-    </div>
-    <div id="stages"></div>
-  </div>
+  </main>
 </div>
 
 <div id="map"></div>
@@ -176,17 +203,18 @@
 <div id="map-controls" class="col map-overlay">
   <div class="anchor">
     <button aria-expanded="false" aria-haspopup="true" class="btn map" id="basemap-btn"
-            title="Basemap"></button>
+            data-i18n-title="basemap.about" data-i18n-aria-label="basemap.label"
+            title="Basemap" aria-label="Basemap"></button>
     <div class="card menu hidden" id="basemap-menu" role="menu"></div>
   </div>
 </div>
 
 <div class="card map-overlay" id="legend-overlay">
-  <h2>Legend</h2>
+  <h2 data-i18n="explorer.heading.legend">Legend</h2>
   <div id="legend-items">
-    <div class="legend-item"><span class="swatch stream"></span> Stream network</div>
-    <div class="legend-item"><span class="swatch upstream"></span> Selected streams</div>
-    <div class="legend-item"><span class="swatch outlet"></span> Selected Inlet/Outlet</div>
+    <div class="legend-item"><span class="swatch stream"></span><span data-i18n="explorer.legend.streams">Stream network</span></div>
+    <div class="legend-item"><span class="swatch upstream"></span><span data-i18n="explorer.legend.selected">Selected streams</span></div>
+    <div class="legend-item"><span class="swatch outlet"></span><span data-i18n="explorer.legend.endpoints">Selected inlet / outlet</span></div>
   </div>
 </div>
 

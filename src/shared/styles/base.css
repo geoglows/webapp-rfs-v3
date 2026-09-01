@@ -17,7 +17,7 @@
 
 /* Both pages are exactly the viewport and never scroll: a fixed control column plus the map
    filling the rest, each stretched to full height by the flex box rather than by a height of its
-   own. Which column — #panel or #sidebar — is the page's business. */
+   own. The column is #panel on both pages; its rules are in components.css. */
 body {
     height: 100vh;
     overflow: hidden;
@@ -51,6 +51,10 @@ body {
 
 .between {
     justify-content: space-between;
+}
+
+.end {
+    justify-content: flex-end;
 }
 
 .grow {
@@ -126,8 +130,8 @@ h3 {
     font-variant-numeric: tabular-nums;
 }
 
-/* The scrolling control column, on both pages. */
-#panel, #sidebar {
+/* The scrolling control column, on both pages — see #panel in components.css. */
+#scroll {
     scrollbar-width: thin;
     scrollbar-color: var(--border) transparent;
 }

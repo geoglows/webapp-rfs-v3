@@ -1,10 +1,8 @@
 import {dataProgress, t} from "../i18n/i18n";
 import {heroIcon, iconButton} from "../icons/icons.js";
 import {byKey, removeAll, surveyAll} from "../data/datasets";
+import {$, mb} from "../dom.js";
 
-const $ = (id) => document.getElementById(id);
-
-const megabytes = (bytes) => `${(bytes / 1e6).toFixed(1)} MB`;
 
 /**
  * TWIN FILE: webapp-rfs-hydrography/src/dataSettings.js — the same list, with its strings inline
@@ -60,7 +58,7 @@ function createDataSettings() {
     row.name.title = t(entry.hint);
     // The size is the whole readout for a held dataset — absent means not downloaded, which is why
     // there is no "Not downloaded" text to go stale beside it.
-    row.size.textContent = row.held ? `(${megabytes(row.held.bytes)})` : "";
+    row.size.textContent = row.held ? `(${mb(row.held.bytes)})` : "";
     if (row.busy) {
       // Mid-download the button is the way out of it, so it must stay enabled and stop claiming
       // to be a download.
@@ -99,7 +97,7 @@ function createDataSettings() {
     btnNone.disabled = held.length === 0;
     if (footLine) {
       footLine.textContent = held.length
-        ? `${held.length}/${survey.length} · ${megabytes(held.reduce((sum, e) => sum + e.status.bytes, 0))}`
+        ? `${held.length}/${survey.length} · ${mb(held.reduce((sum, e) => sum + e.status.bytes, 0))}`
         : t("settings.data.empty");
     }
     return survey;

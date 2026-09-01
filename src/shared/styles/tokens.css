@@ -27,14 +27,19 @@
 
     /* Accent */
     --accent: #38bdf8;
+    /* The colour the open-source library list is written in. */
+    --library: #38bdf8;
     --accent-dim: #0ea5e9;
     --accent-soft: rgba(56, 189, 248, .14);
     --on-accent: #04121b;
 
     /* Status */
     --success: #10b981;
+    --success-bright: #34d399;
     --danger: #ef4444;
     --danger-text: #fca5a5;
+    /* The danger colour at a wash, behind a rule the styling editor has flagged. */
+    --danger-bg: rgba(239, 68, 68, .09);
     --warn: #f59e0b;
     --warn-text: #fcd34d;
 
@@ -52,7 +57,7 @@
     --upstream: #F5A623;
     --selected: #B45309;
     --selected-text: #FBBF24;
-    --group: #A78BFA;
+    --group: #F97316;
     --basin: #14b8a6;
     --catchment: #D55E00;
     --inlet: #34d399;
@@ -84,7 +89,10 @@
     --pad: 12px;
     --size: 36px;
     --icon: 20px;
-    --panel-w: 380px;
+    /* The control column's width, shared by both pages: a quarter of the window, floored at the
+       measure the styling editor's three-part rows need and capped so a wide screen gives the extra
+       room to the map. Read by #panel and by the forecast legend, which has to step past it. */
+    --panel-w: clamp(360px, 25%, 480px);
 
     --mono: "JetBrains Mono", ui-monospace, monospace;
     font-family: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
@@ -107,13 +115,16 @@
     --text-faint: #64748b;
 
     --accent: #0284c7;
+    --library: #0284c7;
     --accent-dim: #0369a1;
     --accent-soft: rgba(2, 132, 199, .12);
     --on-accent: #ffffff;
 
     --success: #059669;
+    --success-bright: #10b981;
     --danger: #dc2626;
     --danger-text: #b91c1c;
+    --danger-bg: rgba(220, 38, 38, .08);
     --warn: #f59e0b;
     --warn-text: #b45309;
 

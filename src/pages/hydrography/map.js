@@ -4,6 +4,8 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import {MAX_ZOOM, URLS} from './config.js';
 import {BASE_LAYER_ID, COLORS, compileLayers, defaultSpec, inRangeExpr} from './streamStyle.js';
+import {basemapStyle} from '../../shared/map/basemaps.js';
+import {mapReady} from '../../shared/map/ready.js';
 
 // MapLibre 6 ships its worker as a separate module and locates it by resolving
 // ./maplibre-gl-worker.mjs against its own import.meta.url. That finds it inside node_modules under
@@ -12,98 +14,19 @@ import {BASE_LAYER_ID, COLORS, compileLayers, defaultSpec, inRangeExpr} from './
 // removes the guess. Same reason, same line, as webapp-rfs-v3/src/map/map.js.
 setWorkerUrl(maplibreWorkerUrl);
 
-const TILE_SETS = {
-  'gray-light': {
-    tiles: ['https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}'],
-    maxzoom: 16,
-    attribution: 'Esri, HERE, Garmin, &copy; OpenStreetMap contributors',
-  },
-  'gray-light-labels': {
-    tiles: ['https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}'],
-    maxzoom: 16,
-    attribution: 'Esri, HERE, Garmin, &copy; OpenStreetMap contributors',
-  },
-  'gray-dark': {
-    tiles: ['https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}'],
-    maxzoom: 16,
-    attribution: 'Esri, HERE, Garmin, &copy; OpenStreetMap contributors',
-  },
-  'gray-dark-labels': {
-    tiles: ['https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}'],
-    maxzoom: 16,
-    attribution: 'Esri, HERE, Garmin, &copy; OpenStreetMap contributors',
-  },
-  imagery: {
-    tiles: ['https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
-    maxzoom: 19,
-    attribution: 'Esri, Vantor, Earthstar Geographics, and the GIS User Community',
-  },
-  places: {
-    tiles: ['https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'],
-    maxzoom: 19,
-    attribution: 'Esri, HERE, Garmin, &copy; OpenStreetMap contributors',
-  },
-  topo: {
-    tiles: ['https://services.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}'],
-    maxzoom: 19,
-    attribution: 'Esri, HERE, Garmin, USGS, NGA, FAO, NOAA, &copy; OpenStreetMap contributors, ' +
-      'and the GIS User Community',
-  },
-  osm: {
-    tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
-    maxzoom: 19,
-    attribution: '&copy; OpenStreetMap contributors',
-  },
-  // OpenTopoMap renders from its own servers and asks that its tiles not be hammered; it stops at
-  // z17, which is well past the zooms this app is read at.
-  opentopo: {
-    tiles: ['a', 'b', 'c'].map(s => `https://${s}.tile.opentopomap.org/{z}/{x}/{y}.png`),
-    maxzoom: 17,
-    attribution: '&copy; OpenStreetMap contributors, SRTM | &copy; OpenTopoMap (CC-BY-SA)',
-  },
-};
-
-export const BASEMAPS = [
-  {id: 'gray-light', label: 'Light Gray (Esri)', tileSets: ['gray-light', 'gray-light-labels']},
-  {id: 'gray-dark', label: 'Dark Gray (Esri)', tileSets: ['gray-dark', 'gray-dark-labels']},
-  {id: 'osm', label: 'OpenStreetMap', tileSets: ['osm']},
-  {id: 'opentopo', label: 'OpenTopoMap', tileSets: ['opentopo']},
-  {id: 'topo', label: 'Topographic (Esri)', tileSets: ['topo']},
-  {id: 'imagery', label: 'Imagery (Esri)', tileSets: ['imagery']},
-  {id: 'imagery-labels', label: 'Imagery + Labels (Esri)', tileSets: ['imagery', 'places']},
-];
-
 /**
- * The one the map opens on. Dark grey rather than the first entry in the list, because the network
- * is drawn in light saturated colours that were chosen against a dark ground - on the light basemap
- * they sit at about 1.8:1 and wash out. The list keeps its own order: light grey still reads first
- * in the picker, where the order is about finding a basemap, not about which one you start on.
+ * The basemap this page opens on.
+ *
+ * Dark grey rather than the shared list's first entry, because the network is drawn in light
+ * saturated colours that were chosen against a dark ground — on a light basemap they sit at about
+ * 1.8:1 and wash out. The list itself is shared with the forecast page and keeps its own order:
+ * light grey still reads first in the picker, where the order is about finding a basemap, not about
+ * which one you start on.
  */
 const DEFAULT_BASEMAP = 'gray-dark';
 
-/** A tile set's source and layer share one id, because there is exactly one layer per set. */
-const tileSetId = key => `basemap-${key}`;
-
-let basemap = DEFAULT_BASEMAP;
-
-export const currentBasemap = () => basemap;
-
-
-const basemapById = id => BASEMAPS.find(b => b.id === id) ?? BASEMAPS[0];
-
-export function setBasemap(id) {
-  const pick = basemapById(id);
-  basemap = pick.id;
-  for (const key of Object.keys(TILE_SETS)) {
-    if (map?.getLayer(tileSetId(key))) {
-      map.setLayoutProperty(tileSetId(key), 'visibility',
-        pick.tileSets.includes(key) ? 'visible' : 'none');
-    }
-  }
-}
-
 const GROUP_SOURCE = 'group';
-const GROUP = '#A78BFA';
+const GROUP = '#F97316';
 let groupLayer = 'groups';
 let groupIdField = 'groupId';
 
@@ -113,19 +36,17 @@ let basinLayer = 'hydrobasins_level2';
 let basinIdField = 'HYBAS_ID';
 
 /**
- * The polygon regions a click reports and a hover highlights, outermost first.
+ * The polygon regions a hover highlights, outermost first.
  *
- * The layer name and id field of each archive are read at boot, so these are getters rather than
- * values — by the time anything calls them the archive has been opened.
+ * The layer name of each archive is read off the archive when it attaches, so `sourceLayer` is a
+ * getter rather than a value — by the time anything calls it the archive has been opened.
  */
 const REGIONS = [
   {
-    key: 'basin', label: 'HydroBASINS L2', color: BASIN, source: BASIN_SOURCE, visible: false,
-    layer: 'basin-fill', sourceLayer: () => basinLayer, idField: () => basinIdField,
+    key: 'basin', source: BASIN_SOURCE, layer: 'basin-fill', sourceLayer: () => basinLayer,
   },
   {
-    key: 'group', label: 'Group', color: GROUP, source: GROUP_SOURCE,
-    layer: 'group-fill', sourceLayer: () => groupLayer, idField: () => groupIdField,
+    key: 'group', source: GROUP_SOURCE, layer: 'group-fill', sourceLayer: () => groupLayer,
   },
 ];
 
@@ -209,29 +130,194 @@ export let archive = null;
 let layerOrder = [BASE_LAYER_ID];
 let applied = new Map();
 
-export async function initMap() {
+/**
+ * The reference geography: the polygons drawn under the network, none of which the app needs in
+ * order to work.
+ *
+ * Each is a separate PMTiles archive on a separate URL, and each may be absent — HydroBASINS is
+ * published beside the hydrography rather than inside a group, the catchments are optional, and a
+ * dataset under construction may have none of them yet. **So none of them is allowed to hold the
+ * boot up.** They used to be read with a `Promise.all` before the map was built, which meant one
+ * unreachable reference layer cost the whole column: no map, no styling editor, no search, and no
+ * way to tell that anything had gone wrong.
+ *
+ * Now the map is built from what is certain — the basemaps and the stream network — and each of
+ * these attaches itself if and when its archive answers. An archive that 404s is skipped with a
+ * warning. One that never answers at all simply never attaches, and costs nothing but its own
+ * layers: no deadline to guess at, nothing cancelled, and an archive that takes thirty seconds
+ * still gets its layers rather than being declared dead at some arbitrary second.
+ *
+ * `read` takes the archive metadata and settles the layer name and id field, which are read off the
+ * archive rather than assumed; returning false means the archive answered but has nothing usable.
+ * `source` and `layers` are functions because both depend on what `read` just settled.
+ */
+const REFERENCES = [
+  {
+    file: 'hydrobasins_level2.pmtiles',
+    url: () => URLS.basinsPmtiles,
+    id: BASIN_SOURCE,
+    read: (md) => {
+      ({layer: basinLayer, idField: basinIdField} = readRegionArchive(md,
+        'hydrobasins_level2.pmtiles', ['HYBAS_ID', 'hybas_id', 'HYBAS_ID2', 'id'],
+        {layer: basinLayer, idField: basinIdField}));
+    },
+    source: () => ({
+      type: 'vector', url: `pmtiles://${URLS.basinsPmtiles}`,
+      promoteId: {[basinLayer]: basinIdField}, attribution: 'HydroSHEDS HydroBASINS',
+    }),
+    layers: () => [
+      {
+        id: 'basin-fill', type: 'fill', source: BASIN_SOURCE, 'source-layer': basinLayer,
+        layout: {visibility: 'none'},
+        paint: {
+          'fill-color': BASIN,
+          'fill-opacity': ['case', ['boolean', ['feature-state', 'hover'], false], 0.12, 0.05],
+        },
+      },
+      {
+        id: 'basin-line', type: 'line', source: BASIN_SOURCE, 'source-layer': basinLayer,
+        layout: {visibility: 'none'},
+        paint: {
+          'line-color': BASIN, 'line-opacity': 0.75,
+          'line-width': ['case', ['boolean', ['feature-state', 'hover'], false], 4, 1.6],
+        },
+      },
+    ],
+  },
+  {
+    file: 'catchments.pmtiles',
+    url: () => URLS.catchmentsPmtiles,
+    id: CATCHMENT_SOURCE,
+    read: readCatchmentArchive,
+    source: () => ({
+      type: 'vector', url: `pmtiles://${URLS.catchmentsPmtiles}`, attribution: 'GEOGLOWS RFS v3',
+    }),
+    layers: () => [
+      {
+        id: 'catchment-fill', type: 'fill', source: CATCHMENT_SOURCE,
+        'source-layer': catchmentFillLayer,
+        layout: {visibility: 'none'},
+        paint: {'fill-color': CATCHMENT, 'fill-opacity': CATCHMENT_OPACITY},
+      },
+      {
+        id: 'catchment-outlet', type: 'fill', source: CATCHMENT_SOURCE,
+        'source-layer': catchmentFillLayer,
+        layout: {visibility: 'none'},
+        filter: ['==', ['get', 'riverId'], -1],
+        paint: {'fill-color': COLORS.outlet, 'fill-opacity': 0.35},
+      },
+      ...(catchmentLines ? [{
+        id: 'catchment-line', type: 'line', source: CATCHMENT_SOURCE,
+        'source-layer': catchmentLineLayer,
+        layout: {visibility: 'none'},
+        paint: {
+          'line-color': CATCHMENT_EDGE,
+          'line-opacity': 0.55,
+          'line-width': ['interpolate', ['linear'], ['zoom'], 4, 0.9, 10, 1.6, 14, 2.6],
+        },
+      }] : []),
+    ],
+    // A watershed selected before the catchments landed still has to colour them.
+    after: () => syncCatchmentHighlight(),
+  },
+  {
+    file: 'groups.pmtiles',
+    url: () => URLS.groupsPmtiles,
+    id: GROUP_SOURCE,
+    read: (md) => {
+      ({layer: groupLayer, idField: groupIdField} = readRegionArchive(md, 'groups.pmtiles',
+        ['groupId', 'group_id', 'group', 'id'], {layer: groupLayer, idField: groupIdField}));
+    },
+    source: () => ({
+      type: 'vector', url: `pmtiles://${URLS.groupsPmtiles}`,
+      promoteId: {[groupLayer]: groupIdField}, attribution: 'GEOGLOWS RFS v3',
+    }),
+    layers: () => [
+      // Off until asked for, like the other two reference layers: the Group boundaries cut the
+      // world into arbitrary publishing units, and a network read against them by default reads as
+      // though the lines meant something about the rivers.
+      {
+        id: 'group-fill', type: 'fill', source: GROUP_SOURCE, 'source-layer': groupLayer,
+        layout: {visibility: 'none'},
+        paint: {
+          'fill-color': GROUP,
+          'fill-opacity': ['case', ['boolean', ['feature-state', 'hover'], false], 0.07, 0.045],
+        },
+      },
+      {
+        id: 'group-line', type: 'line', source: GROUP_SOURCE, 'source-layer': groupLayer,
+        layout: {visibility: 'none'},
+        paint: {
+          'line-color': GROUP, 'line-opacity': 0.7,
+          'line-width': ['case', ['boolean', ['feature-state', 'hover'], false], 5, 2.2],
+        },
+      },
+    ],
+  },
+];
+
+/**
+ * Where the reference layers belong relative to each other, bottom first.
+ *
+ * They no longer arrive in a known order — whichever archive answers first attaches first — so the
+ * stack cannot come from the order of insertion. Each layer is instead inserted *under* the first
+ * layer above it in this list that is already on the map, which puts them in the same order however
+ * the network behaves. The stream network is above all of them, and is the backstop.
+ */
+const REFERENCE_STACK = [
+  'basin-fill', 'basin-line',
+  'catchment-fill', 'catchment-outlet', 'catchment-line',
+  'group-fill', 'group-line',
+];
+
+const beneath = (id) => {
+  const above = REFERENCE_STACK.slice(REFERENCE_STACK.indexOf(id) + 1);
+  return above.find(other => map.getLayer(other))
+    ?? layerOrder.find(other => map.getLayer(other))
+    ?? OVERLAYS.find(other => map.getLayer(other));
+};
+
+/**
+ * Read one reference archive and, if it answers with something usable, put it on the map.
+ *
+ * Nothing awaits this and nothing checks whether it worked, so every way it can fail has to end
+ * here: an archive that 404s (openArchive says so and returns null), one that answers with nothing
+ * this app can draw (`read` returns false), and one that answers with a layer the style then
+ * rejects — a source-layer name that is not in the tiles, say. The last is the one that has to be
+ * caught rather than left to become an unhandled rejection.
+ */
+async function attachReference(protocol, ref, onChange) {
+  try {
+    const md = await openArchive(protocol, ref.url(), ref.file);
+    if (md === null) return;
+    if (ref.read(md) === false) return;
+    // A slow archive can still be in flight when the page is being torn down.
+    if (!map || map.getSource(ref.id)) return;
+    map.addSource(ref.id, ref.source());
+    for (const layer of ref.layers()) map.addLayer(layer, beneath(layer.id));
+    ref.after?.();
+    onChange?.();
+  } catch (err) {
+    console.warn(`[map] ${ref.file} answered but could not be drawn (${err.message}) — ` +
+      'its layers are left off the map');
+  }
+}
+
+/**
+ * Build the map from what is certain, and hand it back as soon as its style is up.
+ *
+ * `onReferenceLayers` fires each time one of the optional archives lands, so the layer switches can
+ * stop reporting it as unpublished.
+ */
+export async function initMap({onReferenceLayers} = {}) {
   const protocol = new Protocol({metadata: true});
   archive = new PMTiles(URLS.streamsPmtiles);
   protocol.add(archive);
   addProtocol('pmtiles', protocol.tile);
 
-  const [groupsMd, catchmentsMd, basinsMd] = await Promise.all([
-    openArchive(protocol, URLS.groupsPmtiles, 'groups.pmtiles'),
-    openArchive(protocol, URLS.catchmentsPmtiles, 'catchments.pmtiles'),
-    openArchive(protocol, URLS.basinsPmtiles, 'hydrobasins_level2.pmtiles'),
-  ]);
-  const hasGroups = groupsMd !== null;
-  if (hasGroups) {
-    ({layer: groupLayer, idField: groupIdField} = readRegionArchive(groupsMd, 'groups.pmtiles',
-      ['groupId', 'group_id', 'group', 'id'], {layer: groupLayer, idField: groupIdField}));
-  }
-  const hasBasins = basinsMd !== null;
-  if (hasBasins) {
-    ({layer: basinLayer, idField: basinIdField} = readRegionArchive(basinsMd,
-      'hydrobasins_level2.pmtiles', ['HYBAS_ID', 'hybas_id', 'HYBAS_ID2', 'id'],
-      {layer: basinLayer, idField: basinIdField}));
-  }
-  const hasCatchments = catchmentsMd !== null && readCatchmentArchive(catchmentsMd);
+  // Every raster basemap, with this page's default switched on and the rest hidden — the shared
+  // list, on the shared visibility mechanism. See shared/map/basemaps.js.
+  const ground = basemapStyle(DEFAULT_BASEMAP);
 
   const streamLayers = compileLayers(defaultSpec(), {highlight: true});
   for (const l of streamLayers) applied.set(l.id, l);
@@ -252,99 +338,14 @@ export async function initMap() {
     style: {
       version: 8,
       sources: {
-        ...Object.fromEntries(Object.entries(TILE_SETS).map(([key, t]) => [tileSetId(key), {
-          type: 'raster', tiles: t.tiles, tileSize: 256, maxzoom: t.maxzoom,
-          attribution: t.attribution,
-        }])),
-        ...(hasGroups ? {
-          [GROUP_SOURCE]: {
-            type: 'vector', url: `pmtiles://${URLS.groupsPmtiles}`,
-            promoteId: {[groupLayer]: groupIdField}, attribution: 'GEOGLOWS RFS v3',
-          },
-        } : {}),
-        ...(hasBasins ? {
-          [BASIN_SOURCE]: {
-            type: 'vector', url: `pmtiles://${URLS.basinsPmtiles}`,
-            promoteId: {[basinLayer]: basinIdField}, attribution: 'HydroSHEDS HydroBASINS',
-          },
-        } : {}),
-        ...(hasCatchments ? {
-          [CATCHMENT_SOURCE]: {
-            type: 'vector', url: `pmtiles://${URLS.catchmentsPmtiles}`,
-            attribution: 'GEOGLOWS RFS v3',
-          },
-        } : {}),
+        ...ground.sources,
         streams: {
           type: 'vector', url: `pmtiles://${URLS.streamsPmtiles}`,
           promoteId: {streams: 'riverId'}, attribution: 'GEOGLOWS RFS v3',
         },
       },
       layers: [
-        ...Object.keys(TILE_SETS).map(key => ({
-          id: tileSetId(key), type: 'raster', source: tileSetId(key),
-          layout: {
-            visibility: basemapById(basemap).tileSets.includes(key) ? 'visible' : 'none',
-          },
-        })),
-        ...(hasBasins ? [
-          {
-            id: 'basin-fill', type: 'fill', source: BASIN_SOURCE, 'source-layer': basinLayer,
-            layout: {visibility: 'none'},
-            paint: {
-              'fill-color': BASIN,
-              'fill-opacity': ['case', ['boolean', ['feature-state', 'hover'], false], 0.12, 0.05],
-            },
-          },
-          {
-            id: 'basin-line', type: 'line', source: BASIN_SOURCE, 'source-layer': basinLayer,
-            layout: {visibility: 'none'},
-            paint: {
-              'line-color': BASIN, 'line-opacity': 0.75,
-              'line-width': ['case', ['boolean', ['feature-state', 'hover'], false], 4, 1.6],
-            },
-          },
-        ] : []),
-        ...(hasCatchments ? [
-          {
-            id: 'catchment-fill', type: 'fill', source: CATCHMENT_SOURCE,
-            'source-layer': catchmentFillLayer,
-            layout: {visibility: 'none'},
-            paint: {'fill-color': CATCHMENT, 'fill-opacity': CATCHMENT_OPACITY},
-          },
-          {
-            id: 'catchment-outlet', type: 'fill', source: CATCHMENT_SOURCE,
-            'source-layer': catchmentFillLayer,
-            layout: {visibility: 'none'},
-            filter: ['==', ['get', 'riverId'], -1],
-            paint: {'fill-color': COLORS.outlet, 'fill-opacity': 0.35},
-          },
-          ...(catchmentLines ? [{
-            id: 'catchment-line', type: 'line', source: CATCHMENT_SOURCE,
-            'source-layer': catchmentLineLayer,
-            layout: {visibility: 'none'},
-            paint: {
-              'line-color': CATCHMENT_EDGE,
-              'line-opacity': 0.55,
-              'line-width': ['interpolate', ['linear'], ['zoom'], 4, 0.9, 10, 1.6, 14, 2.6],
-            },
-          }] : []),
-        ] : []),
-        ...(hasGroups ? [
-          {
-            id: 'group-fill', type: 'fill', source: GROUP_SOURCE, 'source-layer': groupLayer,
-            paint: {
-              'fill-color': GROUP,
-              'fill-opacity': ['case', ['boolean', ['feature-state', 'hover'], false], 0.07, 0.045],
-            },
-          },
-          {
-            id: 'group-line', type: 'line', source: GROUP_SOURCE, 'source-layer': groupLayer,
-            paint: {
-              'line-color': GROUP, 'line-opacity': 0.7,
-              'line-width': ['case', ['boolean', ['feature-state', 'hover'], false], 5, 2.2],
-            },
-          },
-        ] : []),
+        ...ground.layers,
         ...streamLayers,
         {
           id: PICK_UP_LAYER, type: 'line', source: 'streams', 'source-layer': 'streams',
@@ -405,23 +406,10 @@ export async function initMap() {
   // where MapLibre puts them, along the bottom right, and the legend sits above them.
   map.addControl(new NavigationControl({showCompass: false}), 'top-left');
   map.addControl(new ScaleControl({unit: 'metric'}), 'bottom-left');
-  await ready(map);
+  await mapReady(map);
+  // Started, never awaited: see REFERENCES.
+  for (const ref of REFERENCES) void attachReference(protocol, ref, onReferenceLayers);
   return map;
-}
-
-function ready(m) {
-  return new Promise(resolve => {
-    let styled = false;
-    m.on('style.load', () => {
-      styled = true;
-    });
-    m.once('load', resolve);
-    m.on('error', e => {
-      if (!styled) return;
-      console.warn(`[map] opening without waiting for "load" — ${e.error?.message ?? e.type}`);
-      resolve();
-    });
-  });
 }
 
 // ── the styled stream layers ─────────────────────────────────────────────────
@@ -588,20 +576,8 @@ function syncCatchmentHighlight() {
 }
 
 // ── the region polygons: Groups and HydroBASINS ──────────────────────────────
-/** Only layers that are on the map and switched on answer a query, so a hidden region is inert. */
+/** Only layers that are on the map answer a query, so a region that is switched off is inert. */
 const drawnRegions = () => REGIONS.filter(r => map?.getLayer(r.layer));
-
-/** The regions under `point` and the id of each, outermost first — what a click reports. */
-export function regionsAt(point) {
-  const layers = drawnRegions().map(r => r.layer);
-  if (!layers.length) return [];
-  const hits = map.queryRenderedFeatures(point, {layers});
-  return REGIONS.map(r => {
-    const f = hits.find(h => h.layer.id === r.layer);
-    const id = f?.properties?.[r.idField()] ?? f?.id;
-    return id == null ? null : {label: r.label, id, color: r.color};
-  }).filter(Boolean);
-}
 
 /** Highlight every region under `point`; pass null to drop the highlight. */
 export function hoverRegions(point) {

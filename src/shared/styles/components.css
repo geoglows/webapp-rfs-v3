@@ -1,6 +1,6 @@
 /* ── Components ───────────────────────────────────────────────────────────
    Every widget both pages use. Page sheets below this one style what is genuinely theirs — the
-   forecast panel and its docks, the hydrography sidebar and its rule editor — and nothing else. */
+   forecast page's docks and the hydrography page's rule editor — and nothing else. */
 
 /* ── Buttons · one look for every clickable thing that isn't a link ──
    .icon / .sm / .auto / .tab / .map / .round / .mini / .seg size it;
@@ -174,7 +174,7 @@
     gap: 8px;
     width: 100%;
     padding: 8px 10px;
-    font-size: var(--fs-base);
+    font-size: 14.5px;
     font-weight: 400;
     text-align: left;
     color: var(--text-dim);
@@ -280,7 +280,7 @@ input[aria-invalid="true"] {
 
 .field label {
     display: block;
-    font-size: var(--fs-base);
+    font-size: 14.5px;
     font-weight: 600;
     margin-bottom: 6px;
 }
@@ -330,6 +330,19 @@ input[aria-invalid="true"] {
     margin-top: min(22vh, 180px);
 }
 
+/* Confirm dialogs (shared/ui/confirm.js): one question and its two answers. Narrower than the
+   entry modals, because a sentence does not want 540px of card, and sitting at the same height so
+   a confirmation lands where every other short modal does. */
+.modal.confirm {
+    width: min(440px, calc(100vw - 32px));
+    align-self: start;
+    margin-top: min(22vh, 180px);
+}
+
+.confirm-actions {
+    margin-top: 14px;
+}
+
 /* text-heavy modals — Settings, whose rows wrap badly at the entry width */
 .modal.wide {
     width: min(680px, calc(100vw - 40px));
@@ -368,25 +381,105 @@ input[aria-invalid="true"] {
 
 .modal-body label.row {
     cursor: pointer;
+    font-size: 14.5px;
+    padding: 6px 0;
 }
 
 .build-stamp {
-    opacity: .7;
+    margin: 20px 0 2px;
+    text-align: center;
     font-family: var(--mono);
-    font-size: var(--fs-xs);
+    font-size: 12px;
+    opacity: .7;
+}
+
+/* ── The control column ──
+   Both pages are the same page frame: a fixed column on the left, the map filling the rest. The
+   two used to write this out separately and disagree about the width — 380px flat on one, a clamp
+   on the other — so the same browser window gave the two apps two different columns. One rule now,
+   and the clamp wins: it holds a readable measure on a laptop and gives the styling editor room on
+   a large display, where a flat 380px was simply narrow.
+
+   The structure is fixed too, and both pages' markup matches it: <header> pinned, <main> taking
+   the rest, #scroll doing the scrolling inside it. Anything a page wants pinned under the scroll —
+   the hydrography export's progress block — is a sibling of #scroll inside <main>. */
+#panel {
+    flex: 0 0 var(--panel-w);
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    /* the width change when a dock opens — see body.dock-open in the forecast sheet */
+    transition: flex-basis .3s ease;
+}
+
+/* Everything under the banner: the scrolling controls and, when one is open, the dock that shares
+   the height with them. Repeats the column #panel already is, so the two split the space left over
+   by the header. */
+#panel main {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+/* header stays pinned; everything else scrolls beneath it */
+#scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+#panel header {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+}
+
+/* the account avatar / sign-in button leads the row of actions. In the narrow panel it sits at the
+   left edge, so its menu opens rightward rather than the library's default of hanging off the
+   right. */
+#panel header .brand, #auth-action {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+#auth-action .geoglows-auth-action-menu {
+    left: 0;
+    right: auto;
+}
+
+/* The logo file is a dark wordmark, so it carries its own white chip in both themes rather than
+   disappearing into the dark one. */
+#panel header img {
+    display: block;
+    height: 30px;
+    width: auto;
+    background: #fff;
+    border-radius: 6px;
+    padding: 6px 9px;
 }
 
 /* ── Overlays on the map ── */
 .map-overlay {
     position: absolute;
-    z-index: 5;
+    z-index: 10;
 }
 
 #map-controls {
     position: absolute;
     top: 12px;
     right: 12px;
-    z-index: 5;
+    z-index: 10;
     display: flex;
     flex-direction: column;
     gap: var(--gap);
@@ -394,8 +487,9 @@ input[aria-invalid="true"] {
 
 /* Each page anchors this to its own side — the forecast page clears its panel, the hydrography
    page sits against the right edge. Only the shared look lives here. */
+/* Where it sits is the page's business — the forecast page puts it beside the column, the
+   hydrography page in the map's bottom-right corner, clear of the scale bar. */
 #legend-overlay {
-    bottom: 12px;
     max-width: 240px;
     padding: 10px 13px;
 }
@@ -441,6 +535,15 @@ input[aria-invalid="true"] {
     position: relative;
 }
 
+/* The language picker is the one that opens downward from under its button, because it sits in
+   the header rather than at the right edge of the map. */
+#lang-menu {
+    z-index: 20;
+    top: calc(100% + 8px);
+    left: 0;
+    right: auto;
+}
+
 .menu {
     position: absolute;
     /* open to the left of the button — the map's pickers sit at the right edge of the viewport */
@@ -454,16 +557,23 @@ input[aria-invalid="true"] {
 }
 
 /* ── The downloaded-data list, in both Settings dialogs ── */
+#data-list {
+    margin: 8px 0 4px;
+    --gap: 4px;
+}
+
+/* Name, size and the two buttons on one line, with the progress line dropping to a row of its own
+   underneath when there is one to show. */
 .data-row {
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-    padding: 9px 0;
-    border-bottom: 1px solid var(--border);
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    align-items: center;
+    gap: 8px;
+    font-size: 15px;
 }
 
 .data-row .row {
-    justify-content: space-between;
+    gap: 10px;
 }
 
 .data-size {
@@ -474,6 +584,7 @@ input[aria-invalid="true"] {
 }
 
 .data-row .status {
+    grid-column: 1 / -1;
     font-size: var(--fs-sm);
 }
 
@@ -488,37 +599,39 @@ input[aria-invalid="true"] {
 
 /* ── The find-a-river dialog ── */
 .search-second {
-    margin-top: 18px;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
 }
 
 .search-results {
-    margin-top: 10px;
+    margin: 8px 0 0;
     max-height: 260px;
     overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
 }
 
 .search-hit {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 1px;
+    display: block;
     width: 100%;
-    padding: 7px 9px;
+    padding: 7px 10px;
     font: inherit;
     text-align: left;
-    color: var(--text);
-    background: transparent;
-    border: 1px solid transparent;
-    border-radius: var(--r-md);
+    color: inherit;
+    background: none;
+    border: 0;
+    border-bottom: 1px solid var(--border);
     cursor: pointer;
+}
+
+.search-hit:last-child {
+    border-bottom: 0;
 }
 
 .search-hit:hover, .search-hit:focus-visible {
     background: var(--bg);
-    border-color: var(--accent);
     outline: none;
 }
 
@@ -527,7 +640,8 @@ input[aria-invalid="true"] {
 }
 
 .search-hit .hint {
-    margin-top: 0;
+    display: block;
+    margin: 1px 0 0;
     font-size: var(--fs-sm);
 }
 

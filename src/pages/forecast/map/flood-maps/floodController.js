@@ -6,8 +6,8 @@ import {legendGradient} from "./colormap";
 import {getConfig} from "riverforecastsystem/v3";
 import {t} from "../../../../shared/i18n/i18n";
 import {onStreamsVisibility, streamsVisible} from "../layers";
+import {$} from "../../../../shared/dom.js";
 
-const $ = (id) => document.getElementById(id);
 
 // What the ladder slider's stops are called before the worker has sent a spec carrying the real
 // list. Must match LADDER_LABELS in mapper.js, which is where they are actually derived.

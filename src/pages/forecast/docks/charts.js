@@ -6,8 +6,8 @@ import {heroIcon} from "../../../shared/icons/icons.js";
 import {askRiverName} from "../ui/saveRiverName.js";
 import {getSetting} from "../../../shared/settings/settings.js";
 import {closeDock, isDockOpen, onDockClosed, openDock} from "./dock.js";
+import {$} from "../../../shared/dom.js";
 
-const $ = (id) => document.getElementById(id);
 const CHARTS_TABS = ["forecast", "retro", "details"];
 
 function renderAttrTable(props) {

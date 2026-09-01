@@ -1,36 +1,57 @@
 import {firstZoomForOrder, TILE_ORDER_LADDER} from './config.js';
+import {t, tf} from '../../shared/i18n/i18n.js';
 
 export const SOURCE_LAYER = 'streams';
 
+/**
+ * What the app knows about the fields the tiles carry.
+ *
+ * The name is the key, and the key is also the i18n key: `explorer.attr.<name>` is the label and
+ * `explorer.attr.<name>.note` the sentence under it, so a field is documented by being listed here
+ * and translated in the locale files rather than in two places. `note: true` says the field has
+ * one; `note` as a function is a sentence with numbers from the tile ladder in it.
+ *
+ * Everything else — role, unit — is not language, so it stays here.
+ */
+const LADDER = () => [
+  tf('explorer.attr.ladder.first',
+    {order: TILE_ORDER_LADDER[0].minOrder, zoom: TILE_ORDER_LADDER[1].zoom}),
+  ...TILE_ORDER_LADDER.slice(1).map(s => tf('explorer.attr.ladder.next', {order: s.minOrder, zoom: s.zoom})),
+].join(', ');
+
 const KNOWN = {
-  strahlerOrder: {
-    label: 'Strahler order', role: 'measure',
-    note: `tiles carry order >= ${TILE_ORDER_LADDER[0].minOrder} below z${TILE_ORDER_LADDER[1].zoom}` +
-      TILE_ORDER_LADDER.slice(1).map(s => `, >= ${s.minOrder} from z${s.zoom}`).join('') +
-      '; order 1 is in no tile',
-  },
-  shreveOrder: {label: 'Shreve order', role: 'measure', note: 'upstream link count — magnitude, not rank'},
-  DSContArea: {label: 'Contributing area', role: 'measure', unit: 'm²', note: 'drainage area at the downstream end'},
-  areaM2: {label: 'Catchment area', role: 'measure', unit: 'm²', note: "this reach's own catchment"},
-  Length: {label: 'Reach length', role: 'measure', unit: 'm'},
-  TDXHydroRegion: {label: 'TDX-Hydro region', role: 'category'},
-  groupId: {label: 'Group', role: 'category', note: 'the per-Group geometry file a reach belongs to'},
-  riverId: {label: 'River ID', role: 'identity'},
-  nextRiverId: {label: 'Next river ID', role: 'identity', note: 'downstream reach, -1 at a terminal'},
-  outletRiverId: {label: 'Outlet river ID', role: 'identity', note: 'terminal reach of the watershed'},
-  riverIndex: {label: 'River index', role: 'identity', note: 'post-order rank — a watershed is one contiguous run of these'},
-  upstreamCount: {label: 'Upstream reaches', role: 'measure', note: 'how far back the run reaches, excluding this one'},
+  strahlerOrder: {role: 'measure', note: () => tf('explorer.attr.strahlerOrder.note', {ladder: LADDER()})},
+  shreveOrder: {role: 'measure', note: true},
+  DSContArea: {role: 'measure', unit: 'm²', note: true},
+  areaM2: {role: 'measure', unit: 'm²', note: true},
+  Length: {role: 'measure', unit: 'm'},
+  TDXHydroRegion: {role: 'category'},
+  groupId: {role: 'category', note: true},
+  riverId: {role: 'identity'},
+  nextRiverId: {role: 'identity', note: true},
+  outletRiverId: {role: 'identity', note: true},
+  riverIndex: {role: 'identity', note: true},
+  upstreamCount: {role: 'measure', note: true},
 };
 
 const ROLE_ORDER = {measure: 0, category: 1, identity: 2};
 
+/** A known field's label, or the raw field name for one the app has never heard of. */
+const labelOf = name => (KNOWN[name] ? t(`explorer.attr.${name}`) : name);
+
+/** A known field's explanatory line, or "" for a field that has none. */
+const noteOf = (name) => {
+  const note = KNOWN[name]?.note;
+  if (!note) return '';
+  return typeof note === 'function' ? note() : t(`explorer.attr.${name}.note`);
+};
+
 /** What the app knows about one field name, with a sane fallback for a field it has never seen. */
 export const fieldInfo = (name, type = 'number') => ({
-  label: name,
-  unit: '',
-  note: '',
-  role: type === 'string' ? 'category' : 'measure',
-  ...(KNOWN[name] ?? {}),
+  label: labelOf(name),
+  unit: KNOWN[name]?.unit ?? '',
+  note: noteOf(name),
+  role: KNOWN[name]?.role ?? (type === 'string' ? 'category' : 'measure'),
 });
 
 export const roleRank = role => ROLE_ORDER[role] ?? 3;
@@ -68,18 +89,22 @@ function build(fields, stats) {
     const s = byName.get(name);
     const declared = String(fields?.[name] ?? s?.type ?? 'number').toLowerCase();
     const type = declared === 'string' ? 'string' : declared === 'boolean' ? 'boolean' : 'number';
-    const known = KNOWN[name] ?? {};
     const attr = {
       name,
       type,
-      label: known.label ?? name,
-      unit: known.unit ?? '',
-      note: known.note ?? '',
-      role: known.role ?? (type === 'string' ? 'category' : 'measure'),
+      unit: KNOWN[name]?.unit ?? '',
+      role: KNOWN[name]?.role ?? (type === 'string' ? 'category' : 'measure'),
       min: s?.min ?? null,
       max: s?.max ?? null,
       values: type === 'string' ? (s?.values ?? []).map(String).sort() : [],
     };
+    // Read rather than stored: the panel is built once from the tile metadata and lives for the
+    // session, so a label baked in here would stay in whichever language the tiles happened to
+    // load in. Nothing spreads these objects, so the accessors survive every call site.
+    Object.defineProperties(attr, {
+      label: {get: () => labelOf(name), enumerable: true},
+      note: {get: () => noteOf(name), enumerable: true},
+    });
     attr.suggested = suggestedThreshold(attr);
     return attr;
   }).sort((a, b) => (ROLE_ORDER[a.role] - ROLE_ORDER[b.role]) || a.label.localeCompare(b.label));
@@ -91,7 +116,7 @@ export async function loadStreamAttributes(archive) {
     const layer = (md.vector_layers ?? []).find(l => l.id === SOURCE_LAYER) ?? md.vector_layers?.[0];
     const stats = (md.tilestats?.layers ?? []).find(l => l.layer === SOURCE_LAYER) ?? md.tilestats?.layers?.[0];
     const attributes = build(layer?.fields, stats);
-    if (!attributes.length) return {attributes: [], error: 'the tiles declare no attributes'};
+    if (!attributes.length) return {attributes: [], error: t('explorer.attr.none')};
     return {
       attributes,
       minzoom: layer?.minzoom ?? md.minzoom ?? 0,
@@ -110,7 +135,7 @@ export function orderVisibilityWarning(condition, minZoom) {
   if (!isFinite(order) || !['>=', '>', '==', 'between'].includes(condition.op)) return null;
   const wanted = condition.op === '>' ? order + 1 : order;
   const from = firstZoomForOrder(wanted);
-  if (from == null) return `order ${wanted} is in no tile at any zoom`;
-  if (from > (minZoom ?? 0)) return `order ${wanted} first appears at z${from}`;
+  if (from == null) return tf('explorer.attr.orderNeverDrawn', {order: wanted});
+  if (from > (minZoom ?? 0)) return tf('explorer.attr.orderFromZoom', {order: wanted, zoom: from});
   return null;
 }

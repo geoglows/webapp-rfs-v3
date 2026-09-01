@@ -9,7 +9,25 @@ const post = (type, extra) => self.postMessage({type, ...extra});
 const mb = b => (b / 1e6).toFixed(1);
 const fmt = n => n.toLocaleString();
 
+/**
+ * A worker has no UI language: the dictionaries are fetched and chosen on the main thread, and
+ * nothing here can read them. So a progress line is sent as the pieces it is made of — an i18n key
+ * and the numbers to fill it with — and geometry.js turns those into a sentence in whichever
+ * language the page is in. A bare string comes through untranslated, for the few pieces that are
+ * only numbers.
+ */
+const d = (key, vars) => ({key, vars});
+
 const stage = (key, pct, detail, extra) => post('stage', {key, pct, detail, ...extra});
+
+/** An error the user will read, as a key the main thread resolves. */
+class Failure extends Error {
+  constructor(key, vars) {
+    super(key);
+    this.key = key;
+    this.vars = vars;
+  }
+}
 
 const clock = s => {
   if (!isFinite(s) || s < 0) return '';
@@ -22,9 +40,11 @@ function readDetail(done, total, startedAt) {
   const secs = (performance.now() - startedAt) / 1000;
   const rate = secs > 0.4 ? done / secs : 0;
   const eta = rate > 0 && secs > 0.8 ? (total - done) / rate : NaN;
-  return `${mb(done)} / ${mb(total)} MB` +
-    (rate ? ` · ${mb(rate)} MB/s` : '') +
-    (isFinite(eta) && eta > 0.5 ? ` · ~${clock(eta)} left` : '');
+  return [
+    d('explorer.export.read', {done: mb(done), total: mb(total)}),
+    rate ? d('explorer.export.rate', {rate: mb(rate)}) : null,
+    isFinite(eta) && eta > 0.5 ? d('explorer.export.eta', {time: clock(eta)}) : null,
+  ].filter(Boolean);
 }
 
 function topLevelColumns(schema) {
@@ -105,17 +125,20 @@ self.onmessage = async e => {
     let onChunk = null;
     const fileName = url.split('/').pop();
     const raw = await hp.asyncBufferFromUrl({url}).catch(() => null);
-    if (!raw) throw new Error(`no ${fileName} published for this Group`);
+    if (!raw) throw new Failure('explorer.export.err.noFile', {file: fileName});
     const base = streamingBuffer(raw, url, n => {
       fetched += n;
       if (phase === 'read') onChunk?.(n);
     });
 
-    stage('index', 15, `${mb(raw.byteLength)} MB file`);
+    stage('index', 15, [d('explorer.export.fileSize', {mb: mb(raw.byteLength)})]);
     const md = await hp.parquetMetadataAsync(base);
     const totalRows = Number(md.num_rows);
-    stage('index', 100, `${mb(fetched)} MB read · ${md.row_groups.length} row groups`);
-    stage('plan', 5, `scanning ${md.row_groups.length} row groups`);
+    stage('index', 100, [
+      d('explorer.export.indexRead', {mb: mb(fetched)}),
+      d('explorer.export.rowGroups', {n: md.row_groups.length}),
+    ]);
+    stage('plan', 5, [d('explorer.export.scanning', {n: md.row_groups.length})]);
 
     // ---- which row groups can hold a selected reach ----
     const picked = [];
@@ -136,7 +159,7 @@ self.onmessage = async e => {
       `${keptRows.toLocaleString()}/${totalRows.toLocaleString()} rows to read for ` +
       `riverIndex ${selLo.toLocaleString()}-${selHi.toLocaleString()}` +
       (selSpans.length > 1 ? ` in ${selSpans.length} runs` : ''));
-    if (!picked.length) throw new Error('no row group contains any selected reach');
+    if (!picked.length) throw new Failure('explorer.export.err.noRowGroup');
 
     // ---- batch the row groups so each buffered span stays under the ceiling ----
     const batches = [];
@@ -150,13 +173,16 @@ self.onmessage = async e => {
       }
     }
     const spanBytes = batches.reduce((a, b) => a + (b.hi - b.lo), 0);
-    stage('plan', 100, `${picked.length}/${md.row_groups.length} groups · ${mb(spanBytes)} MB` +
-      (batches.length > 1 ? ` · ${batches.length} batches` : ''));
+    stage('plan', 100, [
+      d('explorer.export.groupsPicked', {picked: picked.length, total: md.row_groups.length}),
+      d('explorer.export.bytes', {mb: mb(spanBytes)}),
+      batches.length > 1 ? d('explorer.export.batches', {n: batches.length}) : null,
+    ].filter(Boolean));
 
     const schemaCols = topLevelColumns(md.schema);
     const cols = schemaCols.map(s => s.name);
     const ri = cols.indexOf('riverIndex');
-    if (ri < 0) throw new Error('the geometry file has no riverIndex column to select on');
+    if (ri < 0) throw new Failure('explorer.export.err.noRiverIndex');
 
     const srcGeo = md.key_value_metadata?.find(k => k.key === 'geo')?.value;
     const geo = srcGeo ? JSON.parse(srcGeo) : {version: '1.1.0', primary_column: 'geometry', columns: {}};
@@ -187,8 +213,11 @@ self.onmessage = async e => {
           return base.slice(s, en);
         },
       };
-      const batchLabel = batches.length > 1 ? `batch ${bi + 1} of ${batches.length} · ` : '';
-      stage('decode', 100 * decodedBytes / spanBytes, `${batchLabel}${fmt(b.end - b.start)} rows`);
+      const batchLabel = batches.length > 1
+        ? d('explorer.export.batch', {n: bi + 1, total: batches.length})
+        : null;
+      stage('decode', 100 * decodedBytes / spanBytes,
+        [batchLabel, d('explorer.export.rows', {n: fmt(b.end - b.start)})].filter(Boolean));
       await new Promise((resolve, reject) => {
         hp.parquetRead({
           file, metadata: md, compressors, columns: cols, rowFormat: 'array',
@@ -204,17 +233,17 @@ self.onmessage = async e => {
       });
       decodedBytes += b.hi - b.lo;
       stage('decode', 100 * decodedBytes / spanBytes,
-        `${batchLabel}${fmt(kept.length)} of ${fmt(wanted)} reaches matched`);
+        [batchLabel, d('explorer.export.matched', {n: fmt(kept.length), total: fmt(wanted)})].filter(Boolean));
     }
     phase = 'done-reading';
     // The wire is quiet from here, so whatever the fetch bar was showing is what it fetched.
-    stage('geometry', 100, `${mb(Math.min(readBytes, spanBytes))} MB of geometry fetched`);
-    stage('decode', 100, `${fmt(kept.length)} of ${fmt(wanted)} reaches matched`);
+    stage('geometry', 100, [d('explorer.export.fetched', {mb: mb(Math.min(readBytes, spanBytes))})]);
+    stage('decode', 100, [d('explorer.export.matched', {n: fmt(kept.length), total: fmt(wanted)})]);
 
     const missing = wanted - kept.length;
     if (missing > 0) {
       post('note', {
-        text: `${fmt(missing)} of ${fmt(wanted)} selected reaches have no geometry in this file`,
+        text: d('explorer.export.missing', {n: fmt(missing), total: fmt(wanted)}),
         cls: 'error',
       });
     }
@@ -225,7 +254,7 @@ self.onmessage = async e => {
     const wkb = new Array(kept.length);
     const encBar = throttle((pct, detail) => stage('encode', pct, detail));
     phase = 'encode';
-    stage('encode', 0, `0 of ${fmt(kept.length)} reaches`);
+    stage('encode', 0, [d('explorer.export.encoding', {n: 0, total: fmt(kept.length)})]);
     for (let i = 0; i < kept.length; i++) {
       const g = asGeoJson(kept[i][gi], nativeType);
       if (g) {
@@ -235,10 +264,14 @@ self.onmessage = async e => {
         wkb[i] = null;
       }
       if ((i & 511) === 511) {
-        encBar.emit(100 * (i + 1) / kept.length, `${fmt(i + 1)} of ${fmt(kept.length)} reaches`);
+        encBar.emit(100 * (i + 1) / kept.length,
+          [d('explorer.export.encoding', {n: fmt(i + 1), total: fmt(kept.length)})]);
       }
     }
-    stage('encode', 100, `${fmt(kept.length)} reaches · ${[...geomTypes].sort().join(', ') || 'no geometry'}`);
+    stage('encode', 100, [
+      d('explorer.picks.reaches.other', {n: fmt(kept.length)}),
+      geomTypes.size ? [...geomTypes].sort().join(', ') : d('explorer.export.noGeometry'),
+    ]);
 
     gcol.encoding = 'WKB';
     gcol.geometry_types = [...geomTypes].sort();
@@ -255,7 +288,10 @@ self.onmessage = async e => {
       return {name, data, type};
     });
 
-    stage('write', 0, `${fmt(kept.length)} reaches, ${cols.length} columns`, {indeterminate: true});
+    stage('write', 0, [
+      d('explorer.picks.reaches.other', {n: fmt(kept.length)}),
+      d('explorer.export.columns', {n: cols.length}),
+    ], {indeterminate: true});
 
     const out = parquetWriteBuffer({
       columnData,
@@ -264,9 +300,13 @@ self.onmessage = async e => {
       rowGroupSize: 2000,
     });
     const buffer = out.buffer ? out.buffer.slice(out.byteOffset, out.byteOffset + out.byteLength) : out;
-    stage('write', 100, `${mb(buffer.byteLength)} MB, snappy, ${Math.ceil(kept.length / 2000)} row groups`);
+    stage('write', 100, [
+      d('explorer.export.bytes', {mb: mb(buffer.byteLength)}),
+      'snappy',
+      d('explorer.export.rowGroups', {n: Math.ceil(kept.length / 2000)}),
+    ]);
     post('done', {buffer, rows: kept.length, fetched});
   } catch (err) {
-    post('error', {message: err.message});
+    post('error', err.key ? {key: err.key, vars: err.vars} : {message: err.message});
   }
 };

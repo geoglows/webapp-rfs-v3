@@ -21,6 +21,45 @@ function t(key, lang = currentLang) {
   return DICTS[lang]?.[key] ?? en[key] ?? key;
 }
 
+// `{name}` in a sentence, filled from an object. Distinct from the `{0}` slots fill() understands:
+// those move an *element* into place and only ever appear in [data-i18n-html] markup, while these
+// are values — a count, an id — written into a string a JS caller is about to show.
+const VARS = /\{(\w+)}/g;
+
+const interpolate = (text, vars) =>
+  (vars ? text.replace(VARS, (whole, name) => (name in vars ? String(vars[name]) : whole)) : text);
+
+/** A translated sentence with its `{name}` placeholders filled in. */
+function tf(key, vars, lang = currentLang) {
+  return interpolate(t(key, lang), vars);
+}
+
+const RULES = new Map();
+const rulesFor = (lang) => {
+  if (!RULES.has(lang)) RULES.set(lang, new Intl.PluralRules(lang));
+  return RULES.get(lang);
+};
+
+/**
+ * A sentence whose wording depends on a count: `tn("explorer.picks.clear", n)` reads
+ * `explorer.picks.clear.one` or `.other`, and fills `{n}` with the count in the reader's locale.
+ *
+ * English concatenating an "s" is not translation — Spanish and French agree with English about
+ * where the boundary between one and many falls, but plenty of languages do not, and the sentences
+ * around the noun inflect too. So the choice is made by `Intl.PluralRules` rather than by `n === 1`.
+ *
+ * Every locale in ./locales/ carries exactly `.one` and `.other`, which is what keeps the three
+ * files at key parity; a category a language has and the dictionary does not — French `many`, for
+ * a million and up — falls back to `.other`, which is the form French wants there anyway.
+ */
+function tn(key, count, vars, lang = currentLang) {
+  const category = rulesFor(lang).select(count);
+  const dict = DICTS[lang] ?? {};
+  const text = dict[`${key}.${category}`] ?? dict[`${key}.other`]
+    ?? en[`${key}.${category}`] ?? en[`${key}.other`] ?? key;
+  return interpolate(text, {n: count.toLocaleString(lang), ...vars});
+}
+
 /**
  * Fetch a language's dictionary if it isn't already in hand. Resolves to the code that can actually
  * be shown — the one asked for, or "en" when there is no such language or its file will not load.
@@ -151,5 +190,7 @@ export {
   dataProgress,
   getLanguage,
   setLanguage,
-  t
+  t,
+  tf,
+  tn
 };

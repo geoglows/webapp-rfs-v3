@@ -1,4 +1,5 @@
 import {el} from '../../shared/dom.js';
+import {t, tf, tn} from '../../shared/i18n/i18n.js';
 import {compact, orderVisibilityWarning} from './streamAttributes.js';
 import {
   BASE_LAYER_ID,
@@ -22,7 +23,7 @@ import {
 const select = (options, value, onchange, cls = '') => {
   const s = el('select', {class: cls, onchange});
   for (const o of options) {
-    const opt = el('option', {value: String(o.value), text: o.label});
+    const opt = el('option', {value: String(o.value), text: o.label, title: o.title});
     if (String(o.value) === String(value)) opt.selected = true;
     s.appendChild(opt);
   }
@@ -35,6 +36,9 @@ const zoomOptions = (withNone, noneLabel = '—') => [
 ];
 
 const num = v => (v === '' || v == null ? null : Number(v));
+
+/** "≈12,480 on screen" — how many reaches a compiled layer is currently drawing. */
+const onScreen = n => tf('explorer.style.onScreen', {n: n.toLocaleString()});
 
 export function createStylePanel({mount, onChange, selection, pmtiles}) {
   let spec = defaultSpec();
@@ -73,28 +77,28 @@ export function createStylePanel({mount, onChange, selection, pmtiles}) {
   // ── attribute menu ─────────────────────────────────────────────────────────
   function attrRow(a) {
     const range = a.type === 'string'
-      ? `${a.values.length} value${a.values.length === 1 ? '' : 's'}`
-      : (a.min == null ? 'number' : `${compact(a.min)} – ${compact(a.max)}`);
+      ? tn('explorer.style.values', a.values.length)
+      : (a.min == null ? t('explorer.style.numberRange') : `${compact(a.min)} – ${compact(a.max)}`);
     return el('div', {class: `attr attr-${a.role}`}, [
       el('div', {class: 'attr-top'}, [
         el('span', {class: 'attr-label', text: a.label}),
         el('button', {
-          class: 'btn mini', title: `Add an attribute styling rule for reaches matching a condition on ${a.name}`,
+          class: 'btn mini', title: tf('explorer.style.addRuleFor', {attribute: a.name}),
           onclick: () => {
             spec.rules.unshift(newRule({
               name: a.label, conditions: [newCondition(a)],
             }));
             restructured();
           },
-          text: '+ rule',
+          text: t('explorer.style.addRule'),
         }),
         el('button', {
-          class: 'btn mini', title: `Add a global visibility filter — draw only the reaches matching a condition on ${a.name}`,
+          class: 'btn mini', title: tf('explorer.style.addFilterFor', {attribute: a.name}),
           onclick: () => {
             spec.filter.conditions.push(newCondition(a));
             restructured();
           },
-          text: '+ filter',
+          text: t('explorer.style.addFilter'),
         }),
       ]),
       el('div', {class: 'attr-meta', text: `${a.name} · ${a.type} · ${range}`}),
@@ -106,16 +110,16 @@ export function createStylePanel({mount, onChange, selection, pmtiles}) {
     const box = el('details', {class: 'attr-menu', open: attributes.length <= 12});
     box.appendChild(el('summary', {
       text: attributes.length
-        ? `Attributes in the tiles (${attributes.length})`
-        : `Attributes unavailable${attrError ? ` — ${attrError}` : ''}`,
+        ? tf('explorer.style.attributes', {n: attributes.length})
+        : t('explorer.style.attributesNone') + (attrError ? ` — ${attrError}` : ''),
     }));
     if (!attributes.length) return box;
-    const roles = [['measure', 'Measures — what to style by'], ['category', 'Categories — what to filter by'],
-      ['identity', 'Identifiers — one reach each']];
-    for (const [role, title] of roles) {
+    const roles = [['measure', 'explorer.style.role.measure'], ['category', 'explorer.style.role.category'],
+      ['identity', 'explorer.style.role.identity']];
+    for (const [role, titleKey] of roles) {
       const rows = attributes.filter(a => a.role === role);
       if (!rows.length) continue;
-      box.appendChild(el('div', {class: 'attr-group', text: title}));
+      box.appendChild(el('div', {class: 'attr-group eyebrow', text: t(titleKey)}));
       for (const a of rows) box.appendChild(attrRow(a));
     }
     return box;
@@ -168,7 +172,7 @@ export function createStylePanel({mount, onChange, selection, pmtiles}) {
         }));
       }
     }
-    row.appendChild(el('button', {class: 'btn mini x', text: '✕', title: 'Remove condition', onclick: onRemove}));
+    row.appendChild(el('button', {class: 'btn mini x', text: '✕', title: t('explorer.style.removeCondition'), onclick: onRemove}));
     return row;
   }
 
@@ -188,7 +192,7 @@ export function createStylePanel({mount, onChange, selection, pmtiles}) {
         },
       }),
       ...(list.length > 1 ? [
-        el('span', {class: 'stops-label', text: 'MATCH'}),
+        el('span', {class: 'stops-label eyebrow', text: t('explorer.style.match')}),
         ...MATCH_MODES.map(m => el('button', {
           class: `btn seg${(owner.match ?? 'all') === m.mode ? ' on' : ''}`, text: m.label, title: m.hint,
           onclick: () => {
@@ -215,10 +219,10 @@ export function createStylePanel({mount, onChange, selection, pmtiles}) {
       el('span', {class: 'stops-label', text: label}),
       el('span', {
         class: 'stops-count',
-        text: stops.length > 1 ? `${stops.length} zoom stops` : 'constant'
+        text: stops.length > 1 ? tf('explorer.style.zoomStops', {n: stops.length}) : t('explorer.style.constant')
       }),
       el('button', {
-        class: 'btn mini add', text: '+ zoom', title: 'Add a stop at another zoom',
+        class: 'btn mini add', text: t('explorer.style.addZoom'), title: t('explorer.style.addZoom.about'),
         onclick: () => {
           const last = stops[stops.length - 1] ?? {zoom: 0, value: STOP_INPUT[prop].type === 'color' ? COLORS.stream : 1};
           const next = ZOOM_STEPS.find(z => z > last.zoom) ?? ZOOM_STEPS[ZOOM_STEPS.length - 1];
@@ -245,7 +249,7 @@ export function createStylePanel({mount, onChange, selection, pmtiles}) {
         }),
         stops.length > 1
           ? el('button', {
-            class: 'btn mini x', text: '✕', title: 'Remove stop',
+            class: 'btn mini x', text: '✕', title: t('explorer.style.removeStop'),
             onclick: () => {
               stops.splice(i, 1);
               restructured();
@@ -260,7 +264,7 @@ export function createStylePanel({mount, onChange, selection, pmtiles}) {
 
   function zoomRange(block) {
     return el('div', {class: 'zrange'}, [
-      el('span', {class: 'stops-label', text: 'VISIBLE'}),
+      el('span', {class: 'stops-label eyebrow', text: t('explorer.style.visible')}),
       select(zoomOptions(true, 'z0'), block.minZoom ?? '', e => {
         block.minZoom = num(e.target.value);
         if (block.maxZoom != null && block.minZoom != null && block.maxZoom <= block.minZoom) {
@@ -268,7 +272,7 @@ export function createStylePanel({mount, onChange, selection, pmtiles}) {
         }
         restructured();
       }, 'zsel'),
-      el('span', {class: 'zsep', text: 'to'}),
+      el('span', {class: 'zsep', text: t('explorer.style.to')}),
       select(zoomOptions(true, 'max'), block.maxZoom ?? '', e => {
         block.maxZoom = num(e.target.value);
         if (block.minZoom != null && block.maxZoom != null && block.maxZoom <= block.minZoom) {
@@ -277,8 +281,8 @@ export function createStylePanel({mount, onChange, selection, pmtiles}) {
         restructured();
       }, 'zsel'),
       el('span', {
-        class: 'hint', title: 'MapLibre hides a layer at and above its maxzoom',
-        text: block.maxZoom != null ? '(hidden at and above)' : ''
+        class: 'hint', title: t('explorer.style.maxzoom.about'),
+        text: block.maxZoom != null ? t('explorer.style.maxzoom') : ''
       }),
     ]);
   }
@@ -286,9 +290,9 @@ export function createStylePanel({mount, onChange, selection, pmtiles}) {
   // ── rules ──────────────────────────────────────────────────────────────────
   function styleBlock(block) {
     return el('div', {class: 'block-style'}, [
-      stopsEditor(block, 'color', 'COLOUR'),
-      stopsEditor(block, 'width', 'WIDTH'),
-      stopsEditor(block, 'opacity', 'OPACITY'),
+      stopsEditor(block, 'color', t('explorer.style.colour')),
+      stopsEditor(block, 'width', t('explorer.style.width')),
+      stopsEditor(block, 'opacity', t('explorer.style.opacity')),
       zoomRange(block),
     ]);
   }
@@ -303,7 +307,7 @@ export function createStylePanel({mount, onChange, selection, pmtiles}) {
     const head = el('div', {class: 'rule-head'}, [
       el('input', {
         type: 'checkbox', class: 'rule-on', checked: rule.enabled !== false,
-        title: 'Draw this rule', onchange: e => {
+        title: t('explorer.style.drawRule'), onchange: e => {
           rule.enabled = e.target.checked;
           restructured();
         },
@@ -317,21 +321,21 @@ export function createStylePanel({mount, onChange, selection, pmtiles}) {
         },
       }),
       el('button', {
-        class: 'btn mini', text: '▲', title: 'Higher priority', disabled: i === 0,
+        class: 'btn mini', text: '▲', title: t('explorer.style.higher'), disabled: i === 0,
         onclick: () => {
           spec.rules.splice(i - 1, 0, spec.rules.splice(i, 1)[0]);
           restructured();
         }
       }),
       el('button', {
-        class: 'btn mini', text: '▼', title: 'Lower priority', disabled: i === spec.rules.length - 1,
+        class: 'btn mini', text: '▼', title: t('explorer.style.lower'), disabled: i === spec.rules.length - 1,
         onclick: () => {
           spec.rules.splice(i + 1, 0, spec.rules.splice(i, 1)[0]);
           restructured();
         }
       }),
       el('button', {
-        class: 'btn mini x', text: '✕', title: 'Delete rule',
+        class: 'btn mini x', text: '✕', title: t('explorer.style.deleteRule'),
         onclick: () => {
           spec.rules.splice(i, 1);
           collapsed.delete(rule.id);
@@ -339,7 +343,8 @@ export function createStylePanel({mount, onChange, selection, pmtiles}) {
         }
       }),
       el('button', {
-        class: 'btn mini caret', text: open ? '▾' : '▸', title: open ? 'Collapse' : 'Expand',
+        class: 'btn mini caret', text: open ? '▾' : '▸',
+        title: t(open ? 'explorer.fold.collapse' : 'explorer.fold.expand'),
         onclick: () => {
           if (open) collapsed.add(rule.id); else collapsed.delete(rule.id);
           render();
@@ -348,27 +353,27 @@ export function createStylePanel({mount, onChange, selection, pmtiles}) {
     ]);
 
     const card = el('div', {class: `rule${rule.enabled === false ? ' off' : ''}${open ? ' open' : ''}`}, [head]);
-    const summary = describeConditions(rule.conditions, byName(), rule.match) || 'every reach';
+    const summary = describeConditions(rule.conditions, byName(), rule.match) || t('explorer.style.everyReach');
     card.appendChild(el('div', {class: 'rule-summary'}, [
       el('span', {text: summary}),
-      el('span', {class: 'rule-count', text: n == null ? '' : `≈${n.toLocaleString()} on screen`}),
+      el('span', {class: 'rule-count', text: n == null ? '' : onScreen(n)}),
     ]));
 
     if (shadowed) {
       card.appendChild(el('div', {
         class: 'warn',
-        text: 'never applies — a rule above it already matches every reach'
+        text: t('explorer.style.shadowed')
       }));
     }
     for (const c of rule.conditions) {
       const w = orderVisibilityWarning(c, rule.minZoom);
-      if (w) card.appendChild(el('div', {class: 'warn', text: `${w} — the tiles carry nothing lower`}));
+      if (w) card.appendChild(el('div', {class: 'warn', text: tf('explorer.style.orderWarning', {warning: w})}));
     }
     if (!open) return card;
 
     card.appendChild(el('div', {class: 'rule-when'}, [
-      el('span', {class: 'stops-label', text: 'WHEN'}),
-      conditionList(rule, {addLabel: '+ condition'}),
+      el('span', {class: 'stops-label eyebrow', text: t('explorer.style.when')}),
+      conditionList(rule, {addLabel: t('explorer.style.addCondition')}),
     ]));
     card.appendChild(styleBlock(rule));
     return card;
@@ -388,7 +393,7 @@ export function createStylePanel({mount, onChange, selection, pmtiles}) {
 
     return el('div', {class: 'style-toolbar'}, [
       el('div', {class: 'row'}, [
-        select([{value: '', label: 'Preset…'}, ...presets.map(p => ({value: p.id, label: p.label}))], '',
+        select([{value: '', label: t('explorer.style.preset')}, ...presets.map(p => ({value: p.id, label: t(p.labelKey), title: t(p.hintKey)}))], '',
           e => {
             const p = presets.find(x => x.id === e.target.value);
             e.target.value = '';
@@ -401,19 +406,19 @@ export function createStylePanel({mount, onChange, selection, pmtiles}) {
             restructured();
           }, 'preset'),
         el('button', {
-          class: 'btn mini', text: '+ rule', title: 'Add an empty rule',
+          class: 'btn mini', text: t('explorer.style.addRule'), title: t('explorer.style.addEmptyRule'),
           onclick: () => {
-            spec.rules.unshift(newRule({name: `Rule ${spec.rules.length + 1}`}));
+            spec.rules.unshift(newRule({name: tf('explorer.style.rule', {n: spec.rules.length + 1})}));
             restructured();
           }
         }),
       ]),
       el('div', {class: 'row'}, [
-        el('span', {class: 'stops-label', text: 'PREVIEW'}),
-        scopeBtn('all', 'All streams', 'Style every reach on the map'),
-        scopeBtn('selection', 'Selection', sel
-          ? `Fade everything outside the ${sel.count.toLocaleString()}-reach subset`
-          : 'Select a river first'),
+        el('span', {class: 'stops-label eyebrow', text: t('explorer.style.preview')}),
+        scopeBtn('all', t('explorer.style.scope.all'), t('explorer.style.scope.all.about')),
+        scopeBtn('selection', t('explorer.style.scope.selection'), sel
+          ? tf('explorer.style.scope.selection.about', {n: sel.count.toLocaleString()})
+          : t('explorer.style.scope.selection.none')),
       ]),
       el('label', {class: 'row check'}, [
         el('input', {
@@ -423,7 +428,7 @@ export function createStylePanel({mount, onChange, selection, pmtiles}) {
             onChange();
           }
         }),
-        el('span', {text: 'Keep the selection highlight over the style'}),
+        el('span', {text: t('explorer.style.keepHighlight')}),
       ]),
     ]);
   }
@@ -434,10 +439,10 @@ export function createStylePanel({mount, onChange, selection, pmtiles}) {
       onchange: e => loadFile(e.target.files?.[0])
     });
     return el('div', {class: 'style-footer'}, [
-      el('button', {class: 'btn seg primary', text: 'Download JSON', onclick: download}),
-      el('button', {class: 'btn seg', text: 'Load', title: 'Read a style JSON back in', onclick: () => file.click()}),
+      el('button', {class: 'btn seg primary', text: t('explorer.style.downloadJson'), onclick: download}),
+      el('button', {class: 'btn seg', text: t('explorer.style.load'), title: t('explorer.style.load.about'), onclick: () => file.click()}),
       el('button', {
-        class: 'btn seg', text: 'Reset', title: 'Back to the v3 default',
+        class: 'btn seg', text: t('explorer.style.reset'), title: t('explorer.style.reset.about'),
         onclick: () => {
           spec = defaultSpec();
           collapsed.clear();
@@ -493,17 +498,18 @@ export function createStylePanel({mount, onChange, selection, pmtiles}) {
     const shadow = shadowedRules(spec);
     const filterBox = el('section', {class: 'style-section'}, [
       el('h3', {}, [
-        el('span', {text: 'Global Visibility Filters'}),
-        el('span', {class: 'hint', text: spec.filter.conditions.length ? 'reaches outside them are not drawn' : 'none — every reach is drawn'}),
+        el('span', {text: t('explorer.style.filters')}),
+        el('span', {class: 'hint', text: t(spec.filter.conditions.length
+          ? 'explorer.style.filters.some' : 'explorer.style.filters.none')}),
       ]),
-      conditionList(spec.filter, {addLabel: '+ condition'}),
+      conditionList(spec.filter, {addLabel: t('explorer.style.addCondition')}),
     ]);
     mount.appendChild(filterBox);
 
     const rulesBox = el('section', {class: 'style-section'}, [
       el('h3', {}, [
-        el('span', {text: `Attribute Styling Rules (${spec.rules.length})`}),
-        el('span', {class: 'hint', text: 'first match wins'}),
+        el('span', {text: tf('explorer.style.rules', {n: spec.rules.length})}),
+        el('span', {class: 'hint', text: t('explorer.style.rules.hint')}),
       ]),
     ]);
     spec.rules.forEach((r, i) => rulesBox.appendChild(ruleCard(r, i, shadow.has(r.id))));
@@ -514,7 +520,7 @@ export function createStylePanel({mount, onChange, selection, pmtiles}) {
       el('h3', {}, [
         el('input', {
           type: 'text', class: 'rule-name base-name', value: spec.base.name,
-          title: 'What the base style is called in the exported file',
+          title: t('explorer.style.baseName'),
           oninput: e => {
             spec.base.name = e.target.value;
             changed();
@@ -522,7 +528,7 @@ export function createStylePanel({mount, onChange, selection, pmtiles}) {
         }),
         el('span', {
           class: 'rule-count base-count',
-          text: n == null ? 'everything no rule claimed' : `≈${n.toLocaleString()} on screen`
+          text: n == null ? t('explorer.style.baseCount') : onScreen(n)
         }),
       ]),
       styleBlock(spec.base),
@@ -549,14 +555,18 @@ export function createStylePanel({mount, onChange, selection, pmtiles}) {
       for (const [i, node] of [...mount.querySelectorAll('.rule')].entries()) {
         const n = counts.get(ids.get(spec.rules[i]?.id));
         const slot = node.querySelector('.rule-count');
-        if (slot) slot.textContent = n == null ? '' : `≈${n.toLocaleString()} on screen`;
+        if (slot) slot.textContent = n == null ? '' : onScreen(n);
       }
       const base = counts.get(BASE_LAYER_ID);
       const slot = mount.querySelector('.base-count');
-      if (slot && base != null) slot.textContent = `≈${base.toLocaleString()} on screen`;
+      if (slot && base != null) slot.textContent = onScreen(base);
     },
     /** A selection appeared or went away — the scope control depends on it. */
     selectionChanged() {
+      render();
+    },
+    /** Rebuild from scratch — what a language change needs, since every label here is written in JS. */
+    repaint() {
       render();
     },
     getSpec: () => spec,

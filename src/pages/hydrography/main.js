@@ -1,12 +1,11 @@
-import {el} from '../../shared/dom.js';
+import {$, el, fmt} from '../../shared/dom.js';
 import '../../shared/styles/tokens.css';
 import '../../shared/styles/base.css';
 import '../../shared/styles/components.css';
 import './style.css';
-import {Popup} from 'maplibre-gl';
 import {URLS, V3_BASE} from './config.js';
 import {upstreamRange} from './data.js';
-import {applyHighlight, applyInlets, applyPicks, applyStreamStyle, archive, clearHighlight, currentSelection, fitRiverBounds, flyToPick, hoverRegions, initMap, map, regionsAt, setSelectionHighlightVisible, streamLayerIds,} from './map.js';
+import {applyHighlight, applyInlets, applyPicks, applyStreamStyle, archive, clearHighlight, currentSelection, fitRiverBounds, flyToPick, hoverRegions, initMap, map, setSelectionHighlightVisible, streamLayerIds,} from './map.js';
 import {compileLayers} from './streamStyle.js';
 import {activePalette, activeUnnamed, loadRiverNames, nameAt, namesStyle, riverNames} from './nameColouring.js';
 import {loadStreamAttributes} from './streamAttributes.js';
@@ -17,24 +16,27 @@ import {aoi, isDownstreamOf, spanCount} from './aoi.js';
 import {renderAoi} from './aoiPanel.js';
 import {renderPicks} from './picksPanel.js';
 import {downloadGeometry} from './geometry.js';
-import {fmt, progress, progressHistory, stageHistory, stages} from './ui.js';
-import {heroIcon, hydrateIcons} from '../../shared/icons/icons.js';
+import {createCollapsible, progress, progressHistory, stageHistory, stages} from './ui.js';
+import {hydrateIcons} from '../../shared/icons/icons.js';
 import {initMapControls, syncLayerPicker} from './mapControls.js';
 import {initLanguagePicker, initSettings, initThemeToggle, onSetting} from '../../shared/settings/settings.js';
 import {createDataSettings} from '../../shared/ui/dataSettings.js';
 import {createRiverSearch} from '../../shared/ui/riverSearch.js';
 import {watch as watchRiverNames} from '../../shared/data/riverNames.js';
 import {dropLegacyDatabase} from '../../shared/data/db.js';
+import {askConfirm} from '../../shared/ui/confirm.js';
+import {wireModals} from '../../shared/ui/modals.js';
+import {t, tf, tn} from '../../shared/i18n/i18n.js';
 
 let sel = null;
 /** The whole watershed record of the reach last clicked, whatever the method made of it. */
 let lastRec = null;
+/** The raw tile properties behind the river attributes card, so a language change can re-render it. */
+let lastProps = null;
 let namesOn = false;
 let namesError = null;
 let stylePanel = null;
-let regionPopup = null;
 
-const $ = id => document.getElementById(id);
 
 // ── selection ────────────────────────────────────────────────────────────────
 const num = v => (Number.isFinite(Number(v)) ? Number(v) : null);
@@ -192,7 +194,7 @@ function renderReachInfo() {
   el.style.display = 'block';
   $('river-select-count').textContent = String(sel.outletId);
   el.innerHTML =
-    `<span class="k">reach</span> <span class="outlet">${sel.outletId}</span>` +
+    `<span class="k">${t('explorer.readout.reach')}</span> <span class="outlet">${sel.outletId}</span>` +
     (sel.strahlerOrder != null ? ` <span class="k">ord</span> ${sel.strahlerOrder}` : '') +
     (sel.groupId != null ? ` <span class="k">group</span> <span class="group">${sel.groupId}</span>` : '') +
     `<br><span class="k">riverIndex</span> ${fmt(sel.riverIndex)}`;
@@ -204,15 +206,18 @@ function renderSelectionInfo() {
   const n = sel.count;
   el.style.display = 'block';
   $('watershed-count').textContent = fmt(n);
+  // The count carries its own span, so the sentence around it is the only part translated: the
+  // number stays where the CSS expects it whatever the language does with the words.
   el.innerHTML =
-    `<span class="count">${fmt(n)}</span> <span class="k">stream${n === 1 ? '' : 's'} selected</span>` +
-    `<br><span class="k">outlet</span> <span class="outlet">${sel.outletId}</span>` +
+    `<span class="count">${fmt(n)}</span> <span class="k">${tn('explorer.readout.streamsSelected', n)}</span>` +
+    `<br><span class="k">${t('explorer.readout.outlet')}</span> <span class="outlet">${sel.outletId}</span>` +
     (sel.strahlerOrder != null ? ` <span class="k">ord</span> ${sel.strahlerOrder}` : '') +
     (sel.groupId != null ? ` <span class="k">group</span> <span class="group">${sel.groupId}</span>` : '') +
     `<br><span class="k">riverIndex</span> ${fmt(sel.lo)}&ndash;${fmt(sel.hi)}` +
     (sel.spans.length > 1
-      ? `<br><span class="k">aoi</span> ${sel.spans.length} runs <span class="k">·</span> ` +
-        `<span class="trimmed">&minus;${fmt(sel.upstreamCount + 1 - n)}</span> <span class="k">trimmed</span>`
+      ? `<br><span class="k">aoi</span> ${tn('explorer.readout.runs', sel.spans.length)} <span class="k">·</span> ` +
+        `<span class="trimmed">&minus;${fmt(sel.upstreamCount + 1 - n)}</span> ` +
+        `<span class="k">${t('explorer.readout.trimmed')}</span>`
       : '');
 }
 
@@ -222,6 +227,7 @@ function renderSelectionInfo() {
  * land — and the fold is the user's alone: a click on the map fills the panel, it never opens it.
  */
 function showRiverAttributes(props) {
+  lastProps = props;
   renderRiverAttributes($('river-body'), props);
   const id = props?.riverId;
   $('river-card-id').textContent = id == null ? '' : String(id);
@@ -233,14 +239,14 @@ function showRiverAttributes(props) {
   const river = props == null ? null : nameAt(props.riverIndex);
   const known = riverNames() != null;
   slot.classList.toggle('unnamed', river == null);
-  slot.textContent = props == null ? '' : river ? river.name : known ? 'unnamed' : '';
+  slot.textContent = props == null ? '' : river ? river.name : known ? t('explorer.names.unnamed') : '';
   slot.title = river
     ? [river.name,
-       river.watershed && river.watershed !== river.name ? `${river.watershed} watershed` : null,
+       river.watershed && river.watershed !== river.name
+         ? tf('explorer.names.watershedOf', {name: river.watershed}) : null,
        river.country,
-       'The smallest named river covering this reach — an unnamed tributary reads as the river it '
-       + 'flows into.'].filter(Boolean).join('\n')
-    : props == null ? '' : known ? 'No name in the table covers this reach.' : '';
+       t('explorer.names.about.smallest')].filter(Boolean).join('\n')
+    : props == null ? '' : known ? t('explorer.names.none') : '';
 }
 
 /**
@@ -279,12 +285,16 @@ async function copyIds() {
 }
 
 /** One Clear for all four methods: it empties what the one you are in is holding. */
-function clearCurrent() {
+async function clearCurrent() {
   if (mode !== 'multi') return clearSelection();
   const n = picks.count();
   if (!n) return;
-  if (!confirm(`Clear all ${fmt(n)} collected outlets? They are not saved anywhere else.`)) return;
-  picks.clear();
+  const ok = await askConfirm({
+    title: t('explorer.confirm.clearPicks.title'),
+    message: tn('explorer.confirm.clearPicks', n),
+    confirmKey: 'explorer.action.clear',
+  });
+  if (ok) picks.clear();
 }
 
 function clearSelection() {
@@ -384,11 +394,14 @@ let mode = picks.modeOn() ? 'multi' : 'river';
  *
  * Returns false when the answer is no, in which case the method does not change.
  */
-function leaveMode(prev) {
+async function leaveMode(prev) {
   if (prev === 'multi') {
     const n = picks.count();
-    if (n > 1 && !confirm(`Leaving multi-select clears the ${fmt(n)} collected watersheds. They ` +
-      'are not saved anywhere else. Leave and clear them?')) return false;
+    if (n > 1 && !await askConfirm({
+      title: t('explorer.confirm.leaveMulti.title'),
+      message: tn('explorer.confirm.leaveMulti', n),
+      confirmKey: 'explorer.confirm.leaveAndClear',
+    })) return false;
     picks.clear();
     return true;
   }
@@ -397,27 +410,37 @@ function leaveMode(prev) {
     // No inlets is no AOI worth the name — the outlet is just the watershed selection, and it
     // carries over to whichever method is next rather than being thrown away.
     if (!inlets.length) return true;
-    if (!confirm(`Leaving the AOI subsetter drops its outlet and the ${fmt(inlets.length)} ` +
-      `inlet${inlets.length === 1 ? '' : 's'} trimming it. Leave and clear it?`)) return false;
+    if (!await askConfirm({
+      title: t('explorer.confirm.leaveAoi.title'),
+      message: tn('explorer.confirm.leaveAoi', inlets.length),
+      confirmKey: 'explorer.confirm.leaveAndClear',
+    })) return false;
     aoi.clear();
     return true;
   }
   return true;
 }
 
-function setMode(next) {
+// One question at a time. The dialog is a promise now rather than a blocking `confirm()`, so a
+// second click on another method row while the first is still being answered would ask twice and
+// resolve into whichever order the answers came back in.
+let switching = false;
+
+async function setMode(next) {
+  if (switching) return;
   const want = next in MODES ? next : 'river';
   const prev = mode;
-  if (want !== prev && !leaveMode(prev)) return;
+  if (want !== prev) {
+    switching = true;
+    try {
+      if (!await leaveMode(prev)) return;
+    } finally {
+      switching = false;
+    }
+  }
   mode = want;
   picks.setMode(mode === 'multi');
-  for (const [name, {card}] of Object.entries(MODES)) {
-    const on = name === mode;
-    const btn = $(`${card}-mode`);
-    btn.textContent = on ? 'On' : 'Off';
-    btn.classList.toggle('on', on);
-    $('sidebar').classList.toggle(`${card}-on`, on);
-  }
+  paintModes();
   paintActions();
   // The same reach, read the other way. River and watershed are one click with two answers, so
   // switching between them repaints the map from what is already selected instead of leaving the
@@ -434,6 +457,17 @@ function setMode(next) {
   if (mode === 'aoi' && sel && !sel.reachOnly && !aoi.state().outlet) {
     const {spans: _ignored, ...rec} = sel;
     aoi.setOutlet({...rec, count: rec.hi - rec.lo + 1});
+  }
+}
+
+/** The four On/Off pills and the class that tells the stylesheet which card is open. */
+function paintModes() {
+  for (const [name, {card}] of Object.entries(MODES)) {
+    const on = name === mode;
+    const btn = $(`${card}-mode`);
+    btn.textContent = t(on ? 'explorer.mode.on' : 'explorer.mode.off');
+    btn.classList.toggle('on', on);
+    $('panel').classList.toggle(`${card}-on`, on);
   }
 }
 
@@ -519,49 +553,12 @@ function onMapHover(e) {
   hoverRegions(e.point);
 }
 
-/**
- * The id of every region polygon under the click — HydroBASINS level 2, and the Group.
- *
- * Built as nodes rather than a string: the ids come out of the tiles, so nothing from the data
- * gets to be markup.
- */
-function showRegions(e) {
-  regionPopup?.remove();
-  regionPopup = null;
-  const regions = regionsAt(e.point);
-  if (!regions.length) return;
-  const body = document.createElement('div');
-  body.className = 'region-popup-body';
-  for (const r of regions) {
-    const row = document.createElement('div');
-    row.className = 'region-row';
-    const dot = document.createElement('span');
-    dot.className = 'dot';
-    dot.style.background = r.color;
-    const k = document.createElement('span');
-    k.className = 'k';
-    k.textContent = r.label;
-    const v = document.createElement('span');
-    v.className = 'v';
-    v.textContent = String(r.id);
-    row.append(dot, k, v);
-    body.append(row);
-  }
-  regionPopup = new Popup({className: 'region-popup', maxWidth: '280px'})
-    .setLngLat(e.lngLat)
-    .setDOMContent(body)
-    .addTo(map);
-}
-
 function onMapClick(e) {
   const hits = map.queryRenderedFeatures(
     [[e.point.x - 4, e.point.y - 4], [e.point.x + 4, e.point.y + 4]], {layers: streamLayerIds()});
-  // A click that misses the network is asking about the region it landed in instead.
-  if (!hits.length) return showRegions(e);
+  if (!hits.length) return;
   const p = hits[0].properties;
   if (p.riverId == null) return;
-  regionPopup?.remove();
-  regionPopup = null;
   const mod = e.originalEvent;
   const additive = !!(mod && (mod.shiftKey || mod.metaKey || mod.ctrlKey));
   // Every field the tiles carry for that reach, whether or not a subset can be cut from it.
@@ -579,7 +576,7 @@ function onMapClick(e) {
 }
 
 // ── boot ─────────────────────────────────────────────────────────────────────
-$('btn-clear').addEventListener('click', clearCurrent);
+$('btn-clear').addEventListener('click', () => void clearCurrent());
 $('btn-copy').addEventListener('click', copyIds);
 $('btn-geoparquet').addEventListener('click', () => {
   if (!sel) return;
@@ -599,7 +596,20 @@ hydrateIcons();
 initThemeToggle();
 // The same picker the forecast page has, driven by the same shared code. Not awaited: index.html
 // ships English, and the chosen dictionary replaces it when it lands.
-initLanguagePicker(() => paintNames());
+// Everything walking [data-i18n] cannot reach: the text this file writes into the readouts, the
+// two panel bodies built as nodes, the On/Off pills, the layer switches' composed tooltips, and
+// the styling editor, which is built entirely in JS.
+initLanguagePicker(() => {
+  paintNames();
+  paintModes();
+  paintNamesMode();
+  if (sel) renderSelectionInfo();
+  showRiverAttributes(lastProps);
+  paintPicks();
+  paintAoi();
+  syncLayerPicker();
+  stylePanel?.repaint();
+});
 
 // ── the river names section ──────────────────────────────────────────────────
 /**
@@ -624,14 +634,14 @@ function paintNames() {
   if (!n) {
     $('names-count').textContent = '';
     $('names-body').replaceChildren(el('div', {class: 'names-hint', text: namesError
-      ? `The names table could not be read: ${namesError}`
-      : 'Loading the river names…'}));
+      ? tf('explorer.names.failed', {error: namesError})
+      : t('explorer.names.loading')}));
     return;
   }
   $('names-count').textContent = fmt(n.riverCount);
   $('names-body').replaceChildren(
-    row(activePalette(), 'Named'),
-    row([activeUnnamed()], 'No name in the table'),
+    row(activePalette(), t('explorer.names.named')),
+    row([activeUnnamed()], t('explorer.names.unnamedLegend')),
   );
 }
 
@@ -640,23 +650,20 @@ function setNamesOn(on, {say = false} = {}) {
     return;
   }
   namesOn = on;
-  $('names-mode').textContent = on ? 'On' : 'Off';
-  $('names-mode').classList.toggle('on', on);
-  $('sidebar').classList.toggle('names-on', on);
-  if (on) setNamesCollapsed(false);
+  paintNamesMode();
+  if (on) namesFold.set(false);
   applyStyle();
 }
 
-function setNamesCollapsed(collapsed) {
-  $('sidebar').classList.toggle('names-collapsed', collapsed);
-  $('names-collapse').replaceChildren(heroIcon(collapsed ? 'chevron-right' : 'chevron-down'));
-  $('names-collapse').title = collapsed
-    ? 'Expand the river names panel'
-    : 'Collapse the river names panel';
+/** The names card's own On/Off pill — repainted on a language change without re-running the mode. */
+function paintNamesMode() {
+  $('names-mode').textContent = t(namesOn ? 'explorer.mode.on' : 'explorer.mode.off');
+  $('names-mode').classList.toggle('on', namesOn);
+  $('panel').classList.toggle('names-on', namesOn);
 }
 
-$('names-collapse').addEventListener('click', () =>
-  setNamesCollapsed(!$('sidebar').classList.contains('names-collapsed')));
+const namesFold = createCollapsible('names', {collapsed: true});
+
 $('names-mode').addEventListener('click', () => setNamesOn(!namesOn, {say: true}));
 
 // Same guard the method keys use, so typing "n" into the styling editor stays typing.
@@ -670,7 +677,6 @@ window.addEventListener('keydown', e => {
 // The switch cannot do anything until the table is here, so it says so rather than looking broken.
 $('names-mode').disabled = true;
 paintNames();
-setNamesCollapsed(true);
 loadRiverNames()
   .then(() => {
     $('names-mode').disabled = false;
@@ -686,21 +692,13 @@ loadRiverNames()
   });
 
 // ── the styling section ──────────────────────────────────────────────────────
-function setStyleCollapsed(collapsed) {
-  $('sidebar').classList.toggle('style-collapsed', collapsed);
-  $('style-collapse').replaceChildren(heroIcon(collapsed ? 'chevron-right' : 'chevron-down'));
-  $('style-collapse').title = collapsed ? 'Expand the styling panel' : 'Collapse the styling panel';
-}
-
-$('style-collapse').addEventListener('click', () =>
-  setStyleCollapsed(!$('sidebar').classList.contains('style-collapsed')));
-setStyleCollapsed(true);
+createCollapsible('style', {collapsed: true});
 
 // ── the method rows ──────────────────────────────────────────────────────────
 // The whole row is the switch, not just the On/Off pill in it, because the four rows are one
 // control: you are picking which of them a click on the map belongs to.
 for (const [name, {card}] of Object.entries(MODES)) {
-  $(`${card}-head`).addEventListener('click', () => setMode(name));
+  $(`${card}-head`).addEventListener('click', () => void setMode(name));
 }
 
 // The other way in, for a session spent on the map rather than in the panel. The key of the method
@@ -713,51 +711,37 @@ window.addEventListener('keydown', e => {
   if (!hit) return;
   const t = e.target;
   if (t?.isContentEditable || ['INPUT', 'SELECT', 'TEXTAREA'].includes(t?.tagName)) return;
-  setMode(mode === hit[0] ? 'river' : hit[0]);
+  void setMode(mode === hit[0] ? 'river' : hit[0]);
 });
 
 paintPicks();
 paintAoi();
-setMode(mode);
+void setMode(mode);
 
 // ── the layer switches ───────────────────────────────────────────────────────
 // mapControls.js fills the rows; the fold is the column's business, like every other section's.
-function setLayersCollapsed(collapsed) {
-  $('sidebar').classList.toggle('layers-collapsed', collapsed);
-  $('layers-collapse').replaceChildren(heroIcon(collapsed ? 'chevron-right' : 'chevron-down'));
-  $('layers-collapse').title = collapsed ? 'Expand the layer list' : 'Collapse the layer list';
-}
-
-$('layers-collapse').addEventListener('click', () =>
-  setLayersCollapsed(!$('sidebar').classList.contains('layers-collapsed')));
-setLayersCollapsed(false);
+createCollapsible('layers');
 
 // ── the watershed selector ───────────────────────────────────────────────────
 // What the last click selected, in the readout the four rows share.
 
 // ── the river attributes section ─────────────────────────────────────────────
-function setRiverCollapsed(collapsed) {
-  $('sidebar').classList.toggle('river-collapsed', collapsed);
-  $('river-collapse').replaceChildren(heroIcon(collapsed ? 'chevron-right' : 'chevron-down'));
-  $('river-collapse').title = collapsed
-    ? 'Expand the river attributes panel'
-    : 'Collapse the river attributes panel';
-}
-
-$('river-collapse').addEventListener('click', () =>
-  setRiverCollapsed(!$('sidebar').classList.contains('river-collapsed')));
-setRiverCollapsed(false);
+createCollapsible('river');
 showRiverAttributes(null);
 
 // ── the map's own controls ───────────────────────────────────────────────────
 // The layer switches, the basemap choice and the legend live over the map rather than in this
-// column; mapControls.js owns all three.
+// column; mapControls.js owns all three. Wired here, before the map exists, and deliberately: none
+// of it needs one, and an archive that never answers must not be able to take the controls down
+// with it. The switches read as unavailable until there are layers for them to report on.
 initMapControls();
 
 // ── settings ─────────────────────────────────────────────────────────────────
 // The cog beside the theme button. Wired before anything subscribes, so that onSetting() below
 // hands out the stored value rather than the fallback.
 initSettings();
+// The cog opens the dialog, ✕ and the backdrop and Escape close it — the same three on both pages.
+wireModals();
 // What the two apps have cached on this device, and the buttons to fetch or erase it.
 createDataSettings();
 onSetting('legend', on => $('legend-overlay').classList.toggle('hidden', !on));
@@ -781,12 +765,15 @@ let ready = false;
 (async () => {
   try {
     console.info(`[explorer] v3 base ${V3_BASE}`);
-    progress.begin('Loading the map');
-    const m = await initMap();
+    progress.begin(t('explorer.loadingMap'));
+    // The reference polygons attach themselves whenever their archives answer, which may be after
+    // this resolves or never; each arrival re-reads the switches so the layer stops reporting as
+    // unpublished the moment it is real.
+    const m = await initMap({onReferenceLayers: syncLayerPicker});
+    syncLayerPicker();
     m.on('click', onMapClick);
     m.on('mousemove', onMapHover);
     m.on('mouseout', () => hoverRegions(null));
-    syncLayerPicker();
     // The collection outlives the page, so whatever was restored is painted as soon as there is a
     // map to paint it on.
     applyPicks(picks.all());

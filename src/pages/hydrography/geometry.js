@@ -1,40 +1,57 @@
 import {URLS} from './config.js';
-import {fmt, progress, stages} from './ui.js';
+import {progress, stages} from './ui.js';
+import {fmt} from '../../shared/dom.js';
+import {t, tf, tn} from '../../shared/i18n/i18n.js';
 
 let running = false;
 export const isBusy = () => running;
 
+// Two files, two halves each, seven phases per half. Every label is a key rather than a string:
+// the whole block is read out into the export's progress list, which is as much a part of the UI
+// as anything in the column.
 const DATASETS = [
-  {key: 'streams', label: 'Streams', url: URLS.streams},
-  {key: 'catchments', label: 'Catchments', url: URLS.catchments},
+  {key: 'streams', labelKey: 'layers.streams', url: URLS.streams},
+  {key: 'catchments', labelKey: 'explorer.layers.catchments', url: URLS.catchments},
 ];
 
 const KINDS = [
-  {key: 'download', label: 'download'},
-  {key: 'process', label: 'processing'},
+  {key: 'download', labelKey: 'explorer.export.download'},
+  {key: 'process', labelKey: 'explorer.export.process'},
 ];
 
 const PHASES = [
-  {key: 'index', kind: 'download', label: 'File index', weight: 4},
-  {key: 'geometry', kind: 'download', label: 'Geometry bytes', weight: 96},
-  {key: 'prepare', kind: 'process', label: 'Prepare selection', weight: 2},
-  {key: 'plan', kind: 'process', label: 'Prune row groups', weight: 6},
-  {key: 'decode', kind: 'process', label: 'Decode + filter rows', weight: 42},
-  {key: 'encode', kind: 'process', label: 'Encode geometry', weight: 36},
-  {key: 'write', kind: 'process', label: 'Write GeoParquet', weight: 14},
+  {key: 'index', kind: 'download', labelKey: 'explorer.export.index', weight: 4},
+  {key: 'geometry', kind: 'download', labelKey: 'explorer.export.geometry', weight: 96},
+  {key: 'prepare', kind: 'process', labelKey: 'explorer.export.prepare', weight: 2},
+  {key: 'plan', kind: 'process', labelKey: 'explorer.export.plan', weight: 6},
+  {key: 'decode', kind: 'process', labelKey: 'explorer.export.decode', weight: 42},
+  {key: 'encode', kind: 'process', labelKey: 'explorer.export.encode', weight: 36},
+  {key: 'write', kind: 'process', labelKey: 'explorer.export.write', weight: 14},
 ];
 
 /** Phase and group keys are namespaced by dataset, so the two runs cannot address each other's. */
 const scoped = (dataset, key) => `${dataset}:${key}`;
 
-const EXPORT_PLAN = {
+// Built per run rather than once at import, so an export started after a language change is
+// reported in that language.
+const exportPlan = () => ({
   groups: DATASETS.flatMap(d => KINDS.map(k => ({
-    key: scoped(d.key, k.key), label: `${d.label} · ${k.label}`,
+    key: scoped(d.key, k.key), label: `${t(d.labelKey)} · ${t(k.labelKey)}`,
   }))),
   phases: DATASETS.flatMap(d => PHASES.map(p => ({
-    key: scoped(d.key, p.key), group: scoped(d.key, p.kind), label: p.label, weight: p.weight,
+    key: scoped(d.key, p.key), group: scoped(d.key, p.kind), label: t(p.labelKey), weight: p.weight,
   }))),
-};
+});
+
+/**
+ * A progress line, as the worker described it: a list of pieces, each either an `{key, vars}` the
+ * dictionary turns into words or a plain string that is only numbers. See the note in geomWorker.js
+ * — a worker cannot read the dictionary, so it says what it means and this says it in a language.
+ */
+const detailText = detail => (Array.isArray(detail)
+  ? detail.map(piece => (typeof piece === 'string' ? piece : tf(piece.key, piece.vars)))
+    .filter(Boolean).join(' · ')
+  : detail);
 
 function save(buffer, name) {
   const a = document.createElement('a');
@@ -47,26 +64,27 @@ function save(buffer, name) {
 function runDataset(dataset, {groupId, outletId, lo, hi, count, spans}) {
   const key = p => scoped(dataset.key, p);
   return new Promise((resolve, reject) => {
-    stages.done(key('prepare'), `${fmt(count)} reaches · riverIndex ${fmt(lo)}-${fmt(hi)}` +
-      (spans?.length > 1 ? ` · ${spans.length} runs` : ''));
-    stages.set(key('index'), {pct: 2, detail: `opening Group ${groupId}`});
+    stages.done(key('prepare'), `${tn('explorer.picks.reaches', count)} · riverIndex ${fmt(lo)}-${fmt(hi)}` +
+      (spans?.length > 1 ? ` · ${tn('explorer.readout.runs', spans.length)}` : ''));
+    stages.set(key('index'), {pct: 2, detail: tf('explorer.export.opening', {group: groupId})});
     const worker = new Worker(new URL('./geomWorker.js', import.meta.url), {type: 'module'});
 
     worker.onmessage = e => {
       const m = e.data;
       if (m.type === 'note') return;
       if (m.type === 'stage') {
-        return stages.set(key(m.key), {pct: m.pct, detail: m.detail, indeterminate: m.indeterminate});
+        return stages.set(key(m.key),
+          {pct: m.pct, detail: detailText(m.detail), indeterminate: m.indeterminate});
       }
       worker.terminate();
-      if (m.type === 'error') return reject(new Error(m.message));
+      if (m.type === 'error') return reject(new Error(m.key ? tf(m.key, m.vars) : m.message));
       const name = `rfs_v3_group${groupId}_${outletId}_${dataset.key}.parquet`;
       save(m.buffer, name);
       resolve();
     };
     worker.onerror = err => {
       worker.terminate();
-      reject(new Error(err.message || 'the geometry worker stopped'));
+      reject(new Error(err.message || t('explorer.export.workerStopped')));
     };
 
     worker.postMessage({url: dataset.url(groupId), lo, hi, spans});
@@ -94,7 +112,7 @@ export function downloadGeometry({groupId, outletId, lo, hi, count, spans, onSet
   }
   running = true;
   progress.hide();
-  stages.begin(EXPORT_PLAN);
+  stages.begin(exportPlan());
   runAll({groupId, outletId, lo, hi, count, spans}).finally(() => {
     running = false;
     onSettled?.();

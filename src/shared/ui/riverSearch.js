@@ -1,10 +1,9 @@
-import {el} from "../dom.js";
+import {$, el} from "../dom.js";
 import {dataProgress, t} from "../i18n/i18n";
 import {resolve} from "../data/riverIndex";
 import {load as loadNames, search as searchNames} from "../data/riverNames";
 import {locate} from "../data/riverLocation";
 
-const $ = (id) => document.getElementById(id);
 
 // Long enough that a burst of typing is one search, short enough to feel like none. The search
 // itself is a scan of a few hundred rows in memory, so this is about how often the list is rebuilt

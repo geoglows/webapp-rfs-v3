@@ -1,133 +1,9 @@
-/* ── Tokens ── */
-:root, :root[data-theme="dark"] {
-    --bg: #0a0e17;
-    --surface: #111827;
-    --surface2: #1e293b;
-    --border: #334155;
-    --text: #e2e8f0;
-    --text-dim: #94a3b8;
-    --accent: #38bdf8;
-    --success: #10b981;
-    --danger: #ef4444;
-    --warn: #f59e0b;
-    --inlet: #34d399;
-    --outlet: #f472b6;
-    --corridor: #fbbf24;
-    --library: #38bdf8;
-    --saved: #ff4fa3;
-    --on-accent: #04121b;
-    --shadow-color: 0, 0, 0;
-    --radius: 8px;
-    --mono: "JetBrains Mono", ui-monospace, monospace;
-    --rfs-chart-axis: var(--text-dim);
-    --rfs-chart-text: var(--text);
-    --rfs-chart-grid: rgba(148, 163, 184, .12);
-    font-family: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
-}
-
-/* light theme — toggled via the header sun/moon button (see settings/settings.js) */
-:root[data-theme="light"] {
-    --bg: #eef2f7;
-    --surface: #ffffff;
-    --surface2: #f1f5f9;
-    --border: #cbd5e1;
-    /* Black, both of them: on a light ground a "dimmed" grey is just lower contrast, not hierarchy. */
-    --text: #000000;
-    --text-dim: #000000;
-    --accent: #0284c7;
-    --success: #059669;
-    --danger: #dc2626;
-    --warn: #f59e0b;
-    --inlet: #059669;
-    --outlet: #db2777;
-    --corridor: #d97706;
-    --library: #0284c7;
-    --saved: #db2777;
-    --on-accent: #ffffff;
-    --shadow-color: 100, 116, 139;
-    --rfs-chart-axis: var(--text);
-    --rfs-chart-text: var(--text);
-    --rfs-chart-grid: rgba(15, 23, 42, .14);
-}
-
-/* ── Reset · page frame ── */
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-}
-
-/* !important because the classes that lay a thing out set display themselves — .btn.icon is a flex
-   box, .dock a flex column — and would otherwise outrank both of these. */
-.hidden, [hidden] {
-    display: none !important;
-}
-
-/* the page is exactly the viewport and never scrolls: a fixed left panel + the map filling the rest,
-   each stretched to the full height by the flex box rather than by a height of its own */
-body {
-    height: 100vh;
-    overflow: hidden;
-    background: var(--bg);
-    color: var(--text);
-    display: flex;
-}
-
-#panel {
-    flex: 0 0 380px;
-    z-index: 10;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    background: var(--surface);
-    border-right: 1px solid var(--border);
-    transition: flex-basis .3s ease; /* the width change when a dock opens */
-}
-
-/* Everything under the banner: the scrolling controls and, when one is open, the dock that shares
-   the height with them. Repeats the column #panel already is, so the two split the space left over
-   by the header. */
-#panel main {
-    flex: 1 1 auto;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-}
-
-/* header stays pinned; everything else scrolls beneath it */
-#scroll {
-    flex: 1 1 auto;
-    min-height: 0;
-    overflow-y: auto;
-}
-
-/* ── Layout primitives · these two plus --gap lay out nearly everything ── */
-.row {
-    display: flex;
-    align-items: center;
-    gap: var(--gap, 8px);
-}
-
-/* ── Type ── */
-h1 {
-    font-family: var(--mono);
-    font-size: 21px;
-    font-weight: 700;
-    letter-spacing: 1px;
-    line-height: 1.25;
-    color: var(--accent);
-}/* Every heading below the app title is one of these: a small mono eyebrow over a block of controls or of prose. h2 titles a panel section, h4 a run of settings or paragraphs inside a modal. */ h2, h4 {
-    color: var(--text-dim);
-}/* the title of a modal or of a dock */ h3 {
-    flex: 0 0 auto;
-    color: var(--accent);
-}
-
-/* a hint that is a rejection rather than an aside — see say() in ui/riverSearch.js */
-.hint.error {
-    color: var(--danger);
-    font-weight: 600;
-}
+/* ── The forecast viewer's own styles ──────────────────────────────────────
+   Everything shared with the hydrography explorer — the tokens, the page frame, the control column,
+   the buttons, fields, cards, modals, menus, map overlays, legend swatches and progress bars — is
+   in src/shared/styles/. What is left here is what only this page has: the prose and tables the
+   docks render, the flood-mapping controls, the timeseries player, the charts, the docks
+   themselves, and the layout the page rearranges into while one of them is open. */
 
 .warning {
     font-size: 14px;
@@ -137,66 +13,6 @@ h1 {
     border-radius: 6px;
     padding: 9px 11px;
     font-weight: 600;
-}
-
-/* ── Controls · one look for every clickable thing that isn't a link.
-   .icon / .sm / .auto / .tab / .map / .round size it · .primary / .toggle /
-   .active / .danger / .saved colour it. (.opt is a menu row and .chart-btn
-   comes from the charts library — both take the base and override from there.) ── */
-.btn, .opt, .chart-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    padding: 9px 12px;
-    font-size: 15px;
-    font-weight: 600;
-    color: var(--text);
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    cursor: pointer;
-    transition: .12s;
-}
-
-/* Colours and states come after the sizes, so that a size variant setting its own colour (.icon,
-   .tab) doesn't outrank the state that should be showing. */
-.btn.primary {
-    color: var(--on-accent);
-    background: var(--accent);
-    border-color: var(--accent);
-}
-
-.btn.primary:hover:not(:disabled) {
-    color: var(--on-accent);
-    filter: brightness(1.08);
-}
-
-/* An on/off button that fills when it is on rather than only outlining: flood mapping mode changes
-   what a click on the map does, which is worth more than a highlight. */
-.btn.toggle.active {
-    color: var(--on-accent);
-    background: var(--accent);
-}
-
-/* e.g. locked while flood mapping mode owns the stream rendering */
-select:disabled, input:disabled {
-    opacity: .45;
-    cursor: not-allowed;
-}
-
-/* a caption over the input it names */
-.field label {
-    display: block;
-    font-size: 14.5px;
-    font-weight: 600;
-    margin-bottom: 6px;
-}
-
-/* Headings are the break between runs of settings or of paragraphs; the first has nothing above it
-   to be separated from. */
-.modal-body h4 {
-    margin: 22px 0 8px;
 }
 
 .modal-body p {
@@ -213,23 +29,6 @@ select:disabled, input:disabled {
 
 .modal-body a:hover {
     text-decoration: underline;
-}
-
-/* a checkbox and the sentence it toggles */
-.modal-body label.row {
-    padding: 6px 0;
-    font-size: 14.5px;
-    cursor: pointer;
-}
-
-/* The last line of the Settings modal: which build is running. Quiet on purpose — it is there to be
-   quoted in a bug report, not read. */
-.build-stamp {
-    margin: 20px 0 2px;
-    text-align: center;
-    font-family: var(--mono);
-    font-size: 12px;
-    opacity: 0.7;
 }
 
 /* The prose modals — About and how-to-use. Plain elements only, so this is what they get. The reset
@@ -333,41 +132,7 @@ select:disabled, input:disabled {
     color: var(--text);
 }
 
-/* ── Left panel · header, sections, the flood controls ── */
-#panel header {
-    flex: 0 0 auto;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-    padding: 16px 18px;
-    border-bottom: 1px solid var(--border);
-    background: var(--surface2);
-}
-
-/* the account avatar / sign-in button leads the row of actions. In the narrow panel it sits at the
-   left edge, so its menu opens rightward rather than the library's default of hanging off the
-   right. */
-#panel header .brand, #auth-action {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-#auth-action .geoglows-auth-action-menu {
-    left: 0;
-    right: auto;
-}
-
-#panel header img {
-    display: block;
-    height: 30px;
-    width: auto;
-    background: #fff;
-    border-radius: 6px;
-    padding: 6px 9px;
-}
-
+/* ── Left panel · sections and the flood controls ── */
 #panel section {
     padding: 13px 18px;
     border-bottom: 1px solid var(--border);
@@ -406,69 +171,12 @@ select:disabled, input:disabled {
     margin-top: 5px;
 }
 
-/* ── Menus · the language, basemap and layer pickers ── */
-/* each picker anchors its own dropdown */
-.anchor {
-    position: relative;
-}
-
-/* The language menu opens inside #panel, which is overflow:hidden, so placeMenu() in map/menu.js
-   puts it in viewport coordinates instead. What is left here is a resting place for the first frame
-   and the stacking order; it is display:none until it has been placed. */
-#lang-menu {
-    z-index: 20;
-    top: calc(100% + 8px);
-    left: 0;
-    right: auto;
-}
-
-/* one row of a menu: a basemap to switch to, a layer to turn on, a language */
-.opt {
-    justify-content: flex-start;
-    padding: 8px 10px;
-    font-size: 14.5px;
-    font-weight: 400;
-    color: var(--text-dim);
-    background: transparent;
-    border-color: transparent;
-}
-
-.opt:hover {
-    color: var(--text);
-    background: var(--bg);
-}
-
-/* the tick, drawn only when checked */
-.opt[aria-checked="true"] .check::after {
-    content: "";
-    position: absolute;
-    left: 4.5px;
-    top: 1px;
-    width: 4px;
-    height: 8px;
-    border: solid #fff;
-    border-width: 0 2px 2px 0;
-    transform: rotate(45deg);
-}
-
-/* ── Map overlays · pickers, legend, player ──
-   All three float over the map on one layer and differ only in where they sit. Where two of them
-   overlap on a narrow map, document order decides, so the player is written last. */
-.map-overlay {
-    position: absolute;
-    z-index: 10;
-}
-
-#map-controls {
-    top: 12px;
-    right: 12px;
-}
-
-/* forecast return-period legend, bottom-left of the map (which starts after the 380px panel) */
+/* The return-period legend, in the map's bottom-left corner. The overlays are positioned against
+   the viewport rather than the map, so this has to step past the column — hence --panel-w, which is
+   what actually sets the column's width (components.css) rather than a literal repeated here. */
 #legend-overlay {
     bottom: 14px;
-    left: calc(380px + 14px);
-    padding: 10px 13px;
+    left: calc(var(--panel-w) + 14px);
     max-width: 220px;
 }
 
@@ -545,7 +253,7 @@ select:disabled, input:disabled {
 
 /* centred over the map, and translucent until there is an animation to drive */
 #player {
-    left: calc(380px + (100vw - 380px) / 2);
+    left: calc(var(--panel-w) + (100vw - var(--panel-w)) / 2);
     transform: translateX(-50%);
     bottom: 22px;
     width: min(720px, calc(100vw - 420px));
@@ -568,36 +276,11 @@ select:disabled, input:disabled {
     height: 2px;
     background: linear-gradient(90deg, var(--accent), #22d3ee);
     width: 0;
-    border-radius: var(--radius) 0 0 0;
+    border-radius: var(--r-lg) 0 0 0;
     transition: width .2s;
 }
 
 /* ── Settings · the downloadable dataset list ── */
-/* .col, so --gap is the space between the rows. */
-#data-list {
-    margin: 8px 0 4px;
-    --gap: 4px;
-}
-
-/* name takes the slack, size sits against the buttons, status spans the width beneath */
-.data-row {
-    display: grid;
-    grid-template-columns: 1fr auto auto;
-    align-items: center;
-    gap: 8px;
-    font-size: 15px;
-}
-
-/* the two actions, which --gap would otherwise zero along with the rows */
-.data-row .row {
-    gap: 10px;
-}
-
-/* progress and errors belong under the row they describe, not beside it */
-.data-row .status {
-    grid-column: 1 / -1;
-}
-
 /* ── Charts · the dock's own states, and what the charts library's markup expects ── */
 .tabs {
     flex: 0 0 auto;
@@ -798,7 +481,7 @@ body.help-open #scroll > section:not(#hydrology-section, #flood-section) {
     padding: 4px 12px 10px;
     margin: 0 -12px;
     border-top: 1px solid var(--border);
-    border-radius: var(--radius);
+    border-radius: var(--r-lg);
     transition: background-color .15s ease;
 }
 
@@ -832,11 +515,6 @@ body.help-open #scroll > section:not(#hydrology-section, #flood-section) {
     --spot-dim: #fb923c;  /* …and the one it pulses to: light orange */
 }
 
-:root[data-theme="light"] {
-    --spot: #facc15;
-    --spot-dim: #f97316;
-}
-
 @keyframes spotlight-pulse {
     0%, 100% { box-shadow: 0 0 0 3px var(--spot), 0 0 18px 6px var(--spot-dim); }
     50% { box-shadow: 0 0 0 5px var(--spot), 0 0 26px 10px var(--spot-dim); }
@@ -848,7 +526,7 @@ body.help-open #scroll > section:not(#hydrology-section, #flood-section) {
     z-index: 5;
     outline: 4px solid var(--spot);
     outline-offset: 4px;
-    border-radius: var(--radius);
+    border-radius: var(--r-lg);
     animation: spotlight-pulse 1.6s ease-in-out infinite;
 }
 
@@ -923,48 +601,3 @@ body.dock-open #player {
 }
 
 /* ── Search ── */
-/* The ID box, under the name box. Ruled off rather than merely spaced: they are two questions, and
-   the results list belonging to the one above needs a visible end. */
-.search-second {
-    margin-top: 14px;
-    padding-top: 14px;
-    border-top: 1px solid var(--border);
-}
-
-/* The list a name search fills. Capped rather than allowed to grow the modal: a query like "san"
-   matches a dozen rivers, and a dialog that resizes under the person typing into it is worse than
-   one that scrolls. */
-.search-results {
-    max-height: 260px;
-    overflow-y: auto;
-    margin: 8px 0 0;
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    background: var(--surface2);
-}
-
-/* A button rather than a styled div, so it is reachable and operable from the keyboard without
-   this file having to reimplement any of that. */
-.search-hit {
-    display: block;
-    width: 100%;
-    padding: 7px 10px;
-    border: 0;
-    border-bottom: 1px solid var(--border);
-    background: none;
-    color: inherit;
-    font: inherit;
-    text-align: left;
-    cursor: pointer;
-}
-
-.search-hit:last-child {
-    border-bottom: 0;
-}
-
-/* The disambiguating line — country, what it flows into, the system it belongs to. Dimmer than the
-   name because it is read only when two rows share one. */
-.search-hit .hint {
-    display: block;
-    margin: 1px 0 0;
-}
