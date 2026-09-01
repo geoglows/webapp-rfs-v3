@@ -36,8 +36,6 @@ const NAMED_WIDTH_SCALE = 2.5;
 
 let names = null;
 
-/** The legend has to read these, not PALETTE: an older riverNames.json ships its own colours. */
-export const activePalette = () => names?.palette ?? PALETTE;
 export const activeUnnamed = () => names?.unnamed ?? UNNAMED;
 
 export const riverNames = () => names;

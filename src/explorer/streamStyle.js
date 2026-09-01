@@ -1,5 +1,4 @@
 import {MAX_ZOOM, MIN_ZOOM, ZOOM_STEP} from './config.js';
-import {compact} from './streamAttributes.js';
 import {t, tf} from '../i18n/i18n.js';
 
 export const SOURCE = 'streams';
@@ -107,13 +106,12 @@ const allOf = (...terms) => {
 const not = expr => (expr === true ? false : expr === false ? true : ['!', expr]);
 
 export function describeConditions(list, attrsByName = new Map(), match = 'all') {
-  const v = (value, type) => (type === 'string' ? value : compact(Number(value)));
   const parts = (list ?? []).map(c => {
     const label = attrsByName.get(c.attribute)?.label ?? c.attribute;
     const op = opsFor(c.type).find(o => o.op === c.op);
-    if (c.op === 'between') return `${label} ${v(c.value, c.type)}–${v(c.value2, c.type)}`;
+    if (c.op === 'between') return `${label} ${c.value}–${c.value2}`;
     if (c.op === 'in') return `${label} in ${listValues(c.value).join(', ')}`;
-    return `${label} ${op?.label ?? c.op} ${v(c.value, c.type)}`;
+    return `${label} ${op?.label ?? c.op} ${c.value}`;
   });
   return parts.join(match === 'any' ? ' or ' : ' and ');
 }

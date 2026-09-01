@@ -29,7 +29,7 @@ function createDataSettings() {
   function buildRow(entry) {
     const el = document.createElement("div");
     el.className = "data-row";
-    const name = document.createElement("b");
+    const name = document.createElement("span");
     const size = document.createElement("span");
     size.className = "data-size";
     const actions = document.createElement("span");

@@ -5,21 +5,17 @@ import {el} from "../dom.js";
  * the grouping — no headings, because the rows are the list you scan. Built as nodes, so nothing
  * coming out of the tiles becomes markup.
  */
-import {compact, fieldInfo, roleRank} from './streamAttributes.js';
+import {fieldInfo, roleRank} from './streamAttributes.js';
 
 const isNum = v => typeof v === 'number' && isFinite(v);
 
-/** The exact number, grouped — what the compact form is standing in for. */
-const full = v => (isNum(v) ? v.toLocaleString(undefined, {maximumFractionDigits: 3}) : String(v));
-
-/** An id is never abbreviated or grouped — it is the thing you paste somewhere else. A measure is,
- * because 5384105885696 m² tells you nothing at a glance; the exact figure is on the tooltip. */
+/** Exactly what the tiles carry, with the unit after it. Nothing is rounded, abbreviated or
+ * re-based: an attribute you cannot read the real value off is not worth printing. */
 function valueOf(name, v, info) {
   if (v == null || v === '') return {text: '—', title: `${name} is not set on this reach`};
-  if (!isNum(v)) return {text: String(v), title: `${name} = ${v}`};
-  const unit = info.unit ? ` ${info.unit}` : '';
-  if (info.role === 'identity') return {text: String(v), title: `${name} = ${v}`};
-  return {text: `${compact(v)}${unit}`, title: `${name} = ${full(v)}${unit}`};
+  const unit = isNum(v) && info.unit ? ` ${info.unit}` : '';
+  const text = `${v}${unit}`;
+  return {text, title: `${name} = ${text}`};
 }
 
 function row(name, v) {

@@ -17,8 +17,8 @@ import trash from "heroicons/24/outline/trash.svg?raw";
 import mapPin from "heroicons/24/outline/map-pin.svg?raw";
 import xMark from "heroicons/24/outline/x-mark.svg?raw";
 import magnifyingGlass from "heroicons/24/outline/magnifying-glass.svg?raw";
-import chevronDown from "heroicons/24/outline/chevron-down.svg?raw";
-import chevronRight from "heroicons/24/outline/chevron-right.svg?raw";
+import paintBrush from "heroicons/24/outline/paint-brush.svg?raw";
+import check from "heroicons/24/outline/check.svg?raw";
 
 const ICONS = {
   "information-circle": informationCircle,
@@ -39,8 +39,8 @@ const ICONS = {
   "map-pin": mapPin,
   "x-mark": xMark,
   "magnifying-glass": magnifyingGlass,
-  "chevron-down": chevronDown,
-  "chevron-right": chevronRight
+  "paint-brush": paintBrush,
+  check
 };
 
 function heroIcon(name) {

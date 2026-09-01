@@ -131,13 +131,25 @@
 }
 
 /* ── Left panel · sections and the flood controls ── */
-#panel section {
-    padding: 13px 18px;
-    border-bottom: 1px solid var(--border);
+/* A section heading outranks the labels of the controls inside it: larger, heavier and in the full
+   text colour, against the 14.5px labels of .field. */
+#scroll section h2 {
+    font-size: var(--fs-lg);
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: var(--text);
 }
 
-#panel section:last-child {
-    border-bottom: none;
+#panel section {
+    margin: 15px 18px;
+}
+
+#scroll hr {
+    border: none;
+    height: 2px;
+    width: 90%;
+    margin: 0 auto;
+    background: var(--rule);
 }
 
 /* One rhythm for everything a section stacks, the flood controls included, so turning flood mapping
@@ -396,7 +408,8 @@
 body.charts-open #charts-dock,
 body.bookmarks-open #bookmarks-dock,
 body.saved-open #saved-dock,
-body.help-open #help-dock {
+body.help-open #help-dock,
+body.styling-open #styling-dock {
     display: flex;
 }
 
@@ -453,8 +466,14 @@ body.dock-open #scroll {
 }
 
 /* the flood and legend sections step aside for the dock */
-body.dock-open #scroll > section:not(#hydrology-section) {
+body.dock-open #scroll > section:not(#hydrology-section),
+body.dock-open #scroll > hr {
     display: none;
+}
+
+/* the wider column gives the rule its whole width */
+body.dock-open #scroll hr {
+    width: 100%;
 }
 
 /* …except for the help dock, whose text points at those controls (data-spotlight): the forecast and
@@ -553,6 +572,10 @@ body.dock-open #hydrology-section .field {
 /* The flood section (on screen only under the help dock) follows the same rhythm. The selector
    matches the specificity of the `body.dock-open #scroll > section:not(...)` rule that hides the
    other sections and sits after it, so this one wins. */
+body.help-open #scroll > hr[data-tool="flood"] {
+    display: block;
+}
+
 body.help-open #scroll > section#flood-section {
     display: flex;
     flex-wrap: wrap;
@@ -589,6 +612,27 @@ body.dock-open #player {
     left: 75%;
     width: min(640px, calc(50vw - 48px));
     min-width: 0;
+}
+
+/* ── Styling dock · the one dock with nothing above it. The names colouring and the rule editor are
+   judged against the map, not against the forecast controls, so the column gives the dock all of
+   its height — and only as much width as the editor's rows need, rather than the half viewport the
+   charts take. These follow the shared dock rules above and so override them. ── */
+body.styling-open #panel {
+    flex-basis: var(--panel-styling-w);
+}
+
+body.styling-open #scroll {
+    display: none;
+}
+
+body.styling-open #legend-overlay {
+    left: calc(var(--panel-styling-w) + 14px);
+}
+
+body.styling-open #player {
+    left: calc(var(--panel-styling-w) + (100vw - var(--panel-styling-w)) / 2);
+    width: min(720px, calc(100vw - var(--panel-styling-w) - 120px));
 }
 
 /* ── Search ── */

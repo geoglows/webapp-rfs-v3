@@ -171,9 +171,6 @@ const REFERENCES = [
       promoteId: {[groupLayer]: groupIdField}, attribution: "GEOGLOWS RFS v3"
     }),
     layers: () => [
-      // Off until asked for, like the other two reference layers: the Group boundaries cut the
-      // world into arbitrary publishing units, and a network read against them by default reads as
-      // though the lines meant something about the rivers.
       {
         id: "group-fill", type: "fill", source: GROUP_SOURCE, "source-layer": groupLayer,
         layout: {visibility: "none"},

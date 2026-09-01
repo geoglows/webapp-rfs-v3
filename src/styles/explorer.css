@@ -5,10 +5,9 @@
 
    Loaded after app.css, so the few rules that override it sit here. */
 
-/* Both sections carry their own rhythm — every block below sets the margin it wants — so they opt
-   out of the even stack `#panel section > * + *` gives the forecast and flood sections. */
-#explorer-section > * + *,
-#styling-section > * + * {
+/* The explorer section carries its own rhythm — every block below sets the margin it wants — so it
+   opts out of the even stack `#panel section > * + *` gives the forecast and flood sections. */
+#explorer-section > * + * {
     margin-top: 0
 }
 
@@ -268,7 +267,7 @@
     display: flex;
     gap: 6px;
     flex-shrink: 0;
-    margin-bottom: 10px
+    margin: 10px 0
 }
 
 /* One line, equal shares. min-width overrides a flex item's automatic minimum, which is what would
@@ -305,7 +304,9 @@
     gap: 8px;
     padding: 5px 18px;
     cursor: pointer;
-    font-size: 12px
+    font-size: 12px;
+    text-transform: none;
+    letter-spacing: 0
 }
 
 .selector-head:hover {
@@ -313,17 +314,23 @@
 }
 
 /* The name, then what it gets you. The clarification takes the slack, so every count lines up on
-   the right edge however long the names are. */
+   the right edge however long the names are. It reads at the row's own size and weight — it is part
+   of what the method is, not a footnote to it — and only drops the caps. */
 .selector-head .clarify {
     flex: 1;
-    color: var(--text-faint);
-    font-size: 10px;
-    font-weight: 500;
+    color: var(--text-dim);
+    font-weight: 600;
     text-transform: none;
     letter-spacing: 0
 }
 
 /* The chosen row, edged in the colour the method paints the map with. */
+#panel.browse-on #browse-head {
+    color: var(--text);
+    background: var(--surface2);
+    box-shadow: inset 3px 0 0 var(--accent)
+}
+
 #panel.river-select-on #river-select-head {
     color: var(--text);
     background: var(--surface2);
@@ -349,7 +356,7 @@
 }
 
 /* The counts each keep the colour their method's readout counts in. */
-#river-select-count, #aoi-count, #picks-count {
+#browse-count, #river-select-count, #aoi-count, #picks-count {
     color: var(--selected-text);
     font-variant-numeric: tabular-nums;
     letter-spacing: 0;
@@ -374,14 +381,16 @@
     flex-direction: column
 }
 
-#panel #river-select-body,
+#panel #reach-body,
 #panel #watershed-body,
 #panel #picks-body,
 #panel #aoi-body {
     display: none
 }
 
-#panel.river-select-on #river-select-body,
+/* The Data Browser and River Select select the same thing, so they read the same block. */
+#panel.browse-on #reach-body,
+#panel.river-select-on #reach-body,
 #panel.watershed-on #watershed-body {
     display: block;
     margin-top: 8px
@@ -393,29 +402,25 @@
     margin-top: 8px
 }
 
-#river-select-info {
+#reach-info {
     display: none;
     font-size: 11px;
     line-height: 1.6
 }
 
-/* ── the river names section ───────────────────────────────────────────────
-   The same On/Off control the selection methods wear, but edged in a name colour rather than the
-   selection orange: it changes what the map is coloured by, not what a click on it does. */
 /* ── styling options ──────────────────────────────────────────────────────
-   The names table's colours and the rule editor, under one heading: you arrive looking for "how
-   this is drawn" rather than for either by name. */
-#styling-section {
-    display: block
-}
-
-/* A subsection of it: no rule, no padding of its own, and a quieter heading than the one over
-   both, so the two read as parts of the block rather than as two blocks. */
+   The names table's switch and the rule editor, in one dock: you arrive looking for "how this is
+   drawn" rather than for either by name. Opened from #btn-styling in the header — see
+   initStylingTools() and the styling-dock block in app.css. */
 #names-card {
     margin-bottom: 10px
 }
 
-#river-card h3, #names-card h3, #style-card h3 {
+#names-card .title {
+    flex: 1
+}
+
+#style-card h3 {
     display: flex;
     align-items: center;
     gap: 8px;
@@ -424,7 +429,7 @@
     color: var(--text-faint);
 }
 
-#river-card h3 .title, #names-card h3 .title, #style-card h3 .title {
+#style-card h3 .title {
     flex: 1
 }
 
@@ -437,40 +442,6 @@
     font-weight: 700
 }
 
-/* The three name colours sit in one swatch group, because what they mean together is "named" —
-   no one of them stands for anything on its own. */
-#names-body .legend-item {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    margin-bottom: 5px;
-    font-size: 11px
-}
-
-#names-body .legend-item .swatch:last-of-type {
-    margin-right: 4px
-}
-
-#names-body .legend-item > span:last-child {
-    margin-left: 2px;
-    color: var(--text-dim)
-}
-
-.names-hint {
-    color: var(--text-faint);
-    font-size: 10px;
-    line-height: 1.5;
-    margin-top: 6px
-}
-
-#panel.names-collapsed #names-body {
-    display: none
-}
-
-#panel.names-collapsed #names-card {
-    margin-bottom: 8px
-}
-
 /* ── the styling panel ─────────────────────────────────────────────────────
    Takes whatever height the switches above and the export block below leave, and scrolls inside
    itself, so a dozen rules never push the layer list or the run report off screen. Deliberately
@@ -479,13 +450,6 @@
 #style-card {
     display: flex;
     flex-direction: column
-}
-
-#style-zoom {
-    color: var(--accent);
-    font-variant-numeric: tabular-nums;
-    letter-spacing: 0;
-    text-transform: none
 }
 
 /* ── the AOI subsetter ─────────────────────────────────────────────────────
@@ -583,55 +547,13 @@
     display: block;
     color: var(--text-faint);
     font-size: 9.5px
-}/* ── the clicked reach ─────────────────────────────────────────────────────
-   An eyebrow that folds the body away, like the styling section below it. Always on the page, empty
-   until a river is clicked, and never more than a third of the column. */
-#river-card {
-    display: flex;
-    flex-direction: column;
-    margin-top: 12px;
-    padding-top: 10px;
-    border-top: 1px solid var(--border-soft)
 }
 
-/* The river's name, beside the id. Cased as written rather than upper like the heading around it:
-   it is a proper noun out of the names table, and "RIO CUNENE" is not what the table says. */
-#river-card-name {
-    color: var(--text);
-    font-weight: 600;
-    letter-spacing: 0;
-    text-transform: none;
-    max-width: 14em;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap
-}
-
-#river-card-name.unnamed {
-    color: var(--muted);
-    font-weight: 400;
-    font-style: italic
-}
-
-/* The riverId beside the heading, so a folded card still says which reach it is holding. */
-#river-card-id {
-    color: var(--selected-text);
-    font-variant-numeric: tabular-nums;
-    letter-spacing: 0;
-    text-transform: none
-}
-
+/* ── the clicked reach ─────────────────────────────────────────────────────
+   The attribute rows. On the page from the start, empty until a river is clicked. */
 #river-body {
-    font-size: 11px;
+    margin-top: 12px;
     line-height: 1.5
-}
-
-#panel.river-collapsed #river-body {
-    display: none
-}
-
-#panel.river-collapsed #river-card {
-    flex: 0 0 auto
 }
 
 /* Label left, value right, hairline between — the reading order is "what is it, what is it here". */
@@ -653,29 +575,9 @@
     flex: 0 0 auto;
     color: var(--text);
     font-family: var(--mono);
-    font-size: 10.5px;
     font-weight: 600;
     text-align: right;
     overflow-wrap: anywhere
-}
-
-#river-body .hint {
-    color: var(--text-faint);
-    font-size: 10px
-}
-
-#style-body {
-    font-size: 11px;
-    line-height: 1.5
-}
-
-#panel.style-collapsed #style-body {
-    display: none
-}
-
-/* Folded away, the section is its heading row and nothing else. */
-#panel.style-collapsed #style-card {
-    padding-bottom: 0
 }
 
 /* The export run reports from under the scrolling body — a sibling of #scroll inside <main>, so it
@@ -687,54 +589,12 @@
     flex-direction: column
 }
 
-#style-body select, #style-body input[type=text], #style-body input[type=number] {
-    border-radius: 4px;
-    font-family: var(--mono);
-    font-size: 10.5px;
-    padding: 3px 4px;
+#style-body select, #style-body input {
     min-width: 0
 }
 
-#style-body select:focus, #style-body input:focus {
-    outline: none;
-    border-color: var(--accent)
-}
-
-#style-body input[type=color] {
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    width: 34px;
-    height: 22px;
-    padding: 1px;
-    cursor: pointer;
-    flex: 0 0 auto
-}
-
-#style-body input[type=checkbox] {
-    width: 13px;
-    height: 13px;
-    accent-color: var(--accent);
-    cursor: pointer;
-    flex: 0 0 auto
-}
-
-#style-body .hint {
-    color: var(--text-faint);
-    font-size: 10px;
-    text-transform: none;
-    letter-spacing: 0
-}
-
-/* The editor's own buttons — .mini, .seg, and the footer's actions. They are not .btn, which is
-   sized for the controls above the fold, but they are cut from the same tokens. */
 #style-body button {
-    flex: 0 0 auto;
-    font-family: var(--mono);
-    cursor: pointer;
-    transition: .12s;
-    text-transform: none;
-    letter-spacing: 0
+    flex: 0 0 auto
 }
 
 .mini.x {
@@ -767,42 +627,33 @@
     gap: 6px
 }
 
-.style-toolbar .row.check {
-    cursor: pointer;
-    color: var(--text-dim);
-    font-size: 10px
+/* Its own name, not .check — that one is the layer picker's 16px box, and a label wearing it is
+   squeezed to 16px square with its text spilling over the rows above and below. */
+.style-toolbar .row.style-check {
+    cursor: pointer
 }
 
 .style-toolbar select.preset {
     flex: 1
 }
 
-/* The attribute menu — the tiles' own field list, with what each one ranges over. Open by default,
-   because it is the thing to read first, but capped and scrolled on its own so it cannot push the
-   rules it exists to create off the bottom of the panel. */
+/* The attribute list — the tiles' own field list, with what each one ranges over. Capped and
+   scrolled on its own so it cannot push the rules it exists to create off the bottom of the panel. */
 .attr-menu {
     margin: 8px 0;
     border: 1px solid var(--border);
     border-radius: var(--r-lg);
-    background: var(--bg)
-}
-
-.attr-menu[open] {
+    background: var(--bg);
     max-height: 232px;
     overflow-y: auto;
     scrollbar-width: thin;
     scrollbar-color: var(--border) transparent
 }
 
-.attr-menu > summary {
-    cursor: pointer;
+.attr-menu > .attr-menu-head {
     padding: 6px 8px;
-    font-family: var(--mono);
-    font-size: 10px;
     font-weight: 600;
     color: var(--accent);
-    text-transform: uppercase;
-    letter-spacing: .6px;
     position: sticky;
     top: 0;
     background: var(--bg);
@@ -811,7 +662,6 @@
 
 .attr-group {
     padding: 6px 8px 2px;
-    font-size: 9.5px;
     color: var(--text-faint)
 }
 
@@ -829,22 +679,18 @@
 .attr-label {
     flex: 1;
     color: var(--text);
-    font-weight: 600;
-    font-size: 11px
+    font-weight: 600
 }
 
 .attr-meta {
     color: var(--text-dim);
     font-family: var(--mono);
-    font-size: 9.5px;
     margin-top: 1px
 }
 
 .attr-note {
     color: var(--text-faint);
-    font-size: 9.5px;
-    margin-top: 1px;
-    line-height: 1.4
+    margin-top: 1px
 }
 
 .style-section {
@@ -915,8 +761,7 @@
 }
 
 .cond-op {
-    flex: 0 0 auto;
-    max-width: 74px
+    flex: 0 0 auto
 }
 
 .cond-val {
@@ -950,18 +795,15 @@
     border: 1px solid var(--swatch-ring)
 }
 
-.rule-name {
+#style-body .rule-name {
     flex: 1;
-    background: transparent !important;
-    border-color: transparent !important;
-    color: var(--text) !important;
-    font-weight: 600;
-    font-size: 11px !important;
-    padding: 2px 3px !important
+    background: transparent;
+    border-color: transparent;
+    font-weight: 600
 }
 
-.rule-name:hover {
-    border-color: var(--border) !important
+#style-body .rule-name:hover {
+    border-color: var(--border)
 }
 
 .rule-summary {
@@ -969,7 +811,6 @@
     gap: 6px;
     align-items: baseline;
     color: var(--text-dim);
-    font-size: 10px;
     font-family: var(--mono);
     margin: 3px 0 0 20px
 }
@@ -987,9 +828,7 @@
 
 .warn {
     margin: 4px 0 0 20px;
-    color: var(--warn-text);
-    font-size: 9.5px;
-    line-height: 1.4
+    color: var(--warn-text)
 }
 
 .rule-when {
@@ -1021,15 +860,13 @@
 }
 
 .stops-label {
-    font-size: 9.5px;
     color: var(--text-faint);
     flex: 0 0 auto
 }
 
 .stops-count {
     flex: 1;
-    color: var(--text-faint);
-    font-size: 9.5px
+    color: var(--text-faint)
 }
 
 .stop {
@@ -1039,10 +876,9 @@
     padding-left: 10px
 }
 
-.stop-zoom {
+.stop-zoom, .zsel {
     flex: 0 0 auto;
-    width: 62px;
-    font-variant-numeric: tabular-nums
+    width: auto
 }
 
 .stop-val {
@@ -1056,14 +892,8 @@
     flex-wrap: wrap
 }
 
-.zsel {
-    flex: 0 0 auto;
-    width: 62px
-}
-
 .zsep {
-    color: var(--text-faint);
-    font-size: 10px
+    color: var(--text-faint)
 }
 
 .style-footer {

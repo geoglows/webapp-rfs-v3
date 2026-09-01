@@ -14,11 +14,20 @@
     /* A hairline separating two parts of one block rather than two blocks — the rule inside a
        style rule, the line between attributes in the field list. */
     --border-soft: rgba(51, 65, 85, .6);
+    /* The line that divides the control column into sections. Thicker than a border and not a
+       border colour: it is meant to be read as a separator at a glance, so each theme takes it to
+       its own extreme — near-white on the dark ground, black on the light one. */
+    --rule: #e2e8f0;
+    /* The mode switches' check and the box around it while it is on — a green picked to hold up
+       against the panel rather than to sit quietly on it. */
+    --check: #22c55e;
 
-    /* Type, in three ranks: body, then labels and units, then counts and ranges. */
-    --text: #e2e8f0;
-    --text-dim: #94a3b8;
-    --text-faint: #64748b;
+    /* Type, in three ranks: body, then labels and units, then counts and ranges. All three are
+       white with only a little of the ground mixed back in — on a dark panel a grey text is lower
+       contrast, not hierarchy, the same way a grey is on the light theme's white. */
+    --text: #f8fafc;
+    --text-dim: #dde5ee;
+    --text-faint: #b6c2d3;
 
     /* Accent */
     --accent: #38bdf8;
@@ -78,6 +87,9 @@
        measure the styling editor's three-part rows need and capped so a wide screen gives the extra
        room to the map. Read by #panel and by the forecast legend, which has to step past it. */
     --panel-w: clamp(360px, 25%, 480px);
+    /* …and the width the styling dock widens it to: enough for the rule editor's rows to breathe,
+       well short of the half-viewport the charts take, since the map is what a style is judged on. */
+    --panel-styling-w: clamp(460px, 34%, 620px);
 
     --mono: "JetBrains Mono", ui-monospace, monospace;
     font-family: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
@@ -90,6 +102,8 @@
     --surface2: #f1f5f9;
     --border: #cbd5e1;
     --border-soft: rgba(148, 163, 184, .55);
+    --rule: #000000;
+    --check: #15803d;
 
     /* Black for both of the top two ranks: on a light ground a "dimmed" grey is lower contrast, not
        hierarchy. The third stays grey — it carries counts and units, where the drop is real. */

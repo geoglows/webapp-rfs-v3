@@ -22,7 +22,7 @@ import {
 import {protocol} from '../map/map.js';
 import {registerStreamLayers} from '../map/layers.js';
 import {compileLayers} from './streamStyle.js';
-import {activePalette, activeUnnamed, loadRiverNames, nameAt, namesStyle, riverNames} from './nameColouring.js';
+import {activeUnnamed, loadRiverNames, namesStyle, riverNames} from './nameColouring.js';
 import {loadStreamAttributes} from './streamAttributes.js';
 import {createStylePanel} from './stylePanel.js';
 import {renderRiverAttributes} from './riverPanel.js';
@@ -32,7 +32,9 @@ import {renderAoi} from './aoiPanel.js';
 import {renderPicks} from './picksPanel.js';
 import {downloadGeometry} from './geometry.js';
 import {groupOf, loadGroups} from './groups.js';
-import {createCollapsible, progress, stages} from './ui.js';
+import {progress, stages} from './ui.js';
+import {heroIcon} from '../icons/icons.js';
+import {closeDock, isDockOpen, openDock} from '../docks/dock.js';
 import {watch as watchRiverNames} from '../data/riverNames.js';
 import {askConfirm} from '../ui/confirm.js';
 import {t, tf, tn} from '../i18n/i18n.js';
@@ -50,11 +52,12 @@ let lastProps = null;
 let namesOn = false;
 let namesError = null;
 let stylePanel = null;
-let namesFold = null;
 /** Whether the style spec is what is drawing the network — see the note at the top. */
 let styleActive = false;
 /** Repaints the network the way the forecast toolchain wants it, when the spec stops drawing it. */
 let repaintForecast = () => {};
+/** Asks the forecast toolchain for the styleset that leaves the network to the style spec. */
+let wantStyleEditor = () => {};
 
 
 // ── selection ────────────────────────────────────────────────────────────────
@@ -117,7 +120,7 @@ function selectOutlet(at) {
     // Kept whole whichever method read it, so switching between river and watershed can re-read
     // the same click rather than asking for it again.
     lastRec = full;
-    const rec = mode === 'river' ? reachOnlyRecord(full) : full;
+    const rec = oneReach(mode) ? reachOnlyRecord(full) : full;
     setSelection(rec, [{lo: rec.lo, hi: rec.hi}]);
     return full;
   } catch (err) {
@@ -189,17 +192,24 @@ function upgradeFromTiles(riverId) {
   });
 }
 
-/** The picked reach, in the river selector's card — the one line saying which reach the attribute
- * list below belongs to. */
+/** The clicked reach's id, on the row of whichever one-reach method is on. */
+function paintReachCount(text) {
+  const browse = $('browse-count');
+  if (browse) browse.textContent = mode === 'browse' ? text : '';
+  $('river-select-count').textContent = mode === 'river' ? text : '';
+}
+
+/** The picked reach, in the readout the Data Browser and River Select share — the one line saying
+ * which reach the attribute list below belongs to. */
 function renderReachInfo() {
-  const box = $('river-select-info');
+  const box = $('reach-info');
   if (!sel?.reachOnly) {
     box.style.display = 'none';
-    $('river-select-count').textContent = '';
+    paintReachCount('');
     return;
   }
   box.style.display = 'block';
-  $('river-select-count').textContent = String(sel.outletId);
+  paintReachCount(String(sel.outletId));
   const groupId = sel.groupId ?? groupOf(sel.riverIndex);
   box.innerHTML =
     `<span class="k">${t('explorer.readout.reach')}</span> <span class="outlet">${sel.outletId}</span>` +
@@ -230,29 +240,11 @@ function renderSelectionInfo() {
       : '');
 }
 
-/** The clicked reach's attributes. The section is on the page from the start, and the fold is the
- * user's alone: a click fills the panel, it never opens it. */
+/** The clicked reach's attributes, printed as the tiles carry them — empty until something has been
+ * clicked. */
 function showRiverAttributes(props) {
   lastProps = props;
   renderRiverAttributes($('river-body'), props);
-  const id = props?.riverId;
-  $('river-card-id').textContent = id == null ? '' : String(id);
-
-  // The name is not one of the reach's attributes — the tiles carry no such field — so it is
-  // resolved from the names table by riverIndex and shown in the heading beside the id rather than
-  // among the rows below, which are what the tiles actually say.
-  const slot = $('river-card-name');
-  const river = props == null ? null : nameAt(props.riverIndex);
-  const known = riverNames() != null;
-  slot.classList.toggle('unnamed', river == null);
-  slot.textContent = props == null ? '' : river ? river.name : known ? t('explorer.names.unnamed') : '';
-  slot.title = river
-    ? [river.name,
-       river.watershed && river.watershed !== river.name
-         ? tf('explorer.names.watershedOf', {name: river.watershed}) : null,
-       river.country,
-       t('explorer.names.about.smallest')].filter(Boolean).join('\n')
-    : props == null ? '' : known ? t('explorer.names.none') : '';
 }
 
 /** Download, copy and clear belong to whichever method is on: they mean the same thing in all four.
@@ -307,8 +299,8 @@ function clearSelection() {
   if (!selectionOn) return selectionChanged();
   $('selection-info').style.display = 'none';
   $('watershed-count').textContent = '';
-  $('river-select-info').style.display = 'none';
-  $('river-select-count').textContent = '';
+  $('reach-info').style.display = 'none';
+  paintReachCount('');
   showRiverAttributes(null);
   paintActions();
   progress.hide();
@@ -402,14 +394,18 @@ function setStyleset(styleset) {
  * Shift-click is the only exception: it collects a watershed without leaving the current method.
  */
 const MODES = {
+  browse: {card: 'browse', key: 'd'},
   river: {card: 'river-select', key: 'r'},
   watershed: {card: 'watershed', key: 'w'},
   aoi: {card: 'aoi', key: 'a'},
   multi: {card: 'picks', key: 'm'},
 };
 
+/** The two that select the reach they land on and nothing else — they differ only in the charts. */
+const oneReach = m => m === 'browse' || m === 'river';
+
 /** Multi-select is the one method that is remembered, because its collection is. */
-let mode = picks.modeOn() ? 'multi' : 'river';
+let mode = picks.modeOn() ? 'multi' : 'browse';
 
 /**
  * Give up what the method being left was holding, asking first when that is a real loss. River and
@@ -467,9 +463,9 @@ async function setMode(next) {
   // The same reach, read the other way. River and watershed are one click with two answers, so
   // switching between them repaints the map from what is already selected instead of leaving the
   // old answer on it until the next click.
-  const between = m => m === 'river' || m === 'watershed';
+  const between = m => oneReach(m) || m === 'watershed';
   if (sel && lastRec && mode !== prev && between(mode) && between(prev)) {
-    const rec = mode === 'river' ? reachOnlyRecord(lastRec) : lastRec;
+    const rec = mode === 'watershed' ? lastRec : reachOnlyRecord(lastRec);
     setSelection(rec, [{lo: rec.lo, hi: rec.hi}]);
   }
   // A watershed already selected is an AOI with no inlets yet, so it is adopted and the first click
@@ -480,13 +476,22 @@ async function setMode(next) {
   }
 }
 
-/** The four On/Off pills and the class that tells the stylesheet which card is open. */
+/**
+ * A switch is a box: empty when off, checked when on. The words it used to carry said nothing the
+ * row's own title does not, so they are the aria-label now and the box is what you read.
+ */
+function paintSwitch(btn, on) {
+  if (on) btn.replaceChildren(heroIcon('check')); else btn.replaceChildren();
+  btn.classList.toggle('on', on);
+  btn.setAttribute('aria-pressed', String(on));
+  btn.setAttribute('aria-label', t(on ? 'explorer.mode.on' : 'explorer.mode.off'));
+}
+
+/** The four mode boxes and the class that tells the stylesheet which card is open. */
 function paintModes() {
   for (const [name, {card}] of Object.entries(MODES)) {
     const on = name === mode;
-    const btn = $(`${card}-mode`);
-    btn.textContent = t(on ? 'explorer.mode.on' : 'explorer.mode.off');
-    btn.classList.toggle('on', on);
+    paintSwitch($(`${card}-mode`), on);
     $('panel').classList.toggle(`${card}-on`, on);
   }
 }
@@ -550,18 +555,12 @@ function paintPicks() {
 }
 
 // ── map interactions ─────────────────────────────────────────────────────────
-/** What the pointer should say a click on a reach would do, in the method that is on. */
-function cursorFor(overStream) {
-  if (!overStream) return '';
-  return ({multi: 'copy', aoi: 'crosshair'})[mode] ?? 'pointer';
-}
-
 /**
  * A click on the map, before the forecast toolchain sees it.
  *
- * Returns true when the explorer has taken it: the three methods that are answering a question
- * about the network — a watershed, an area of interest, a collection — are not asking for a reach's
- * charts as well. River mode returns false, so the click goes on to open them.
+ * Returns true when the explorer has taken it: the four methods that are answering a question about
+ * the network — a reach, a watershed, an area of interest, a collection — are not asking for a
+ * reach's charts as well. The Data Browser returns false, so the click goes on to open them.
  */
 function onMapClick(e, hit) {
   const p = hit?.properties;
@@ -584,53 +583,29 @@ function onMapClick(e, hit) {
     // A modified click collects without switching methods — the one you noticed on the way past.
     picks.toggle({...rec, lon: e.lngLat.lng, lat: e.lngLat.lat});
   }
-  return mode !== 'river' || additive;
+  return mode !== 'browse' || additive;
 }
 
 // ── the river names section ──────────────────────────────────────────────────
 /**
  * Colouring the network by the river names table. A display switch, not a fifth selection method: it
- * never changes what a click means, which is why it is wired on its own and edged in a name colour
- * rather than the selection orange.
+ * never changes what a click means, which is why it is wired on its own.
  */
 function paintNames() {
-  const row = (swatches, label) => {
-    const r = el('div', {class: 'legend-item'});
-    for (const c of swatches) {
-      const sw = el('span', {class: 'swatch'});
-      sw.style.background = c;
-      r.append(sw);
-    }
-    r.append(el('span', {text: label}));
-    return r;
-  };
   const n = riverNames();
-  if (!n) {
-    $('names-count').textContent = '';
-    $('names-body').replaceChildren(el('div', {class: 'names-hint', text: namesError
-      ? tf('explorer.names.failed', {error: namesError})
-      : t('explorer.names.loading')}));
-    return;
-  }
-  $('names-count').textContent = fmt(n.riverCount);
-  $('names-body').replaceChildren(
-    row(activePalette(), t('explorer.names.named')),
-    row([activeUnnamed()], t('explorer.names.unnamedLegend')),
-  );
+  $('names-count').textContent = n ? fmt(n.riverCount) : '';
 }
 
 function setNamesOn(on) {
   if (on && !riverNames()) return;
   namesOn = on;
   paintNamesMode();
-  if (on) namesFold.set(false);
   applyStyle();
 }
 
-/** The names card's own On/Off pill — repainted on a language change without re-running the mode. */
+/** The names card's own box — repainted on a language change without re-running the mode. */
 function paintNamesMode() {
-  $('names-mode').textContent = t(namesOn ? 'explorer.mode.on' : 'explorer.mode.off');
-  $('names-mode').classList.toggle('on', namesOn);
+  paintSwitch($('names-mode'), namesOn);
   $('panel').classList.toggle('names-on', namesOn);
 }
 
@@ -660,11 +635,15 @@ function initSelectionTools() {
   aoi.onChange(paintAoi);
   picks.onChange(paintPicks);
 
-  // The whole row is the switch, not just the On/Off pill in it, because the four rows are one
-  // control: you are picking which of them a click on the map belongs to.
+  // The whole row is the switch, not just the box in it, because the rows are one control: you are
+  // picking which of them a click on the map belongs to. A toolchain this build left out took its
+  // row off the page with it, and the method goes with the row.
   for (const [name, {card}] of Object.entries(MODES)) {
-    $(`${card}-head`).addEventListener('click', () => void setMode(name));
+    const head = $(`${card}-head`);
+    if (!head) delete MODES[name];
+    else head.addEventListener('click', () => void setMode(name));
   }
+  if (!(mode in MODES)) mode = 'river';
 
   // The other way in, for a session spent on the map rather than in the panel. The key of the method
   // already on drops back to the river selector, so M stays the toggle it has always been.
@@ -676,7 +655,6 @@ function initSelectionTools() {
     void setMode(mode === hit[0] ? 'river' : hit[0]);
   });
 
-  createCollapsible('river');
   showRiverAttributes(null);
   paintPicks();
   paintAoi();
@@ -685,8 +663,16 @@ function initSelectionTools() {
 
 /** The names colouring and the rule editor — everything that decides how the network is drawn. */
 function initStylingTools() {
-  namesFold = createCollapsible('names', {collapsed: true});
-  createCollapsible('style', {collapsed: true});
+  // Both cards live in a dock rather than in the column: the rule editor is wider than the column
+  // is, and while a style is being tuned the map is the thing to keep in view, not the controls.
+  const toggleDock = () => {
+    if (isDockOpen('styling')) return void closeDock(map, 'styling');
+    void openDock(map, 'styling');
+    // Nothing in the editor draws anything while a forecast styleset owns the network.
+    wantStyleEditor();
+  };
+  $('btn-styling').addEventListener('click', toggleDock);
+  $('styling-close').addEventListener('click', () => closeDock(map, 'styling'));
 
   $('names-mode').addEventListener('click', () => setNamesOn(!namesOn));
   window.addEventListener('keydown', e => {
@@ -717,12 +703,7 @@ function initStylingTools() {
     selection: selectionForStyle,
     pmtiles: URLS.streamsPmtiles,
   });
-  const showZoom = () => {
-    $('style-zoom').textContent = `z${map.getZoom().toFixed(1)}`;
-  };
-  map.on('move', showZoom);
   map.on('idle', refreshCounts);
-  showZoom();
   // The same archive the map draws from, opened through the shared protocol so the attribute list
   // is read off the copy the tiles already come through rather than a second one.
   const archive = new PMTiles(URLS.streamsPmtiles);
@@ -738,10 +719,12 @@ function initStylingTools() {
  * whether the network is its to draw; `onRepaintNetwork` is what hands the base layer back when it
  * stops being.
  */
-export function initExplorer({tools, styleset = 'standard', onRepaintNetwork = () => {}} = {}) {
+export function initExplorer({tools, styleset = 'standard', onRepaintNetwork = () => {},
+                              onStyleEditor = () => {}} = {}) {
   selectionOn = !!tools?.hydrography;
   stylingOn = !!tools?.styling;
   repaintForecast = onRepaintNetwork;
+  wantStyleEditor = onStyleEditor;
 
   attachExplorerLayers();
   if (selectionOn) initSelectionTools();
@@ -754,7 +737,6 @@ export function initExplorer({tools, styleset = 'standard', onRepaintNetwork = (
 
   return {
     onMapClick,
-    cursorFor,
     setStyleset,
     goToRiver,
     clearSelection,

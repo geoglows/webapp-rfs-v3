@@ -6,7 +6,7 @@ import {button, el, fmt} from "../dom.js";
  * so nothing coming out of the tiles becomes markup.
  */
 import {MAX_PICKS, picks} from './picks.js';
-import {t, tf, tn} from '../i18n/i18n.js';
+import {tf, tn} from '../i18n/i18n.js';
 
 
 function pickRow(p, i, total, {onRemove, onZoom}) {
@@ -32,9 +32,7 @@ function pickRow(p, i, total, {onRemove, onZoom}) {
 export function renderPicks(mount, {onRemove, onZoom}) {
   const list = picks.all();
   const out = [];
-  if (!list.length) {
-    out.push(el('div', {class: 'picks-empty', text: t('explorer.picks.empty')}));
-  } else {
+  if (list.length) {
     const rows = el('div', {class: 'picks-list'});
     list.forEach((p, i) => rows.append(pickRow(p, i, list.length, {onRemove, onZoom})));
     out.push(rows);

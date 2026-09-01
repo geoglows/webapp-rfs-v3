@@ -28,11 +28,6 @@
     <h1>%VITE_APP_TITLE%</h1>
     <div class="row">
       <div id="auth-action"></div>
-      <!-- In the header rather than beside the forecast tools: finding a river is how you start,
-           whichever toolchains this deployment ships. -->
-      <button id="btn-search-river" class="btn icon" data-icon-name="magnifying-glass-solid"
-              data-i18n-title="search.label" data-i18n-aria-label="search.aria"
-              title="Find a river by name or ID" aria-label="Find a river by name or ID"></button>
       <button id="btn-settings" class="btn icon" data-icon-name="cog-6-tooth" data-i18n-title="settings.label" title="Settings"></button>
       <!-- see initLanguagePicker() in src/settings/settings.js — it reads LANGUAGES off these
            buttons, so this markup is what decides which languages the app offers. -->
@@ -47,6 +42,14 @@
         </div>
       </div>
       <button id="btn-theme" class="btn icon" data-i18n-title="theme.toggle" title="Toggle light / dark theme"></button>
+      <!-- In the header rather than beside the forecast tools: finding a river is how you start,
+           whichever toolchains this deployment ships. -->
+      <button id="btn-search-river" class="btn icon" data-icon-name="magnifying-glass-solid"
+              data-i18n-title="search.label" data-i18n-aria-label="search.aria"
+              title="Find a river by name or ID" aria-label="Find a river by name or ID"></button>
+      <button id="btn-styling" class="btn icon" data-tool="styling" data-icon-name="paint-brush"
+              data-i18n-title="explorer.heading.styling" data-i18n-aria-label="explorer.styling.aria"
+              title="Styling Options" aria-label="Open the styling options"></button>
       <button id="btn-help" class="btn icon" data-icon-name="question-mark-circle" data-i18n-title="help.label" data-i18n-aria-label="help.aria"
               title="Help and about" aria-label="Help and about this site"></button>
     </div>
@@ -54,7 +57,7 @@
   <main>
     <div id="scroll">
       <section id="hydrology-section" data-tool="forecast">
-        <h2 data-i18n="hydro.heading">Forecast Visualizers</h2>
+        <h2 data-i18n="hydro.heading">Streamflow Visualization</h2>
         <div class="field">
           <label for="forecast-date" data-i18n="hydro.forecastDate">Forecast Initialization Date</label>
           <input id="forecast-date" type="date"/>
@@ -80,6 +83,7 @@
           <button id="btn-toggle-slider" class="btn icon" data-icon-name="clock-solid" data-i18n-title="stream.hideSlider" title="Hide timeseries slider"></button>
         </div>
       </section>
+      <hr data-tool="flood"/>
       <section id="flood-section" data-tool="flood">
         <h2 data-i18n="flood.heading">Flood Mapping</h2>
         <div class="row wrap">
@@ -137,8 +141,58 @@
 
       <!-- HYDROGRAPHY EXPLORER · four answers to "what did that click select", the actions that act
            on whichever is on, and the attributes of the reach the click landed on under them. -->
+      <hr data-tool="hydrography"/>
       <section id="explorer-section" data-tool="hydrography">
         <h2 data-i18n="explorer.heading.selection">Hydrography Explorer</h2>
+
+        <div id="selector-rows">
+          <div class="selector-head eyebrow" id="browse-head" data-tool="forecast"
+               data-i18n-title="explorer.mode.browse.about"
+               title="One click selects the reach it lands on and opens its charts. Press D.">
+            <button class="btn sm mode" id="browse-mode" tabindex="-1"></button>
+            <span class="title" data-i18n="explorer.mode.browse">Data Browser</span>
+            <span class="clarify" data-i18n="explorer.mode.browse.clarify">(1 River + Open Charts)</span>
+            <span id="browse-count" data-i18n-title="explorer.count.reach"
+                  title="The reach you clicked"></span>
+          </div>
+
+          <div class="selector-head eyebrow" id="river-select-head" data-i18n-title="explorer.mode.river.about"
+               title="One click selects just the reach it lands on. Press R.">
+            <button class="btn sm mode" id="river-select-mode" tabindex="-1"></button>
+            <span class="title" data-i18n="explorer.mode.river">River Select</span>
+            <span class="clarify" data-i18n="explorer.mode.river.clarify">(1 River)</span>
+            <span id="river-select-count" data-i18n-title="explorer.count.reach"
+                  title="The reach you clicked"></span>
+          </div>
+
+          <div class="selector-head eyebrow" id="watershed-head" data-i18n-title="explorer.mode.watershed.about"
+               title="One click selects every reach that drains to the reach it lands on. Press W.">
+            <button class="btn sm mode" id="watershed-mode" tabindex="-1"></button>
+            <span class="title" data-i18n="explorer.mode.watershed">Watershed Select</span>
+            <span class="clarify" data-i18n="explorer.mode.watershed.clarify">(1 River + Upstreams)</span>
+            <span id="watershed-count" data-i18n-title="explorer.count.streams"
+                  title="Streams in the current selection"></span>
+          </div>
+
+          <div class="selector-head eyebrow" id="picks-head" data-i18n-title="explorer.mode.multi.about"
+               title="Collect a watershed outlet on every click, instead of selecting one at a time. Shift-click a river to collect one without leaving the method you are in, or press M.">
+            <button class="btn sm mode" id="picks-mode" tabindex="-1"></button>
+            <span class="title" data-i18n="explorer.mode.multi">Multi Select</span>
+            <span class="clarify" data-i18n="explorer.mode.multi.clarify">(Multiple Watersheds)</span>
+            <span id="picks-count" data-i18n-title="explorer.count.picks"
+                  title="Watershed outlets collected">0</span>
+          </div>
+
+          <div class="selector-head eyebrow" id="aoi-head" data-i18n-title="explorer.mode.aoi.about"
+               title="Cut an area of interest out of a watershed: click its outlet, then click each inlet to drop it and everything that drains into it. Press A.">
+            <button class="btn sm mode" id="aoi-mode" tabindex="-1"></button>
+            <span class="title" data-i18n="explorer.mode.aoi">AOI Subsetter</span>
+            <span class="clarify" data-i18n="explorer.mode.aoi.clarify">(Rivers between 2+ points)</span>
+            <span id="aoi-count" data-i18n-title="explorer.count.inlets"
+                  title="Inlets trimmed off the area of interest">0</span>
+          </div>
+        </div>
+
         <div id="selection-actions">
           <button class="btn primary" disabled id="btn-geoparquet"
                   data-i18n="explorer.action.download" data-i18n-title="explorer.action.download.about"
@@ -156,48 +210,11 @@
           </button>
         </div>
 
-        <div id="selector-rows">
-          <div class="selector-head eyebrow" id="river-select-head" data-i18n-title="explorer.mode.river.about"
-               title="One click selects just the reach it lands on. Press R.">
-            <button class="btn sm mode" id="river-select-mode" tabindex="-1">On</button>
-            <span class="title" data-i18n="explorer.mode.river">River Select</span>
-            <span class="clarify" data-i18n="explorer.mode.river.clarify">(1 River)</span>
-            <span id="river-select-count" data-i18n-title="explorer.count.reach"
-                  title="The reach you clicked"></span>
-          </div>
-
-          <div class="selector-head eyebrow" id="watershed-head" data-i18n-title="explorer.mode.watershed.about"
-               title="One click selects every reach that drains to the reach it lands on. Press W.">
-            <button class="btn sm mode" id="watershed-mode" tabindex="-1">Off</button>
-            <span class="title" data-i18n="explorer.mode.watershed">Watershed Select</span>
-            <span class="clarify" data-i18n="explorer.mode.watershed.clarify">(1 River + Upstreams)</span>
-            <span id="watershed-count" data-i18n-title="explorer.count.streams"
-                  title="Streams in the current selection"></span>
-          </div>
-
-          <div class="selector-head eyebrow" id="picks-head" data-i18n-title="explorer.mode.multi.about"
-               title="Collect a watershed outlet on every click, instead of selecting one at a time. Shift-click a river to collect one without leaving the method you are in, or press M.">
-            <button class="btn sm mode" id="picks-mode" tabindex="-1">Off</button>
-            <span class="title" data-i18n="explorer.mode.multi">Multi Select</span>
-            <span class="clarify" data-i18n="explorer.mode.multi.clarify">(Multiple Watersheds)</span>
-            <span id="picks-count" data-i18n-title="explorer.count.picks"
-                  title="Watershed outlets collected">0</span>
-          </div>
-
-          <div class="selector-head eyebrow" id="aoi-head" data-i18n-title="explorer.mode.aoi.about"
-               title="Cut an area of interest out of a watershed: click its outlet, then click each inlet to drop it and everything that drains into it. Press A.">
-            <button class="btn sm mode" id="aoi-mode" tabindex="-1">Off</button>
-            <span class="title" data-i18n="explorer.mode.aoi">AOI Subsetter</span>
-            <span class="clarify" data-i18n="explorer.mode.aoi.clarify">(Rivers between 2+ points)</span>
-            <span id="aoi-count" data-i18n-title="explorer.count.inlets"
-                  title="Inlets trimmed off the area of interest">0</span>
-          </div>
-        </div>
-
-        <!-- One readout under the four rows: only the chosen method's block is in the page. -->
+        <!-- One readout under the five rows: only the chosen method's block is in the page, and the
+             two that select a single reach share one. -->
         <div id="selector-body">
-          <div id="river-select-body">
-            <div id="river-select-info"></div>
+          <div id="reach-body">
+            <div id="reach-info"></div>
           </div>
           <div id="watershed-body">
             <div id="selection-info"></div>
@@ -208,50 +225,7 @@
 
         <!-- The reach the last click landed on, field by field as the tiles carry it. Under the
              selector options because it describes what they just selected. -->
-        <div id="river-card">
-          <h3>
-            <span class="title" data-i18n="explorer.heading.riverAttributes">River attributes</span>
-            <span id="river-card-name"></span>
-            <span id="river-card-id" data-i18n-title="explorer.riverCard.id"
-                  title="The riverId of the reach you clicked"></span>
-            <button class="btn sm" id="river-collapse" data-i18n-title="explorer.fold.collapse"
-                    title="Collapse this section"></button>
-          </h3>
-          <div id="river-body"></div>
-        </div>
-      </section>
-
-      <!-- STYLING OPTIONS · colouring by the river names table, and the rule editor that draws
-           everything else. Both draw the network under the Standard stream style; a forecast
-           styleset paints over them until it is switched back. -->
-      <section id="styling-section" data-tool="styling">
-        <h2 data-i18n="explorer.heading.styling">Styling Options</h2>
-
-        <div id="names-card">
-          <h3>
-            <button class="btn sm mode names" id="names-mode" data-i18n-title="explorer.names.about"
-                    title="Colour the network by the river names table: named reaches take a colour, everything no name covers goes grey. Press N.">
-              Off
-            </button>
-            <span class="title" data-i18n="explorer.heading.names">River names</span>
-            <span id="names-count" data-i18n-title="explorer.names.count"
-                  title="Named rivers in the table"></span>
-            <button class="btn sm" id="names-collapse" data-i18n-title="explorer.fold.collapse"
-                    title="Collapse this section"></button>
-          </h3>
-          <div id="names-body"></div>
-        </div>
-
-        <div id="style-card">
-          <h3>
-            <span class="title" data-i18n="explorer.heading.streamStyle">Stream styling</span>
-            <span id="style-zoom" data-i18n-title="explorer.style.zoom"
-                  title="Current map zoom — every stop below sits on a half-zoom step">z2.0</span>
-            <button class="btn sm" id="style-collapse" data-i18n-title="explorer.fold.collapse"
-                    title="Collapse this section"></button>
-          </h3>
-          <div id="style-body"></div>
-        </div>
+        <div id="river-body"></div>
       </section>
     </div>
 
@@ -312,6 +286,34 @@
       <div class="modal-body" id="saved-body"></div>
     </div>
 
+    <!-- STYLING OPTIONS · colouring by the river names table, and the rule editor that draws
+         everything else. Both draw the network under the Standard stream style; a forecast
+         styleset paints over them until it is switched back. Docked rather than stacked in the
+         column: the rule editor wants more width than the column has, and nothing above it needs
+         to stay on screen while a style is being tuned. -->
+    <div id="styling-dock" class="dock" data-tool="styling">
+      <div class="modal-head">
+        <h3 data-i18n="explorer.heading.styling">Styling Options</h3>
+        <button class="btn sm" id="styling-close" data-i18n-aria-label="common.close" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div id="names-card" class="row">
+          <button class="btn sm mode names" id="names-mode" data-i18n-title="explorer.names.about"
+                  title="Colour the network by the river names table: named reaches take a colour, everything no name covers goes grey. Press N."></button>
+          <span class="title" data-i18n="explorer.heading.names">River names</span>
+          <span id="names-count" data-i18n-title="explorer.names.count"
+                title="Named rivers in the table"></span>
+        </div>
+
+        <div id="style-card">
+          <h3>
+            <span class="title" data-i18n="explorer.heading.streamStyle">Stream styling</span>
+          </h3>
+          <div id="style-body"></div>
+        </div>
+      </div>
+    </div>
+
     <div id="help-dock" class="dock">
       <div class="modal-head">
         <h3 data-i18n="help.heading">Help and about</h3>
@@ -338,6 +340,8 @@
             <li data-i18n-html="help.app.settings" data-spotlight="#btn-settings"></li>
             <li data-i18n-html="help.app.lang" data-spotlight="#btn-language"></li>
             <li data-i18n-html="help.app.theme" data-spotlight="#btn-theme"></li>
+            <li data-i18n-html="help.app.search" data-spotlight="#btn-search-river"></li>
+            <li data-i18n-html="help.app.styling" data-spotlight="#btn-styling" data-tool="styling"></li>
             <li data-i18n-html="help.app.help" data-spotlight="#btn-help"></li>
           </ul>
         </section>
@@ -422,6 +426,7 @@
           <h4 data-i18n="help.explorer.h"></h4>
           <p data-i18n="help.explorer.intro"></p>
           <ul>
+            <li data-i18n-html="help.explorer.browse" data-tool="forecast"></li>
             <li data-i18n-html="help.explorer.river"></li>
             <li data-i18n-html="help.explorer.watershed"></li>
             <li data-i18n-html="help.explorer.multi"></li>
@@ -430,7 +435,7 @@
           <p data-i18n-html="help.explorer.actions"></p>
           <p data-i18n-html="help.explorer.attributes"></p>
         </section>
-        <section class="help-section" data-tool="styling">
+        <section class="help-section" data-tool="styling" data-spotlight="#btn-styling">
           <h4 data-i18n="help.styling.h"></h4>
           <p data-i18n-html="help.styling.intro" data-spotlight="#stream-style"></p>
           <ul>
@@ -578,10 +583,6 @@
     </div>
     <div class="modal-body">
       <h4 data-i18n="settings.display">Display</h4>
-      <label class="row">
-        <input type="checkbox" id="set-legend"/>
-        <span data-i18n="settings.mapLegend">Show the map legend</span>
-      </label>
       <label class="row" data-tool="forecast">
         <input type="checkbox" id="set-shaded-warning-levels"/>
         <span data-i18n="settings.shadedWarningLevels">Shade warning levels on the forecast chart</span>
@@ -596,7 +597,7 @@
       </p>
       <!-- rows built by createDataSettings() in src/ui/dataSettings.js, from the registry in
            src/data/datasets.js -->
-      <div id="data-list" class="col"></div>
+      <div id="data-list"></div>
       <div class="col data-foot">
         <div id="data-foot-status" class="hint status"></div>
         <div class="row wrap">

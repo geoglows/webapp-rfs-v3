@@ -222,7 +222,11 @@ async function boot() {
       tools: TOOLS,
       styleset: currentStyleset,
       // What repaints the network when a forecast styleset takes it back off the style spec.
-      onRepaintNetwork: () => streams.applyPaint()
+      onRepaintNetwork: () => streams.applyPaint(),
+      // The style spec only draws the network under the Standard styleset, so opening the editor
+      // asks for it — otherwise every rule and preset in there is a no-op on a forecast-coloured
+      // network, with nothing on screen to say why.
+      onStyleEditor: () => panelControls?.chooseStyleset("standard")
     });
   }
 
@@ -314,9 +318,9 @@ async function boot() {
       }
       return;
     }
-    // The explorer reads the click first. Three of its four methods are answering a question about
-    // the network — a watershed, an area of interest, a collection — and say so by taking the
-    // click; River Select does not, so the reach goes on to open its charts as it always has.
+    // The explorer reads the click first. Four of its five methods are answering a question about
+    // the network — a reach, a watershed, an area of interest, a collection — and say so by taking
+    // the click; the Data Browser does not, so the reach goes on to open its charts.
     if (explorer?.onMapClick(e, hit)) return;
     if (!hit) return;
     // The reach itself rather than where the pointer landed, which at low zoom are nowhere near
@@ -335,7 +339,7 @@ async function boot() {
   // watching layers that no longer exist.
   map.on("mousemove", (e) => {
     const over = map.queryRenderedFeatures(e.point, {layers: streamLayers()}).length > 0;
-    map.getCanvas().style.cursor = explorer?.cursorFor(over) ?? (over ? "pointer" : "");
+    map.getCanvas().style.cursor = over ? "pointer" : "";
     hoverRegions(e.point);
   });
   map.on("mouseout", () => hoverRegions(null));

@@ -52,20 +52,6 @@ export const fieldInfo = (name, type = 'number') => ({
 
 export const roleRank = role => ROLE_ORDER[role] ?? 3;
 
-/** Human-scale numbers for a menu: 1.2 M, 8.4 k, 0.75 — never 5384105885696. */
-export const compact = v => {
-  if (v == null || !isFinite(v)) return '—';
-  const a = Math.abs(v);
-  if (a >= 1e12) return `${(v / 1e12).toFixed(1)} T`;
-  if (a >= 1e9) return `${(v / 1e9).toFixed(1)} G`;
-  if (a >= 1e6) return `${(v / 1e6).toFixed(1)} M`;
-  if (a >= 1e4) return `${(v / 1e3).toFixed(1)} k`;
-  if (a >= 100) return String(Math.round(v));
-  if (Number.isInteger(v)) return String(v);
-  // Number() again to drop the trailing zeros toPrecision leaves behind: 7.8, not 7.80.
-  return String(Number(v.toPrecision(3)));
-};
-
 function suggestedThreshold({type, min, max, values}) {
   if (type === 'string') return values?.[0] ?? '';
   if (min == null || max == null) return 0;

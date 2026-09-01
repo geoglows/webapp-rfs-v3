@@ -99,22 +99,30 @@
     padding: 3px 8px;
 }
 
-/* A selection mode's on/off pill — mono and uppercase because it reads as a state, not a label. */
+/* A selection mode's switch: an empty box, with a green check in it while that mode is the one a
+   click on the map belongs to. What it switches is the row it sits in, which is the label. */
 .btn.mode {
-    width: auto;
-    height: auto;
-    padding: 2px 6px;
-    font-family: var(--mono);
-    font-size: var(--fs-2xs);
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: .5px;
+    --size: 20px;
+    --icon: 16px;
+    padding: 0;
+    border: 2px solid var(--text-dim);
+    border-radius: var(--r-sm);
     background: transparent;
+}
+
+/* the glyph is 1.5 as it ships, which is a hairline at this size */
+.btn.mode svg {
+    stroke-width: 2.75;
+}
+
+.btn.mode.on, .btn.mode.on:hover:not(:disabled) {
+    color: var(--check);
+    border-color: var(--check);
 }
 
 /* Colours and states come after the sizes, so a size variant setting its own colour (.icon, .tab)
    doesn't outrank the state that should be showing. */
-.btn.primary, .btn.mode.on, .btn.seg.on, .btn.toggle.active {
+.btn.primary, .btn.seg.on, .btn.toggle.active {
     color: var(--on-accent);
     background: var(--accent);
     border-color: var(--accent);
@@ -125,7 +133,7 @@
     border-color: var(--accent);
 }
 
-.btn.primary:hover:not(:disabled), .btn.mode.on:hover:not(:disabled) {
+.btn.primary:hover:not(:disabled) {
     color: var(--on-accent);
     filter: brightness(1.08);
 }
@@ -544,20 +552,30 @@ input[aria-invalid="true"] {
     gap: 2px;
 }
 
-/* ── The downloaded-data list, in both Settings dialogs ── */
+/* ── The downloaded-data list, in both Settings dialogs ──
+   A small table rather than a full-width list: the three columns are each as wide as the widest
+   thing in them and no wider, and the table stops there instead of stretching across the dialog. */
 #data-list {
+    display: grid;
+    grid-template-columns: max-content max-content max-content;
+    justify-content: center;
     margin: 8px 0 4px;
-    --gap: 4px;
+    column-gap: 14px;
 }
 
-/* Name, size and the two buttons on one line, with the progress line dropping to a row of its own
-   underneath when there is one to show. */
+/* Name, size and the two buttons on one line, on the columns the list sets, with the progress line
+   dropping to a row of its own underneath when there is one to show. */
 .data-row {
     display: grid;
-    grid-template-columns: 1fr auto auto;
+    grid-column: 1 / -1;
+    grid-template-columns: subgrid;
     align-items: center;
-    gap: 8px;
-    font-size: 15px;
+    padding: 5px 0;
+    border-top: 1px solid var(--border);
+}
+
+.data-row:first-child {
+    border-top: none;
 }
 
 .data-row .row {

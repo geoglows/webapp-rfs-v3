@@ -1,27 +1,4 @@
 import {$, el} from "../dom.js";
-import {heroIcon} from "../icons/icons.js";
-import {t} from "../i18n/i18n.js";
-
-/**
- * A folding section of the column. `key` names all three things it touches: the class the stylesheet
- * folds with is `${key}-collapsed` and the button is `#${key}-collapse`. The tooltip is written as
- * `data-i18n-title` as well as set directly, so a language change repaints it pointing the right way.
- */
-export function createCollapsible(key, {collapsed = false} = {}) {
-  const panel = $('panel');
-  const btn = $(`${key}-collapse`);
-  const cls = `${key}-collapsed`;
-  const set = fold => {
-    const titleKey = fold ? 'explorer.fold.expand' : 'explorer.fold.collapse';
-    panel.classList.toggle(cls, fold);
-    btn.replaceChildren(heroIcon(fold ? 'chevron-right' : 'chevron-down'));
-    btn.setAttribute('data-i18n-title', titleKey);
-    btn.title = t(titleKey);
-  };
-  btn.addEventListener('click', () => set(!panel.classList.contains(cls)));
-  set(collapsed);
-  return {set, collapsed: () => panel.classList.contains(cls)};
-}
 
 // The run report is the selection tools' — a build without them has no #panel-foot in the page,
 // and the two objects below become inert rather than each of their callers having to check.

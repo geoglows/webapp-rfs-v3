@@ -37,11 +37,7 @@ export function renderAoi(mount, state, {onRemove, onZoom}) {
   const {outlet, inlets, count, trimmed} = state;
   const out = [];
 
-  if (!outlet) {
-    out.push(el('div', {class: 'picks-empty', text: t('explorer.aoi.pickOutlet')}));
-    mount.replaceChildren(...out);
-    return;
-  }
+  if (!outlet) return void mount.replaceChildren();
 
   const head = el('div', {class: 'aoi-head'});
   head.append(
@@ -51,9 +47,7 @@ export function renderAoi(mount, state, {onRemove, onZoom}) {
   );
   out.push(head);
 
-  if (!inlets.length) {
-    out.push(el('div', {class: 'picks-empty', text: t('explorer.aoi.noInlets')}));
-  } else {
+  if (inlets.length) {
     const rows = el('div', {class: 'picks-list'});
     for (const inlet of inlets) rows.append(inletRow(inlet, {onRemove, onZoom}));
     out.push(rows);

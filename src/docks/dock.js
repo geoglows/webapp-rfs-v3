@@ -1,13 +1,14 @@
 /**
  * Shared plumbing for the panels that dock into the left column — the charts dock, the default
- * bookmarks list, the rivers the user saved, and the help/about text. At most one is open at a time: they occupy the
- * same space beneath the hydrology controls and all widen the panel to half the viewport (see the
- * charts dock block in style.css).
+ * bookmarks list, the rivers the user saved, the help/about text, and the styling options. At most
+ * one is open at a time: they occupy the same space beneath the hydrology controls and widen the
+ * panel — to half the viewport, or to the narrower width the styling dock asks for (see the dock
+ * block in app.css).
  *
  * Each dock `name` has a `#<name>-dock` element in index.html, shown by the `<name>-open` class on
  * <body>; `dock-open` marks "some dock is open" and drives the shared layout rules.
  */
-const DOCKS = ["charts", "bookmarks", "saved", "help"];
+const DOCKS = ["charts", "bookmarks", "saved", "help", "styling"];
 const cleanups = new Map();
 
 const onDockClosed = (name, fn) => cleanups.set(name, fn)
@@ -50,19 +51,25 @@ function reflowMap(map, durationMs = 340) {
   });
 }
 
+// The styling dock widens the panel less than the rest do (see app.css), so it is the one swap
+// between two docks that still changes the panel's width.
+const NARROW = new Set(["styling"]);
+
 /** Show a dock, resolving once the panel and the map have settled at their new widths. */
 function openDock(map, name) {
-  // Swapping one dock for another leaves the panel at the same width, so only a cold open reflows.
-  const wasWide = document.body.classList.contains("dock-open");
-  for (const other of DOCKS) {
-    if (other === name || !isDockOpen(other)) continue;
+  // Swapping one dock for another usually leaves the panel at the same width, so only a cold open
+  // — or a swap across the narrow/wide line — reflows.
+  const open = DOCKS.filter(isDockOpen);
+  const sameWidth = open.length > 0 && open.every(other => NARROW.has(other) === NARROW.has(name));
+  for (const other of open) {
+    if (other === name) continue;
     document.body.classList.remove(`${other}-open`);
     syncDockButton(other);
     cleanups.get(other)?.();
   }
   document.body.classList.add("dock-open", `${name}-open`);
   syncDockButton(name);
-  return wasWide ? Promise.resolve() : reflowMap(map);
+  return sameWidth ? Promise.resolve() : reflowMap(map);
 }
 
 function closeDock(map, name) {

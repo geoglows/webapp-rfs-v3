@@ -1,6 +1,6 @@
 import {el} from '../dom.js';
 import {t, tf, tn} from '../i18n/i18n.js';
-import {compact, orderVisibilityWarning} from './streamAttributes.js';
+import {orderVisibilityWarning} from './streamAttributes.js';
 import {
   BASE_LAYER_ID,
   COLORS,
@@ -45,7 +45,6 @@ export function createStylePanel({mount, onChange, selection, pmtiles}) {
   let attrError = '';
   let presets = [];
   let highlight = true;
-  const collapsed = new Set();
   let counts = new Map();
   let pending = null;
 
@@ -77,7 +76,7 @@ export function createStylePanel({mount, onChange, selection, pmtiles}) {
   function attrRow(a) {
     const range = a.type === 'string'
       ? tn('explorer.style.values', a.values.length)
-      : (a.min == null ? t('explorer.style.numberRange') : `${compact(a.min)} – ${compact(a.max)}`);
+      : (a.min == null ? t('explorer.style.numberRange') : `${a.min} – ${a.max}`);
     return el('div', {class: `attr attr-${a.role}`}, [
       el('div', {class: 'attr-top'}, [
         el('span', {class: 'attr-label', text: a.label}),
@@ -106,8 +105,9 @@ export function createStylePanel({mount, onChange, selection, pmtiles}) {
   }
 
   function attributeMenu() {
-    const box = el('details', {class: 'attr-menu', open: attributes.length <= 12});
-    box.appendChild(el('summary', {
+    const box = el('div', {class: 'attr-menu'});
+    box.appendChild(el('div', {
+      class: 'attr-menu-head',
       text: attributes.length
         ? tf('explorer.style.attributes', {n: attributes.length})
         : t('explorer.style.attributesNone') + (attrError ? ` — ${attrError}` : ''),
@@ -298,7 +298,6 @@ export function createStylePanel({mount, onChange, selection, pmtiles}) {
 
   function ruleCard(rule, i, shadowed) {
     const ids = layerIds();
-    const open = !collapsed.has(rule.id);
     const swatch = el('span', {class: 'rule-swatch'});
     swatch.style.background = rule.color[0]?.value ?? '#888';
     const n = counts.get(ids.get(rule.id));
@@ -337,21 +336,12 @@ export function createStylePanel({mount, onChange, selection, pmtiles}) {
         class: 'btn mini x', text: '✕', title: t('explorer.style.deleteRule'),
         onclick: () => {
           spec.rules.splice(i, 1);
-          collapsed.delete(rule.id);
           restructured();
-        }
-      }),
-      el('button', {
-        class: 'btn mini caret', text: open ? '▾' : '▸',
-        title: t(open ? 'explorer.fold.collapse' : 'explorer.fold.expand'),
-        onclick: () => {
-          if (open) collapsed.add(rule.id); else collapsed.delete(rule.id);
-          render();
         }
       }),
     ]);
 
-    const card = el('div', {class: `rule${rule.enabled === false ? ' off' : ''}${open ? ' open' : ''}`}, [head]);
+    const card = el('div', {class: `rule${rule.enabled === false ? ' off' : ''}`}, [head]);
     const summary = describeConditions(rule.conditions, byName(), rule.match) || t('explorer.style.everyReach');
     card.appendChild(el('div', {class: 'rule-summary'}, [
       el('span', {text: summary}),
@@ -368,8 +358,6 @@ export function createStylePanel({mount, onChange, selection, pmtiles}) {
       const w = orderVisibilityWarning(c, rule.minZoom);
       if (w) card.appendChild(el('div', {class: 'warn', text: tf('explorer.style.orderWarning', {warning: w})}));
     }
-    if (!open) return card;
-
     card.appendChild(el('div', {class: 'rule-when'}, [
       el('span', {class: 'stops-label eyebrow', text: t('explorer.style.when')}),
       conditionList(rule, {addLabel: t('explorer.style.addCondition')}),
@@ -400,8 +388,6 @@ export function createStylePanel({mount, onChange, selection, pmtiles}) {
             const keepScope = spec.scope;
             spec = p.build();
             spec.scope = keepScope;
-            collapsed.clear();
-            for (const r of spec.rules) collapsed.add(r.id);
             restructured();
           }, 'preset'),
         el('button', {
@@ -419,7 +405,7 @@ export function createStylePanel({mount, onChange, selection, pmtiles}) {
           ? tf('explorer.style.scope.selection.about', {n: sel.count.toLocaleString()})
           : t('explorer.style.scope.selection.none')),
       ]),
-      el('label', {class: 'row check'}, [
+      el('label', {class: 'row style-check'}, [
         el('input', {
           type: 'checkbox', checked: highlight,
           onchange: e => {
@@ -444,7 +430,6 @@ export function createStylePanel({mount, onChange, selection, pmtiles}) {
         class: 'btn seg', text: t('explorer.style.reset'), title: t('explorer.style.reset.about'),
         onclick: () => {
           spec = defaultSpec();
-          collapsed.clear();
           restructured();
         }
       }),
@@ -472,8 +457,6 @@ export function createStylePanel({mount, onChange, selection, pmtiles}) {
     try {
       const parsed = parseStyleJson(JSON.parse(await f.text()));
       spec = parsed.spec;
-      collapsed.clear();
-      for (const r of spec.rules) collapsed.add(r.id);
       restructured();
     } catch (err) {
       console.error('[style] load failed', err);

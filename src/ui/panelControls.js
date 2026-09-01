@@ -87,8 +87,20 @@ function createPanelControls({streams, onForecastDateChange, onStylesetChange = 
     });
   }
 
+  /**
+   * Move the picker as if it had been used. The change event carries the whole path with it —
+   * the network repaints, the styling section is told, and the player follows — so nothing here
+   * has to be repeated.
+   */
+  function chooseStyleset(styleset) {
+    const sel = $("stream-style");
+    if (!sel || sel.value === styleset) return;
+    sel.value = styleset;
+    sel.dispatchEvent(new Event("change"));
+  }
+
   initStreamStyleControls();
-  return {initForecastDatePicker, updateSliderVisibility, updateLegendButton};
+  return {initForecastDatePicker, updateSliderVisibility, updateLegendButton, chooseStyleset};
 }
 
 export {createPanelControls};
