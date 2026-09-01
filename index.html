@@ -3,7 +3,18 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <!-- The two origins the first screen waits on whatever this deployment is configured to draw:
+       the app's own data, and the Esri tile service every basemap but streetsOSM and topoUsgs
+       reads (VITE_MAP_DEFAULT_BASEMAP picks which). Warming the sockets here takes the
+       handshakes off a chain the browser cannot otherwise start early — a vector basemap names
+       its tile service in a style document it has to fetch first.
+
+       Deliberately not listing www.arcgis.com / basemaps.arcgis.com, which only the `environment`
+       basemap uses: a preconnect the page then never uses is a socket held open against the
+       requests it was meant to help, and this list cannot see which basemap was configured. Keep
+       it to origins every build hits, and keep it short — four is the practical ceiling. -->
   <link rel="preconnect" href="https://cdn.apps.geoglows.org" crossorigin/>
+  <link rel="preconnect" href="https://services.arcgisonline.com"/>
   <title>%VITE_APP_TITLE%</title>
   <meta name="description" content="%VITE_APP_DESCRIPTION%"/>
   <link href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230d1520'/%3E%3Cg fill='none' stroke='%234A90E2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M30 20L25 18.7L16.5 15.2' stroke-width='3.8'/%3E%3Cpath d='M16.5 15.2L11 9.5L7 6.5' stroke-width='2.6'/%3E%3Cpath d='M16.5 15.2L12 21.5L9.5 25.5' stroke-width='2.6'/%3E%3Cpath d='M11 9.5L4.5 9.5' stroke-width='1.7'/%3E%3Cpath d='M12 21.5L5.5 19.5' stroke-width='1.7'/%3E%3Cpath d='M25 18.7L22.8 12' stroke-width='1.7'/%3E%3Cpath d='M21.3 17L19 22.5' stroke-width='1.7'/%3E%3C/g%3E%3C/svg%3E" rel="icon"/>

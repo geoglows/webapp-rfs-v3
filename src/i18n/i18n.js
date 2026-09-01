@@ -121,6 +121,22 @@ function fill(el, text) {
   if (at < text.length) el.append(markup(text.slice(at)));
 }
 
+/**
+ * Whether an element's tooltip should also be spoken as its name.
+ *
+ * True for a control that shows no word of its own — an icon button, a glyph like the player's
+ * ▶, an empty count — and false for anything that already reads as something, or for a bare
+ * span/div that ARIA gives no name to in the first place. See the call site for why each half of
+ * that matters.
+ *
+ * "Word" rather than "text" is the point of WORDS: a face that is one arrow or one ✕ is a picture
+ * spelled with a character, and speaking it as its codepoint name is no better than leaving the
+ * control unnamed. Only content a person could actually say back is treated as a name.
+ */
+const NAMEABLE = "a[href], button, input, select, textarea, summary, [role]";
+const WORDS = /[\p{L}\p{N}]/u;
+const namesFromTitle = (el) => el.matches(NAMEABLE) && !WORDS.test(el.textContent);
+
 function applyTranslations(lang, root = document) {
   root.querySelectorAll("[data-i18n]").forEach((el) => {
     el.textContent = t(el.dataset.i18n, lang);
@@ -132,11 +148,22 @@ function applyTranslations(lang, root = document) {
   root.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
     el.setAttribute("placeholder", t(el.dataset.i18nPlaceholder, lang));
   });
-  // A tooltip is also the accessible name — everything carrying one is an unlabelled icon. The few
-  // whose spoken name should differ give their own data-i18n-aria-label and are left alone.
+  // A tooltip becomes the accessible name only where there is no name already and the element can
+  // hold one — which is what a data-i18n-title mostly marks: an unlabelled icon control.
+  //
+  // The two exclusions are not defensive, they are both things ARIA forbids. A tooltip on a plain
+  // <span> or <div> cannot be its name (aria-label is prohibited on elements with no role, and a
+  // screen reader is entitled to drop it), and a tooltip on a control that already shows a word is
+  // a *different* name from the one on screen — "Clear" spoken as "Empty whatever the current
+  // method is holding" is a control nobody can ask for out loud. In both cases the tooltip is
+  // still set; it is simply left as the tooltip it is.
+  //
+  // The few elements whose spoken name should genuinely differ from their text say so with their
+  // own data-i18n-aria-label, handled below, and are left alone here.
   root.querySelectorAll("[data-i18n-title]").forEach((el) => {
     el.setAttribute("title", t(el.dataset.i18nTitle, lang));
-    if (!el.dataset.i18nAriaLabel) el.setAttribute("aria-label", t(el.dataset.i18nTitle, lang));
+    if (el.dataset.i18nAriaLabel || !namesFromTitle(el)) return;
+    el.setAttribute("aria-label", t(el.dataset.i18nTitle, lang));
   });
   root.querySelectorAll("[data-i18n-aria-label]").forEach((el) => {
     el.setAttribute("aria-label", t(el.dataset.i18nAriaLabel, lang));

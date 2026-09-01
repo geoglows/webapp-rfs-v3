@@ -1,9 +1,9 @@
-import {floodNetwork} from "./network";
+import {corridorBetween} from "./corridor";
 import {FLOOD_MAX_SEGMENTS, FLOOD_MIN_MAP_ZOOM} from "../settings/settings.js";
 
 // Reaches are addressed by riverIndex everywhere in flood mapping — the streams tiles carry it as a
-// property, the flood stores key their river directories on it, and the network graph's edges are
-// in it — so the highlight filters match on that property, never on riverId.
+// property, the flood stores key their river directories on it, and a corridor is worked out from
+// it — so the highlight filters match on that property, never on riverId.
 const NO_MATCH = ["in", ["get", "riverIndex"], ["literal", []]];
 const inFilter = (ids) => ids.length ? ["in", ["get", "riverIndex"], ["literal", ids]] : NO_MATCH;
 
@@ -13,9 +13,9 @@ class Selection {
    * them; click more to extend the corridor, click a chosen reach again to drop it.
    *
    * Two sets, and the difference matters for both the highlights and the toggling: `clicked` is
-   * what the user actually picked, `corridor` is what that means on the river (RiverNetwork's
-   * between(), from riverforecastsystem/v3/hydrography). Only `clicked` is toggled — clicking a reach the
-   * corridor merely passes through pins it, so it survives dropping the click that pulled it in.
+   * what the user actually picked, `corridor` is what that means on the river (corridor.js, off the
+   * runs the tiles already carry). Only `clicked` is toggled — clicking a reach the corridor merely
+   * passes through pins it, so it survives dropping the click that pulled it in.
    *
    * hasCoverage(riverIndex): whether the flood library holds a reach anywhere — the global bitset
    * from the flood root, which arrives async once the worker is ready, so call refresh() then.
@@ -27,19 +27,11 @@ class Selection {
     this.onChange = onChange;
     this.hasCoverage = hasCoverage;
     document.getElementById("btn-clear")?.addEventListener("click", () => this.clear());
-    // The graph is optional (see network.js) and only arrives after the first clicks are possible,
-    // so it is folded in whenever it lands rather than waited on.
-    void floodNetwork().then((net) => {
-      if (!net) return;
-      this.network = net;
-      if (this.clicked.size) this.recompute();
-    });
   }
 
   map;
   onChange;
   hasCoverage;
-  network = null;
   clicked = new Set();
   corridor = new Set();
   warnEl = document.getElementById("warning");
@@ -110,11 +102,33 @@ class Selection {
     this.logSelection([...this.corridor].filter((id) => this.hasCoverage(id)).length);
   }
 
-  /** The corridor the current clicks imply. Without the graph it is just the clicks — see network.js. */
+  /**
+   * Every reach the map has drawn, as the run of riverIndex it covers — the candidates a corridor
+   * is routed through. Read off the tiles on each click rather than held: the loaded set changes
+   * with every pan, and a click can only ever join reaches the map is showing anyway.
+   *
+   * Deduped because a reach crossing a tile boundary is returned once per tile it appears in.
+   */
+  loadedRuns() {
+    let feats;
+    try {
+      feats = this.map.querySourceFeatures("streams", {sourceLayer: "streams"});
+    } catch {
+      return [];
+    }
+    const runs = new Map();
+    for (const f of feats) {
+      const hi = Number(f.properties?.riverIndex);
+      const up = Number(f.properties?.upstreamCount);
+      if (!Number.isInteger(hi) || !Number.isInteger(up) || runs.has(hi)) continue;
+      runs.set(hi, {lo: hi - up, hi});
+    }
+    return [...runs.values()];
+  }
+
+  /** The corridor the current clicks imply — see corridor.js. */
   computeCorridor() {
-    return this.network
-      ? this.network.between([...this.clicked])
-      : {corridor: new Set(this.clicked), junctions: [], detached: [...this.clicked]};
+    return corridorBetween(this.clicked, this.loadedRuns());
   }
 
   /**
@@ -184,7 +198,7 @@ class Selection {
     const parts = [`Selection: ${this.clicked.size} clicked → ${n} in corridor, ${floodableCount} floodable`,
                    `${this.coverageIds.length} reach(es) with coverage loaded`];
     if (this.detached?.length && this.clicked.size > 1) {
-      parts.push(`${this.detached.length} click(es) on a separate branch — no river runs between those and the rest`);
+      parts.push(`${this.detached.length} click(es) on a separate branch — no drawn river runs between those and the rest`);
     }
     console.log(parts.join(" · "));
   }

@@ -36,3 +36,14 @@ export const $ = (id) => document.getElementById(id);
 export const mb = (bytes) => `${(bytes / 1e6).toFixed(1)} MB`;
 
 export const fmt = (n) => n.toLocaleString();
+
+/**
+ * Run `fn` once the browser has a moment, or after `timeout` regardless.
+ *
+ * For work that has to happen but must not happen *now*: a prefetch, a warm-up, an optional file.
+ * Boot is the only time this app is ever short of main thread, and everything that reaches for
+ * this is competing with the map for exactly that. The timeout is the promise that "later" still
+ * arrives on a tab that never goes idle.
+ */
+export const whenIdle = (fn, {timeout = 10_000} = {}) =>
+  window.requestIdleCallback ? window.requestIdleCallback(fn, {timeout}) : setTimeout(fn, 3_000);

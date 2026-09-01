@@ -106,6 +106,23 @@ const tileSetId = (key) => `basemap-${key}`;
 
 const basemapById = (id) => BASEMAPS.find((b) => b.id === id) ?? BASEMAPS[0];
 
+/**
+ * The basemap a deployment asked to open on, or the first one.
+ *
+ * Separate from basemapById only to say something when the answer is the fallback. An id that
+ * names no basemap is a typo in VITE_MAP_DEFAULT_BASEMAP, and silently opening on `environment`
+ * makes it look as though the setting is being ignored — which is exactly how it reads from the
+ * outside, since a deployment that meant the default would not have set it at all.
+ */
+function defaultBasemap(id) {
+  const found = BASEMAPS.find((b) => b.id === id);
+  if (id && !found) {
+    console.warn(`VITE_MAP_DEFAULT_BASEMAP="${id}" is not a basemap — opening on `
+      + `"${BASEMAPS[0].id}". One of: ${BASEMAPS.map((b) => b.id).join(", ")}`);
+  }
+  return found ?? BASEMAPS[0];
+}
+
 let active = BASEMAPS[0].id;
 // Whether `active` is a choice somebody made rather than the page's default. The picker is wired
 // before the map exists, so a click can land first; basemapStyle() must not then
@@ -116,7 +133,7 @@ let chosen = false;
 const currentBasemap = () => active;
 
 function basemapStyle(defaultId) {
-  if (!chosen) active = basemapById(defaultId).id;
+  if (!chosen) active = defaultBasemap(defaultId).id;
   const on = basemapById(active).tileSets ?? [];
   return {
     sources: Object.fromEntries(Object.entries(TILE_SETS).map(([key, ts]) => [tileSetId(key), {

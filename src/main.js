@@ -27,7 +27,7 @@ import {createHelpDock} from "./docks/help.js";
 import {createDataSettings} from "./ui/dataSettings";
 import {createRiverSearch} from "./ui/riverSearch";
 import {wireModals} from "./ui/modals.js";
-import {$} from "./dom.js";
+import {$, whenIdle} from "./dom.js";
 
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -128,11 +128,6 @@ const goToRiver = (river, named) => {
 // ═══════════════════════════════════════════════════════════════════════════
 // Background work · started once the app is up, never waited on
 // ═══════════════════════════════════════════════════════════════════════════
-// After the browser has finished with the frame that got the app on screen. The timeout is the
-// point: an app being interacted with may never go idle, and this work would rather start late than
-// never. Falls back to a plain delay for browsers without the callback.
-const whenIdle = (fn) => (window.requestIdleCallback ? window.requestIdleCallback(fn, {timeout: 10_000}) : setTimeout(fn, 3_000));
-
 /**
  * Fill the river ID lookup in the background, so searching by ID is instant the first time somebody
  * tries it rather than a 17 MB wait at the moment they ask.
