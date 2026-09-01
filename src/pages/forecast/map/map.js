@@ -3,6 +3,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import maplibreWorkerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import {Protocol} from "pmtiles";
 import {basemapStyle, setBasemap} from "../../../shared/map/basemaps.js";
+import {logMapErrors} from "../../../shared/map/errors.js";
 import {mapReady} from "../../../shared/map/ready.js";
 import {MAP_CENTER, MAP_DEFAULT_BASEMAP, MAP_ZOOM} from "../../../shared/settings/settings.js";
 
@@ -54,15 +55,8 @@ async function initMap() {
     }
   });
 
-  // MapLibre flattens every failure into a generic `error` event, so a bad tile fetch arrives as
-  // nothing but "Bad response code: 404". The source id and url live on the event, not the message —
-  // log them too, otherwise the console says something went wrong without saying what. Registered
-  // here rather than by the caller, so a failure during the load this function waits on is reported.
-  map.on("error", (e) => {
-    if (!e?.error) return;
-    const where = e.sourceId ? ` [${e.sourceId}]` : "";
-    console.error(`map${where}: ${e.error.message}`, e.error.url ?? "");
-  });
+  // Registered before the wait below, so a failure during it is reported.
+  logMapErrors(map);
 
   map.addControl(new NavigationControl({showCompass: true, visualizePitch: false}), "top-left");
   await mapReady(map);

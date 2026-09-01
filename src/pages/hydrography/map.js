@@ -5,6 +5,7 @@ import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&ur
 import {MAX_ZOOM, URLS} from './config.js';
 import {BASE_LAYER_ID, COLORS, compileLayers, defaultSpec, inRangeExpr} from './streamStyle.js';
 import {basemapStyle} from '../../shared/map/basemaps.js';
+import {logMapErrors} from '../../shared/map/errors.js';
 import {mapReady} from '../../shared/map/ready.js';
 
 // MapLibre 6 ships its worker as a separate module and locates it by resolving
@@ -391,6 +392,10 @@ export async function initMap({onReferenceLayers} = {}) {
       ],
     },
   });
+
+  // Registered before the wait below, so a failure during it is reported — and so a tile archive
+  // that answers badly says which one it was rather than logging a bare Error.
+  logMapErrors(map);
 
   map.touchZoomRotate.disableRotation();
   map.keyboard.disableRotation();
