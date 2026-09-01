@@ -20,7 +20,7 @@ setWorkerUrl(maplibreWorkerUrl);
  *
  * Dark grey rather than the shared list's first entry, because the network is drawn in light
  * saturated colours that were chosen against a dark ground — on a light basemap they sit at about
- * 1.8:1 and wash out. The list itself is shared with the forecast page and keeps its own order:
+ * 1.8:1 and wash out. The list itself is shared with the data viewer and keeps its own order:
  * light grey still reads first in the picker, where the order is about finding a basemap, not about
  * which one you start on.
  */

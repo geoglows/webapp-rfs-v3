@@ -9,7 +9,7 @@
 </head>
 <body>
 
-<!-- The control column is structurally identical to the forecast page's: same #panel id, same
+<!-- The control column is structurally identical to the data viewer's: same #panel id, same
      <header> over <main>, same pinned-header/scrolling-body split, and therefore the same CSS,
      which now lives in shared/styles/components.css rather than being written twice at two
      different widths. What is inside the column is this page's own. -->
@@ -26,7 +26,7 @@
       <button aria-label="Find a river by name or ID" class="btn icon" data-icon-name="magnifying-glass" disabled id="btn-search"
               data-i18n-title="search.label" data-i18n-aria-label="search.aria"
               title="Find a river by name or ID"></button>
-      <!-- The same picker, the same classes and the same ids as the forecast page: one
+      <!-- The same picker, the same classes and the same ids as the data viewer: one
            initLanguagePicker() in shared/settings drives both, and LANGUAGES is read off these
            buttons, so the two headers stay one control rather than two that resemble each other. -->
       <div class="anchor">
@@ -51,7 +51,7 @@
           <button class="btn sm" id="layers-collapse" data-i18n-title="explorer.fold.collapse"
                   title="Collapse this section"></button>
         </h2>
-        <!-- rows built by initLayerPicker() in src/pages/hydrography/mapControls.js -->
+        <!-- rows built by initLayerPicker() in src/pages/hydrography-explorer/mapControls.js -->
         <div id="layers-body"></div>
       </div>
 
@@ -281,6 +281,6 @@
   </div>
 </div>
 
-<script src="/src/pages/hydrography/main.js" type="module"></script>
+<script src="/src/pages/hydrography-explorer/main.js" type="module"></script>
 </body>
 </html>

@@ -590,11 +590,11 @@ $('btn-geoparquet').addEventListener('click', () => {
 // ── theme ────────────────────────────────────────────────────────────────────
 // Both pages share one settings module, so the theme is stored once, defaults off
 // prefers-color-scheme once, and swaps the button's sun/moon once. This page used to keep its own
-// copy against the raw `rfs-theme` key — the same key the forecast page had already migrated off
+// copy against the raw `rfs-theme` key — the same key the data viewer had already migrated off
 // and was deleting on every visit, which is why a theme picked here did not survive one.
 hydrateIcons();
 initThemeToggle();
-// The same picker the forecast page has, driven by the same shared code. Not awaited: index.html
+// The same picker the data viewer has, driven by the same shared code. Not awaited: index.html
 // ships English, and the chosen dictionary replaces it when it lands.
 // Everything walking [data-i18n] cannot reach: the text this file writes into the readouts, the
 // two panel bodies built as nodes, the On/Off pills, the layer switches' composed tooltips, and

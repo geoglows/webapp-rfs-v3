@@ -278,7 +278,7 @@ function createRiverSearch({onFound, onClear, locateOnPick = true, requireLocati
 
   clearBtn?.addEventListener("click", () => clearHighlight());
 
-  // Either id: the forecast page's header calls it "search a river", the hydrography page's just
+  // Either id: the data viewer's header calls it "search a river", the hydrography page's just
   // "search". Both are the same dialog and neither markup is worth churning to agree.
   ($("btn-search-river") ?? $("btn-search"))?.addEventListener("click", () => open());
 

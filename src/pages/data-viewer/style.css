@@ -1,4 +1,4 @@
-/* ── The forecast viewer's own styles ──────────────────────────────────────
+/* ── The data viewer's own styles ──────────────────────────────────────
    Everything shared with the hydrography explorer — the tokens, the page frame, the control column,
    the buttons, fields, cards, modals, menus, map overlays, legend swatches and progress bars — is
    in src/shared/styles/. What is left here is what only this page has: the prose and tables the

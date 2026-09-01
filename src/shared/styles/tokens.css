@@ -1,5 +1,5 @@
 /* ── Tokens ───────────────────────────────────────────────────────────────
-   One palette for both pages, so the forecast viewer and the hydrography explorer sit next to each
+   One palette for both pages, so the data viewer and the hydrography explorer sit next to each
    other in the GEOGLOWS portal as one product rather than two that happen to share a subject.
 
    The first block is what the tokens mean in the dark theme, and doubles as the fallback for a
@@ -106,7 +106,7 @@
     --border: #cbd5e1;
     --border-soft: rgba(148, 163, 184, .55);
 
-    /* Black for both of the top two ranks, which is the forecast page's long-standing decision:
+    /* Black for both of the top two ranks, which is the data viewer's long-standing decision:
        on a light ground a "dimmed" grey is just lower contrast, not hierarchy. The third rank
        stays grey — it carries counts and units, where the drop really is a drop in importance
        rather than a drop in legibility. */

@@ -80,7 +80,7 @@ export default {
   "layers.riverfld": "VIIRS composite",
   "layers.goes": "Satellite IR (GOES)",
   "layers.viirs": "True color (VIIRS)",
-  // the hydrography explorer's layer switches — see pages/hydrography/mapControls.js
+  // the hydrography explorer's layer switches — see pages/hydrography-explorer/mapControls.js
   "explorer.layers.streams.about": "The river network itself. Turning it off leaves the polygons and the selection behind, for reading a catchment or a group boundary without lines over it.",
   "explorer.layers.groups": "Group boundaries",
   "explorer.layers.basins": "HydroBASINS level 2",
@@ -168,7 +168,7 @@ export default {
   "explorer.aoi.inlets.other": "{n} inlets",
   "explorer.aoi.trimmed": "{n} reaches trimmed off.",
   "explorer.aoi.removeInlet": "Put {id} and the ground above it back in the AOI",
-  // the fields the stream tiles carry — see pages/hydrography/streamAttributes.js
+  // the fields the stream tiles carry — see pages/hydrography-explorer/streamAttributes.js
   "explorer.attr.none": "the tiles declare no attributes",
   "explorer.attr.ladder.first": "order ≥ {order} below z{zoom}",
   "explorer.attr.ladder.next": "≥ {order} from z{zoom}",
@@ -195,7 +195,7 @@ export default {
   "explorer.attr.riverIndex.note": "post-order rank — a watershed is one contiguous run of these",
   "explorer.attr.upstreamCount": "Upstream reaches",
   "explorer.attr.upstreamCount.note": "how far back the run reaches, excluding this one",
-  // the styling rule editor — see pages/hydrography/stylePanel.js and streamStyle.js
+  // the styling rule editor — see pages/hydrography-explorer/stylePanel.js and streamStyle.js
   "explorer.loadingMap": "Loading the map",
   "explorer.export.download": "download",
   "explorer.export.process": "processing",

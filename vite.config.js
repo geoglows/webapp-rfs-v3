@@ -202,8 +202,8 @@ export default defineConfig({
     // `rolldownOptions`, not `rollupOptions`: Vite 8 is rolldown-backed and deprecates the latter.
     rolldownOptions: {
       input: {
-        forecast: entry("./index.html"),
-        hydrography: entry("./hydrography/index.html")
+        "data-viewer": entry("./index.html"),
+        "hydrography-explorer": entry("./hydrography/index.html")
       },
       output: {
         codeSplitting: {

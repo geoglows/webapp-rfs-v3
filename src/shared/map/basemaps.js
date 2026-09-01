@@ -1,7 +1,7 @@
 /**
  * The basemaps, and the one mechanism both pages switch them with.
  *
- * There used to be two of these — the forecast page's, which removed the current basemap's layers
+ * There used to be two of these — the data viewer's, which removed the current basemap's layers
  * and added the next one's, and the hydrography page's, which declared every raster set in the
  * initial style and toggled `visibility`. The second is the one that survived: nothing is torn
  * down, so a switch cannot lose the layer order the rest of the app was inserted into, and the
@@ -12,7 +12,7 @@
  * it is therefore added the first time it is chosen and from then on only toggled, like the rasters
  * that were there from the start.
  *
- * The list is shared; the basemap a page *opens* on is not. The forecast page opens on the Esri
+ * The list is shared; the basemap a page *opens* on is not. The data viewer opens on the Esri
  * vector basemap (VITE_MAP_DEFAULT_BASEMAP), the hydrography explorer on dark grey, because its
  * network is drawn in light saturated colours picked against a dark ground — on the light basemap
  * they sit at about 1.8:1 and wash out. Each page passes its own to basemapStyle().

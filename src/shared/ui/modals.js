@@ -3,7 +3,7 @@
  *
  * Every modal in either app is the same shape — a `.backdrop` holding one `.card.modal`, hidden by
  * a class — so there is exactly one way in and three ways out, and they are the same on both pages.
- * This lived in the forecast page's main.js and the hydrography page simply did not have it: its
+ * This lived in the data viewer's main.js and the hydrography page simply did not have it: its
  * Settings cog opened nothing, and its ✕ buttons and Escape key did nothing, because the markup was
  * copied across when the two apps merged and the wiring was not.
  *
@@ -17,7 +17,7 @@ const hide = (el) => el?.classList.add("hidden");
 
 /**
  * Wire the dialogs. `onEscape` runs after Escape has closed whatever was open, for a page that has
- * more than modals to dismiss — the forecast page's docks.
+ * more than modals to dismiss — the data viewer's docks.
  */
 export function wireModals({onEscape} = {}) {
   $("btn-settings")?.addEventListener("click", () => $("settings-modal")?.classList.remove("hidden"));

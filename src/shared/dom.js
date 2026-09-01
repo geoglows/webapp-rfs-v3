@@ -53,7 +53,7 @@ export const $ = (id) => document.getElementById(id);
  *
  * One decimal, everywhere. There were three of these and two precisions, which is how the same
  * cached dataset came to read "38.1 MB" on the Settings row and "38.20 MB" in the explorer's
- * column. The worker in pages/hydrography/geomWorker.js keeps its own: it reports a bare number
+ * column. The worker in pages/hydrography-explorer/geomWorker.js keeps its own: it reports a bare number
  * that its callers put units on, and a worker that imports nothing is a worker that cannot break
  * on a DOM module.
  */

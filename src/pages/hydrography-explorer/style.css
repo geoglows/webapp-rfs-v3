@@ -1,11 +1,11 @@
 /* ── The hydrography explorer's own styles ─────────────────────────────────
-   Everything shared with the forecast page — the tokens, the page frame, the control column, the
+   Everything shared with the data viewer — the tokens, the page frame, the control column, the
    buttons, fields, cards, modals, menus, map overlays, legend swatches and progress bars — is in
    src/shared/styles/. What is left here is what only this page has: the four selection methods and
    their readouts, the collected-picks and AOI lists, the river attribute table, the staged export
    block, and the styling rule editor, which is most of the file.
 
-   The column itself is #panel, the same id and the same markup as the forecast page, so both are
+   The column itself is #panel, the same id and the same markup as the data viewer, so both are
    laid out by one rule in shared/styles/components.css rather than by two that disagreed about the
    width. The classes below only ever add to that. */
 

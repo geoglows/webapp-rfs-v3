@@ -1,6 +1,6 @@
 /* ── Components ───────────────────────────────────────────────────────────
    Every widget both pages use. Page sheets below this one style what is genuinely theirs — the
-   forecast page's docks and the hydrography page's rule editor — and nothing else. */
+   data viewer's docks and the hydrography page's rule editor — and nothing else. */
 
 /* ── Buttons · one look for every clickable thing that isn't a link ──
    .icon / .sm / .auto / .tab / .map / .round / .mini / .seg size it;
@@ -165,7 +165,7 @@
 
 /* ── Menu rows ──
    Declared in full rather than derived from .btn: a menu row is left-aligned, full-width,
-   transparent and lighter-weight, which is most of .btn overridden. The forecast page used to
+   transparent and lighter-weight, which is most of .btn overridden. The data viewer used to
    derive it and then override seven properties, which quietly dropped border-radius, cursor,
    transition, width and text-align the moment .btn changed. */
 .opt {
@@ -411,7 +411,7 @@ input[aria-invalid="true"] {
     overflow: hidden;
     background: var(--surface);
     border-right: 1px solid var(--border);
-    /* the width change when a dock opens — see body.dock-open in the forecast sheet */
+    /* the width change when a dock opens — see body.dock-open in the data viewer's sheet */
     transition: flex-basis .3s ease;
 }
 
@@ -485,9 +485,9 @@ input[aria-invalid="true"] {
     gap: var(--gap);
 }
 
-/* Each page anchors this to its own side — the forecast page clears its panel, the hydrography
+/* Each page anchors this to its own side — the data viewer clears its panel, the hydrography
    page sits against the right edge. Only the shared look lives here. */
-/* Where it sits is the page's business — the forecast page puts it beside the column, the
+/* Where it sits is the page's business — the data viewer puts it beside the column, the
    hydrography page in the map's bottom-right corner, clear of the scale bar. */
 #legend-overlay {
     max-width: 240px;
@@ -649,7 +649,7 @@ input[aria-invalid="true"] {
    One bar. The hydrography page shipped two complete implementations of this — a download bar and
    a staged-export bar — whose fills were declaration-identical and which carried a copy each of the
    indeterminate animation and the reduced-motion override, 276 lines for one component. The
-   forecast page had a third, a 2px sliver in the player card, which is now .progress.thin.
+   data viewer had a third, a 2px sliver in the player card, which is now .progress.thin.
 
    Both pages also used #progress-bar as an id, for two unrelated things. Neither does now. */
 .progress-track {
