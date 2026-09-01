@@ -12,37 +12,7 @@ import {
   writeRecord
 } from "./riverNamesDb.js";
 
-/**
- * TWIN FILE: webapp-rfs-hydrography/src/riverNamesData.js — the same module under a name that does
- * not collide with the explorer's own riverNames.js, which is the colouring it paints from.
- *
- * The river names, from the app side: keep a copy on the device, keep it current, and search it.
- *
- * `group=0/riverNames.json` is a hand curated table of the rivers people actually look for — a few
- * hundred of them, each stored as the span of the network it covers rather than as a name on every
- * reach. It is published beside the tiles because those spans are `riverIndex` values, which mean
- * nothing except against the exact network release they were compiled from.
- *
- * That span is also why searching by name is cheap in a way searching by ID is not. A name row
- * already carries `hi`, the mouth reach's own `riverIndex`, and `riverIndex` is what every reader
- * in this app takes. So a name found here is a river the charts can open immediately — no binary
- * search, and none of the ~17 MB riverId lookup that a bare ID has to be resolved through. The
- * whole names table is ~100 kB.
- *
- * Names are not unique and cannot be made to be. There are two Severns, in Britain and in Ontario,
- * and three rivers called Verde; the watershed alone does not separate them, because two of those
- * collisions are between watersheds that also share a name. Every row therefore carries the
- * country its mouth stands in, the named river it flows into if there is one, and its geographic
- * extent — which is what a results list needs to tell two rows apart, and what the camera needs to
- * frame the river rather than drop a pin on its mouth.
- */
 const SOURCE = () => `${urls.hydrographyGroup({group: 0})}/riverNames.json`;
-
-// How often a tab that stays open reconsiders its copy. The thing being waited for is a date, not
-// an interval, so this only has to be short enough that a session running across the boundary
-// notices it in reasonable time and long enough to be invisible. Nothing is fetched on a tick that
-// finds the copy still fresh.
-const CHECK_INTERVAL_MS = 60 * 60 * 1000;
 
 // The table, once read out of IndexedDB, with the search keys folded onto each row.
 let loaded = null;
@@ -54,7 +24,7 @@ let loading = null;
 let refreshing = null;
 let watching = false;
 
-/** Lowercased and stripped of accents, so "Jucar" finds "Júcar" and "SEVERN" finds "Severn". */
+// Lowercased and stripped of accents
 const fold = (s) => s.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase().trim();
 
 /**
@@ -186,23 +156,21 @@ function refresh({force = false} = {}) {
 }
 
 /**
- * Watch the clock for as long as the app is open.
+ * Reconsider the copy when the tab is brought back to the front.
  *
- * Three triggers, because a tab is not reliably running when a date passes. The interval catches a
- * session left open across the boundary; the visibility handler catches the far more common case
- * of a tab that was open but backgrounded — and asleep, with its timers throttled — over the same
- * boundary; and load() itself catches the ordinary case of an app opened for the first time that
- * month. Each of them only asks whether the copy is stale, so the usual cost of all three is zero.
+ * No timer: the thing being waited for is a date, and polling for it burns wake-ups on a question
+ * whose answer is almost always "still fresh". The two moments that actually matter are covered
+ * without one — load() catches the ordinary case of an app opened for the first time that month,
+ * and this catches the tab that was left open and backgrounded across the boundary, at the point
+ * where a stale name would first be seen.
  */
 function watch() {
   if (watching || typeof window === "undefined") return;
   watching = true;
-  const check = () => {
+  document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "hidden") return;
     void refresh();
-  };
-  setInterval(check, CHECK_INTERVAL_MS);
-  document.addEventListener("visibilitychange", check);
+  });
 }
 
 /**

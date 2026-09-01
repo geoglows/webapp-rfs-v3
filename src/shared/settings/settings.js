@@ -51,11 +51,9 @@ const SETTINGS = [
 
 const STORAGE_PREFIX = "rfs-setting-";
 const SAVED_AT_KEY = "rfs-settings-saved-at";
-// Where the theme used to live, and where it still lives for the hydrography explorer: that app is
-// deployed alongside this one at /rfs-hydrography and reads this key directly, and the two share
-// one origin, so this is not a dead migration key — it is a live channel between two apps. Hence
-// copy-and-mirror below rather than the move this used to do, which silently wiped that app's
-// theme on every visit here. Delete this and both call sites when that app is retired into this one.
+// Where the theme lived when the hydrography explorer was a separate deployment on this origin.
+// Read below to adopt a theme picked there, and still written back for a device that has not yet
+// loaded the merged build. Delete this and both call sites once that deployment is gone.
 const LEGACY_THEME_KEY = "rfs-theme";
 const values = new Map();
 const listeners = new Map();
@@ -224,8 +222,7 @@ const prefs = {
     if (!pref) throw new Error(`Unknown preference: ${key}`);
     if (prefs.get(key) === value) return;
     localStorage.setItem(STORAGE_PREFIX + key, value);
-    // The other half of the LEGACY_THEME_KEY channel: mirror the choice out so the hydrography
-    // explorer picks it up on its next load.
+    // Mirrored out for the standalone hydrography deployment; see LEGACY_THEME_KEY.
     if (key === "theme") localStorage.setItem(LEGACY_THEME_KEY, value);
     for (const fn of listeners.get(key) ?? []) fn(value);
     if (!remote) noteLocalChange();

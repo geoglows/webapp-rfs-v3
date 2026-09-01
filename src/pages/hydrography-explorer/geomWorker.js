@@ -10,11 +10,9 @@ const mb = b => (b / 1e6).toFixed(1);
 const fmt = n => n.toLocaleString();
 
 /**
- * A worker has no UI language: the dictionaries are fetched and chosen on the main thread, and
- * nothing here can read them. So a progress line is sent as the pieces it is made of — an i18n key
- * and the numbers to fill it with — and geometry.js turns those into a sentence in whichever
- * language the page is in. A bare string comes through untranslated, for the few pieces that are
- * only numbers.
+ * A worker cannot read the dictionaries, so a progress line is sent as its pieces — an i18n key and
+ * the numbers to fill it with — and geometry.js turns those into a sentence. A bare string comes
+ * through untranslated, for the pieces that are only numbers.
  */
 const d = (key, vars) => ({key, vars});
 

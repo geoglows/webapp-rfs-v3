@@ -3,16 +3,9 @@ import {heroIcon} from "../../shared/icons/icons.js";
 import {t} from "../../shared/i18n/i18n.js";
 
 /**
- * A folding section of the column: the layer switches, the river attributes, the river names, the
- * styling editor.
- *
- * There were four of these written out longhand, differing only in a string, and every one of them
- * did the same three things — put a class on #panel that the stylesheet folds the section with,
- * swap the chevron so it points where the click will take you, and retitle the button to say so.
- * `key` names all three: the class is `${key}-collapsed` and the button is `#${key}-collapse`.
- *
- * The tooltip is written as `data-i18n-title` as well as set directly, so a language change
- * repaints it in whichever direction the fold is currently pointing.
+ * A folding section of the column. `key` names all three things it touches: the class the stylesheet
+ * folds with is `${key}-collapsed` and the button is `#${key}-collapse`. The tooltip is written as
+ * `data-i18n-title` as well as set directly, so a language change repaints it pointing the right way.
  */
 export function createCollapsible(key, {collapsed = false} = {}) {
   const panel = $('panel');
@@ -43,19 +36,10 @@ let hideTimer = null;
 
 let high = 0;
 
-const HISTORY = 200;
-export const progressHistory = [];
-const record = (pct, phase, detail, indeterminate = false) => {
-  progressHistory.push({pct, phase, detail, indeterminate, at: performance.now()});
-  if (progressHistory.length > HISTORY) progressHistory.shift();
-};
-
 export const progress = {
   /** Open the block for a new run, at 0. */
   begin(phase, detail = '') {
     clearTimeout(hideTimer);
-    progressHistory.length = 0;
-    record(0, phase, detail);
     high = 0;
     progressEl.style.display = 'block';
     progressEl.classList.remove('indeterminate', 'done');
@@ -68,7 +52,6 @@ export const progress = {
 
   set(pct, {phase, detail} = {}) {
     high = Math.max(high, Math.min(100, Math.max(0, pct)));
-    record(high, phase ?? phaseEl.textContent, detail ?? detailEl.textContent);
     progressEl.classList.remove('indeterminate');
     fillEl.style.width = `${high}%`;
     pctEl.textContent = `${Math.round(high)}%`;
@@ -81,7 +64,6 @@ export const progress = {
 
   indeterminate(phase, detail = '') {
     clearTimeout(hideTimer);
-    record(high, phase, detail, true);
     progressEl.style.display = 'block';
     progressEl.classList.add('indeterminate');
     if (phase != null) phaseEl.textContent = phase;
@@ -94,7 +76,6 @@ export const progress = {
   finish(phase, detail = '') {
     progressEl.classList.remove('indeterminate');
     high = 100;
-    record(100, phase, detail);
     fillEl.style.width = '100%';
     pctEl.textContent = '100%';
     progressEl.classList.add('done');
@@ -115,9 +96,6 @@ export const progress = {
     fillEl.style.width = '0%';
   },
 };
-
-export const stageHistory = [];
-const STAGE_HISTORY = 400;
 
 let plan = {groups: [], phases: []};
 let phaseState = new Map();
@@ -164,7 +142,6 @@ export const stages = {
     phaseState = new Map(phases.map(p => [p.key, {pct: 0, state: 'pending', detail: ''}]));
     nodes = new Map();
     groupNodes = new Map();
-    stageHistory.length = 0;
     stagesEl.replaceChildren();
     stagesEl.style.display = 'block';
 
@@ -201,11 +178,6 @@ export const stages = {
     if (indeterminate != null) s.indeterminate = indeterminate;
     s.state = state ?? (s.pct >= 100 ? 'done' : 'active');
     if (s.state === 'done') s.indeterminate = false;
-    stageHistory.push({
-      key, pct: s.pct, state: s.state, detail: s.detail,
-      indeterminate: !!s.indeterminate, at: performance.now()
-    });
-    if (stageHistory.length > STAGE_HISTORY) stageHistory.shift();
     paintPhase(key);
     paintGroup(plan.phases.find(p => p.key === key)?.group);
   },

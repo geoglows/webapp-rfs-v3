@@ -70,7 +70,7 @@ function closeDock(map, name) {
   document.body.classList.remove(`${name}-open`, "dock-open");
   syncDockButton(name);
   cleanups.get(name)?.();
-  reflowMap(map);
+  void reflowMap(map);
 }
 
 function closeAllDocks(map) {

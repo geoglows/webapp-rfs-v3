@@ -11,12 +11,12 @@ import {activePalette, activeUnnamed, loadRiverNames, nameAt, namesStyle, riverN
 import {loadStreamAttributes} from './streamAttributes.js';
 import {createStylePanel} from './stylePanel.js';
 import {renderRiverAttributes} from './riverPanel.js';
-import {idsText, MAX_PICKS, picks} from './picks.js';
+import {idsText, picks} from './picks.js';
 import {aoi, isDownstreamOf, spanCount} from './aoi.js';
 import {renderAoi} from './aoiPanel.js';
 import {renderPicks} from './picksPanel.js';
 import {downloadGeometry} from './geometry.js';
-import {createCollapsible, progress, progressHistory, stageHistory, stages} from './ui.js';
+import {createCollapsible, progress, stages} from './ui.js';
 import {hydrateIcons} from '../../shared/icons/icons.js';
 import {initMapControls, syncLayerPicker} from './mapControls.js';
 import {initLanguagePicker, initSettings, initThemeToggle, onSetting} from '../../shared/settings/settings.js';
@@ -42,9 +42,9 @@ let stylePanel = null;
 const num = v => (Number.isFinite(Number(v)) ? Number(v) : null);
 
 /**
- * The reach a click landed on, as the numbers a subset is cut from: its own riverIndex, and the
- * contiguous run of riverIndex that everything upstream of it occupies. Both a watershed selection
- * and an AOI's outlet and inlets are this record — they differ only in what is done with it.
+ * The reach a click landed on, as the numbers a subset is cut from: its own riverIndex and the
+ * contiguous run everything upstream occupies. A watershed selection and an AOI outlet are the same
+ * record; they differ only in what is done with it.
  */
 function reachRecord(at) {
   const riverId = num(at.riverId);
@@ -67,11 +67,8 @@ function reachRecord(at) {
   };
 }
 
-/**
- * Make `spans` the selection, under `rec`'s outlet. A watershed passes its one run; an AOI passes
- * what its inlets left. Everything downstream — the readout, the highlight, the styling scope, the
- * export — reads `sel`, so both arrive there the same way.
- */
+/** Make `spans` the selection under `rec`'s outlet — one run for a watershed, what the inlets left
+ * for an AOI. Everything downstream reads `sel`, so both arrive there the same way. */
 function setSelection(rec, spans) {
   sel = {...rec, spans, count: spanCount(spans)};
   applyHighlight({lo: rec.lo, hi: rec.hi, spans}, rec.outletId, applyStyle);
@@ -81,20 +78,14 @@ function setSelection(rec, spans) {
   return sel;
 }
 
-/**
- * The reach itself, as a selection. Everything downstream of here reads `spans`, so a single reach
- * is simply the run of one that its own riverIndex makes — no separate path through the highlight,
- * the catchment shading, the styling scope or the export.
- */
+/** A single reach as a selection: the run of one its own riverIndex makes, so it needs no separate
+ * path through the highlight, the shading, the styling scope or the export. */
 const reachOnlyRecord = rec => ({
   ...rec, lo: rec.riverIndex, hi: rec.riverIndex, upstreamCount: 0, count: 1, reachOnly: true,
 });
 
-/**
- * Select what a click means in the method that is on, and hand back the *watershed* record either
- * way — shift-click collects the network above the reach whatever the method, so it must not be
- * handed the one-reach version.
- */
+/** Select what a click means in the method that is on, and hand back the *watershed* record either
+ * way — shift-click collects the network above the reach whatever the method is. */
 function selectOutlet(at) {
   try {
     const full = reachRecord(at);
@@ -111,19 +102,14 @@ function selectOutlet(at) {
 }
 
 /**
- * A river the search box found, selected as if it had been clicked — the search is another way in
- * to the same selection, not a mode of its own.
+ * A river the search box found, selected as if it had been clicked.
  *
- * A name and an ID arrive as different things, so they land differently. **A name** is a whole
- * river: the table gives the run of riverIndex it covers, so the span is selected outright and the
- * camera frames the published extent rather than traveling to the mouth. Neither needs a lookup.
- * **An ID** is one reach, and goes through selectOutlet like a click does — so it means the reach in
- * river mode and the network above it in watershed mode, which is what the method that is on says
- * it means.
+ * A name is a whole river — the table gives its run of riverIndex, so the span is selected outright
+ * and the camera frames the published extent. An ID is one reach and goes through selectOutlet like
+ * a click, so it means whatever the method that is on says it means.
  *
- * Deliberately does not touch the AOI or the collection, in any mode. A search is typed into a
- * dialog over the map; making it place an AOI inlet or add to the picks would be a side effect
- * nobody asked for.
+ * Deliberately touches neither the AOI nor the collection: a search should not place an inlet or add
+ * to the picks as a side effect.
  */
 function goToRiver(reach, named) {
   // The three fields a found reach actually has. The panel below renders whatever it is handed as
@@ -160,15 +146,10 @@ function goToRiver(reach, named) {
 /**
  * Redo the selection from the tiles once the camera has arrived on a reach found by ID.
  *
- * The metadata store answers with the four numbers a selection is made of — riverId, riverIndex,
- * upstream count, and where the reach is — and not with the rest of what the tiles carry: not the
- * group its geometry is published in, which the GeoParquet export needs, and not the attributes the
- * panel below lists for a clicked reach. Both arrive with the tiles, so this waits for them rather
- * than asking the store for a second thing it cannot answer.
- *
- * A reach too small to be drawn at the zoom the camera stopped at is simply not there to be found,
- * and stays as the store described it: selected, framed, and named by its id. The guard is what
- * keeps a click made while the tiles were loading from being overwritten by this.
+ * The metadata store answers with the four numbers a selection needs but not the publication group
+ * the export wants or the attributes the panel lists — both arrive with the tiles, so this waits for
+ * them. A reach too small to be drawn at the zoom the camera stopped at is not there to be found and
+ * stays as the store described it; the guard keeps a click made meanwhile from being overwritten.
  */
 function upgradeFromTiles(riverId) {
   map.once('idle', () => {
@@ -180,10 +161,8 @@ function upgradeFromTiles(riverId) {
   });
 }
 
-/**
- * The picked reach, in the river selector's own card. The full attribute list still lands in the
- * River attributes section below — this is the one line that says which reach those belong to.
- */
+/** The picked reach, in the river selector's card — the one line saying which reach the attribute
+ * list below belongs to. */
 function renderReachInfo() {
   const el = $('river-select-info');
   if (!sel?.reachOnly) {
@@ -221,11 +200,8 @@ function renderSelectionInfo() {
       : '');
 }
 
-/**
- * The clicked reach's own attributes, in the folding section under the selection summary. The
- * section is on the page from the start — an empty one still tells you where the attributes will
- * land — and the fold is the user's alone: a click on the map fills the panel, it never opens it.
- */
+/** The clicked reach's attributes. The section is on the page from the start, and the fold is the
+ * user's alone: a click fills the panel, it never opens it. */
 function showRiverAttributes(props) {
   lastProps = props;
   renderRiverAttributes($('river-body'), props);
@@ -249,12 +225,8 @@ function showRiverAttributes(props) {
     : props == null ? '' : known ? t('explorer.names.none') : '';
 }
 
-/**
- * The three buttons at the head of the column — download, copy, clear — belong to whichever method
- * is on rather than to a method each, because they mean the same thing in all four: take what is
- * selected, put it on the clipboard, throw it away. Multi-select is the one that holds something
- * without a selection behind it, so it is the one exception in the test.
- */
+/** Download, copy and clear belong to whichever method is on: they mean the same thing in all four.
+ * Multi-select holds something without a selection behind it, so it is the exception in the test. */
 let busy = false;
 
 function paintActions() {
@@ -359,21 +331,16 @@ function refreshCounts() {
 
 // ── the selection methods ────────────────────────────────────────────────────
 /**
- * Four things a click on a river can mean, and exactly one of them at a time. Each has a card in
- * the column and an on/off switch at the head of it, and turning one on turns the others off —
- * they are four answers to the same question, not four features that stack.
+ * Four things a click can mean, one at a time — four answers to the same question, not four features
+ * that stack, so turning one on turns the others off.
  *
  *   river      the reach you clicked, and nothing else
  *   watershed  everything that drains to the reach you clicked
  *   aoi        the same, minus what came in from each inlet you then click
  *   multi      collect the watershed above the reach, and keep collecting
  *
- * The river selector leads because it is the smallest answer and the one a click means before you
- * have asked for anything larger: you point at a reach to find out what it is. Selecting a whole
- * continent's drainage is the deliberate act, so it is the one you switch into.
- *
- * Shift-click is the exception, and the only one: it collects a watershed without leaving the
- * method you are in, for the river you noticed while doing something else.
+ * River leads because it is the smallest answer; selecting a continent's drainage is the deliberate
+ * act. Shift-click is the only exception: it collects a watershed without leaving the current method.
  */
 const MODES = {
   river: {card: 'river-select', key: 'r'},
@@ -386,13 +353,9 @@ const MODES = {
 let mode = picks.modeOn() ? 'multi' : 'river';
 
 /**
- * Give up what the method being left was holding, and say so first when that is a real loss.
- *
- * River and watershed hold nothing of their own — the same click means something in both — so
- * leaving them costs nothing. The other two accumulate: multi-select a list of watersheds, the AOI
- * subsetter the inlets trimming one. Neither survives the switch, so neither goes quietly.
- *
- * Returns false when the answer is no, in which case the method does not change.
+ * Give up what the method being left was holding, asking first when that is a real loss. River and
+ * watershed hold nothing of their own; multi-select and the AOI accumulate and do not survive the
+ * switch. Returns false when the answer is no, in which case the method does not change.
  */
 async function leaveMode(prev) {
   if (prev === 'multi') {
@@ -450,10 +413,8 @@ async function setMode(next) {
     const rec = mode === 'river' ? reachOnlyRecord(lastRec) : lastRec;
     setSelection(rec, [{lo: rec.lo, hi: rec.hi}]);
   }
-  // A watershed already selected is an AOI with no inlets yet, so it is adopted rather than asked
-  // for again — the first click of the mode goes to an inlet instead of repeating itself.
-  // A one-reach selection is not a watershed, so it is not an AOI outlet either — coming from the
-  // river selector, the AOI still asks for the outlet of the area you actually mean.
+  // A watershed already selected is an AOI with no inlets yet, so it is adopted and the first click
+  // goes to an inlet. A one-reach selection is not a watershed, so the AOI still asks for an outlet.
   if (mode === 'aoi' && sel && !sel.reachOnly && !aoi.state().outlet) {
     const {spans: _ignored, ...rec} = sel;
     aoi.setOutlet({...rec, count: rec.hi - rec.lo + 1});
@@ -473,10 +434,8 @@ function paintModes() {
 
 // ── the AOI subsetter ────────────────────────────────────────────────────────
 /**
- * A third thing a click can mean. Single-select answers "what drains to this reach"; the AOI
- * subsetter answers "what drains to this reach that did not come in from up there", which takes two
- * kinds of click — one for the outlet, then one per inlet. aoi.js holds the state and does the
- * arithmetic; what is here is the mode, what a click means while it is on, and the painting.
+ * "What drains to this reach that did not come in from up there" — one click for the outlet, then one
+ * per inlet. aoi.js holds the state and the arithmetic; here is the mode, the click and the painting.
  */
 /** What a click on a river means while the mode is on: the outlet first, then inlets. */
 function aoiClick(at, lngLat) {
@@ -518,12 +477,8 @@ aoi.onChange(paintAoi);
 
 // ── multi-select ─────────────────────────────────────────────────────────────
 /**
- * Collecting is a second thing a click can mean. Single-select answers "what is upstream of this
- * reach"; collecting builds a list of watersheds to hand to something else, so it is deliberately
- * additive, survives a reload, and never clears itself.
- *
- * Two ways in, because the two are used differently: the mode, for a session spent going around the
- * world clicking rivers, and a shift-click, for the one you noticed while doing something else.
+ * A list of watersheds to hand to something else: deliberately additive, survives a reload, never
+ * clears itself. Two ways in — the mode for a session of it, shift-click for a one-off.
  */
 /** One click both collects and uncollects, so a wrong pick is undone where it was made. */
 function collect(rec) {
@@ -588,17 +543,14 @@ $('btn-geoparquet').addEventListener('click', () => {
   });
 });
 // ── theme ────────────────────────────────────────────────────────────────────
-// Both pages share one settings module, so the theme is stored once, defaults off
-// prefers-color-scheme once, and swaps the button's sun/moon once. This page used to keep its own
-// copy against the raw `rfs-theme` key — the same key the data viewer had already migrated off
-// and was deleting on every visit, which is why a theme picked here did not survive one.
+// One shared settings module, so the theme is stored once and defaults off prefers-color-scheme
+// once. This page used to keep its own copy against the raw `rfs-theme` key, which the data viewer
+// deleted on every visit — which is why a theme picked here did not survive one.
 hydrateIcons();
 initThemeToggle();
-// The same picker the data viewer has, driven by the same shared code. Not awaited: index.html
-// ships English, and the chosen dictionary replaces it when it lands.
-// Everything walking [data-i18n] cannot reach: the text this file writes into the readouts, the
-// two panel bodies built as nodes, the On/Off pills, the layer switches' composed tooltips, and
-// the styling editor, which is built entirely in JS.
+// Not awaited: index.html ships English and the chosen dictionary replaces it when it lands. The
+// callback repaints everything walking [data-i18n] cannot reach — the readouts, the two panel
+// bodies, the On/Off pills, the layer tooltips and the styling editor.
 initLanguagePicker(() => {
   paintNames();
   paintModes();
@@ -613,11 +565,9 @@ initLanguagePicker(() => {
 
 // ── the river names section ──────────────────────────────────────────────────
 /**
- * Colouring the network by the river names table.
- *
- * This is a display switch, not a fourth selection method: it changes what the map is coloured by
- * and never what a click on it means, which is why it is wired on its own instead of joining
- * MODES. Its card is edged in a name colour rather than the selection orange for the same reason.
+ * Colouring the network by the river names table. A display switch, not a fifth selection method: it
+ * never changes what a click means, which is why it is wired on its own and edged in a name colour
+ * rather than the selection orange.
  */
 function paintNames() {
   const row = (swatches, label) => {
@@ -645,7 +595,7 @@ function paintNames() {
   );
 }
 
-function setNamesOn(on, {say = false} = {}) {
+function setNamesOn(on) {
   if (on && !riverNames()) {
     return;
   }
@@ -664,14 +614,14 @@ function paintNamesMode() {
 
 const namesFold = createCollapsible('names', {collapsed: true});
 
-$('names-mode').addEventListener('click', () => setNamesOn(!namesOn, {say: true}));
+$('names-mode').addEventListener('click', () => setNamesOn(!namesOn));
 
 // Same guard the method keys use, so typing "n" into the styling editor stays typing.
 window.addEventListener('keydown', e => {
   if (e.metaKey || e.ctrlKey || e.altKey || e.key.toLowerCase() !== 'n') return;
   const t = e.target;
   if (t?.isContentEditable || ['INPUT', 'SELECT', 'TEXTAREA'].includes(t?.tagName)) return;
-  setNamesOn(!namesOn, {say: true});
+  setNamesOn(!namesOn);
 });
 
 // The switch cannot do anything until the table is here, so it says so rather than looking broken.
@@ -730,10 +680,9 @@ createCollapsible('river');
 showRiverAttributes(null);
 
 // ── the map's own controls ───────────────────────────────────────────────────
-// The layer switches, the basemap choice and the legend live over the map rather than in this
-// column; mapControls.js owns all three. Wired here, before the map exists, and deliberately: none
-// of it needs one, and an archive that never answers must not be able to take the controls down
-// with it. The switches read as unavailable until there are layers for them to report on.
+// mapControls.js owns the layer switches, basemap choice and legend. Wired before the map exists,
+// deliberately: none of it needs one, and an archive that never answers must not take the controls
+// down with it. The switches read as unavailable until there are layers to report on.
 initMapControls();
 
 // ── settings ─────────────────────────────────────────────────────────────────
@@ -747,9 +696,8 @@ createDataSettings();
 onSetting('legend', on => $('legend-overlay').classList.toggle('hidden', !on));
 
 // ── find a river ─────────────────────────────────────────────────────────────
-// The magnifying glass in the header. The dialog itself is RFS v3's, and so are the two datasets it
-// searches: both apps keep them in the one IndexedDB database, so a lookup downloaded in either is
-// read by the other. dropLegacyDatabase() reclaims the space the viewer used before that was true.
+// Both apps keep the two searched datasets in one IndexedDB database, so a lookup downloaded in
+// either is read by the other. dropLegacyDatabase() reclaims the space used before that was true.
 dropLegacyDatabase();
 createRiverSearch({
   onFound: goToRiver,

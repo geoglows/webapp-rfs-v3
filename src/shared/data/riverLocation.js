@@ -1,8 +1,6 @@
 import {fetchMetadataAt} from "riverforecastsystem/v3/hydrography";
 
 /**
- * TWIN FILE: webapp-rfs-hydrography/src/riverLocation.js — the same module, keep the two in step.
- *
  * Where a reach is, by riverIndex: `{lat, lon, upstreamCount}` read straight off the hydrography
  * metadata store.
  *

@@ -168,7 +168,7 @@ function createFloodController({map, streams, getForecastDate, isMapLoaded}) {
     if (mappingMode && workerReady && current.floodable.length > 0) {
       requestSelect();
       // The forecast is per-reach, so a changed selection needs a (cached-where-possible) refetch.
-      if (usesForecast()) loadForecastFlows();
+      if (usesForecast()) void loadForecastFlows();
     } else clearFloodOverlay();
   }
 
@@ -278,7 +278,7 @@ function createFloodController({map, streams, getForecastDate, isMapLoaded}) {
     // Forecast styles need the selection's hydrographs; loadForecastFlows() computes once the
     // download lands (and is a no-op when the cached download already matches date + selection).
     if (style !== "forecast") fcPause();
-    loadForecastFlows();
+    void loadForecastFlows();
   }
 
   // Download the ensemble-median hydrograph for every floodable reach at the selected forecast
@@ -343,7 +343,7 @@ function createFloodController({map, streams, getForecastDate, isMapLoaded}) {
       forecastLoading = false;
     }
     // Released the flag first, so the retry actually runs instead of tripping the guard above.
-    if (stale) loadForecastFlows();
+    if (stale) void loadForecastFlows();
   }
 
   // ---- forecast player ----
@@ -469,7 +469,7 @@ function createFloodController({map, streams, getForecastDate, isMapLoaded}) {
     if (!on) clearFloodOverlay();
     else if (workerReady && current.floodable.length > 0) {
       requestSelect();
-      if (usesForecast()) loadForecastFlows();
+      if (usesForecast()) void loadForecastFlows();
     }
   }
 
@@ -534,7 +534,7 @@ function createFloodController({map, streams, getForecastDate, isMapLoaded}) {
     onForecastDateChange() {
       if (!usesForecast()) return;
       fcPause();
-      loadForecastFlows();
+      void loadForecastFlows();
     }
   };
 }

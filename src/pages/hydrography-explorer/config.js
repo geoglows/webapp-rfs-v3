@@ -1,14 +1,11 @@
 import {urls} from 'riverforecastsystem/v3';
 
-// The data root is settled once for both pages, in the shared module — importing it here is what
-// runs configure() before the urls.* reads below. It used to resolve against document.baseURI,
-// which cannot survive two pages at different depths; see the comment there.
-//
-// Still build-time only. The data root is not readable off the query string: a link that repoints
-// the whole app at another origin is a link that can be handed to someone, and every byte the map
-// then draws — tiles, metadata, river names — would come from wherever the sender chose.
-export {V3_BASE} from '../../shared/settings/rfsConfig.js';
+// The data root is settled once for both pages in the shared module; importing it here is what runs
+// configure() before the urls.* reads below. Build-time only, deliberately: a query-string data root
+// would be a link that repoints every byte the map draws at an origin the sender chose.
 import {V3_BASE} from '../../shared/settings/rfsConfig.js';
+
+export {V3_BASE};
 
 const group = g => urls.hydrographyGroup({group: g});
 

@@ -1,29 +1,23 @@
 import en from "./locales/en.js";
 
 /**
- * The UI strings, one dictionary per language under ./locales/.
- *
- * English is imported: it is the fallback t() reaches for on any missing key, so it has to be in
- * hand synchronously, and it is the language index.html is already written in. Every other language
- * is a JSON file fetched only if somebody selects it — globbed lazily, so each is its own chunk and
- * a deployment's untouched languages cost their users nothing. Adding a language is a JSON file in
- * ./locales/ plus a button in #lang-menu; nothing imports one by name.
+ * The UI strings, one dictionary per language under ./locales/. English is imported because it is
+ * the synchronous fallback for any missing key; the rest are globbed lazily, one chunk each, fetched
+ * only if selected. Adding a language is a JSON file here plus a button in #lang-menu.
  */
 const LOADERS = import.meta.glob("./locales/*.json", {import: "default"});
 const DICTS = {en};
 
 let currentLang = "en";
-// Bumped per setLanguage() call, so a dictionary that arrives after a newer choice was made is
-// dropped rather than repainting the UI into a language the user has already moved on from.
+// Bumped per setLanguage(), so a dictionary arriving after a newer choice is dropped.
 let switchId = 0;
 
 function t(key, lang = currentLang) {
   return DICTS[lang]?.[key] ?? en[key] ?? key;
 }
 
-// `{name}` in a sentence, filled from an object. Distinct from the `{0}` slots fill() understands:
-// those move an *element* into place and only ever appear in [data-i18n-html] markup, while these
-// are values — a count, an id — written into a string a JS caller is about to show.
+// `{name}` values written into a string. Distinct from the `{0}` slots fill() understands, which
+// move an *element* into place and only appear in [data-i18n-html] markup.
 const VARS = /\{(\w+)}/g;
 
 const interpolate = (text, vars) =>
@@ -41,18 +35,12 @@ const rulesFor = (lang) => {
 };
 
 /**
- * A sentence whose wording depends on a count: `tn("explorer.picks.clear", n)` reads
- * `explorer.picks.clear.one` or `.other`, and fills `{n}` with the count in the reader's locale.
- *
- * English concatenating an "s" is not translation — Spanish and French agree with English about
- * where the boundary between one and many falls, but plenty of languages do not, and the sentences
- * around the noun inflect too. So the choice is made by `Intl.PluralRules` rather than by `n === 1`.
- *
- * Every locale in ./locales/ carries exactly `.one` and `.other`, which is what keeps the three
- * files at key parity; a category a language has and the dictionary does not — French `many`, for
- * a million and up — falls back to `.other`, which is the form French wants there anyway.
+ * A sentence whose wording depends on a count: reads `<key>.one` or `.other` and fills `{n}` in the
+ * reader's locale. `Intl.PluralRules` rather than `n === 1`, because plenty of languages put the
+ * boundary elsewhere. Every locale carries exactly `.one` and `.other`; a category a language has and
+ * the dictionary does not (French `many`) falls back to `.other`.
  */
-function tn(key, count, vars, lang = currentLang) {
+function tn(key, count, vars = {}, lang = currentLang) {
   const category = rulesFor(lang).select(count);
   const dict = DICTS[lang] ?? {};
   const text = dict[`${key}.${category}`] ?? dict[`${key}.other`]
@@ -61,10 +49,8 @@ function tn(key, count, vars, lang = currentLang) {
 }
 
 /**
- * Fetch a language's dictionary if it isn't already in hand. Resolves to the code that can actually
- * be shown — the one asked for, or "en" when there is no such language or its file will not load.
- * A failure is not fatal by design: every key falls back to English, so the app keeps working in a
- * language nobody chose rather than not at all.
+ * Fetch a language's dictionary. Resolves to the code that can actually be shown — the one asked for,
+ * or "en". A failure is not fatal: every key falls back to English.
  */
 async function loadDict(lang) {
   if (DICTS[lang]) return lang;
@@ -88,10 +74,8 @@ const DATA_PHASES = {
 };
 
 /**
- * "Downloading 42%" — one build's progress as a line of text in the current language. The same
- * download is watched from three places now (the Settings row, the search box, the charts dock), so
- * it reads the same in all three. A percentage rather than a count: the download reports per chunk
- * over hundreds of chunks, and nothing else stays legible at that rate.
+ * "Downloading 42%" — one build's progress, worded the same in all three places that watch it. A
+ * percentage rather than a count: the download reports per chunk over hundreds of chunks.
  */
 function dataProgress({phase, done, total}) {
   const pct = total ? Math.round((done / total) * 100) : 0;
@@ -104,9 +88,8 @@ function getLanguage() {
 
 const SLOT = /\{(\d+)}/g;
 
-// The children an element had before it was ever filled, per element. Kept because filling is what
-// removes them: a language change refills from the same original elements rather than from whatever
-// the previous language's word order left behind.
+// The children an element had before it was first filled — filling is what removes them, so a
+// language change refills from the originals rather than the last language's word order.
 const slotsOf = new WeakMap();
 
 const markup = (html) => {
@@ -116,13 +99,10 @@ const markup = (html) => {
 };
 
 /**
- * A sentence that is more than plain text, written into the element that asked for it.
- *
- * Inline emphasis (<strong>, <em>) is written into the sentence itself, since there is nothing in it
- * to keep in one place. Anything carrying markup a translation should not have to copy — a link and
- * its URL — stays in index.html as a child of the element, and the sentence refers to it as `{0}`,
- * `{1}` … in whatever position its word order needs. The children are moved rather than rebuilt, so
- * a link whose own text is translated is still the node the [data-i18n] pass reaches afterwards.
+ * A sentence that is more than plain text. Inline emphasis lives in the sentence; anything a
+ * translation should not have to copy — a link and its URL — stays in index.html as a child and the
+ * sentence refers to it as `{0}`, `{1}` … wherever its word order needs. Children are moved, not
+ * rebuilt, so a translated link is still the node the [data-i18n] pass reaches afterwards.
  */
 function fill(el, text) {
   let slots = slotsOf.get(el);
@@ -145,17 +125,15 @@ function applyTranslations(lang, root = document) {
   root.querySelectorAll("[data-i18n]").forEach((el) => {
     el.textContent = t(el.dataset.i18n, lang);
   });
-  // After the plain pass: a [data-i18n] element that is one of these slots has its own text by now,
-  // and filling only moves it, so both are in the language just applied.
+  // After the plain pass, so a [data-i18n] element used as a slot already carries its own text.
   root.querySelectorAll("[data-i18n-html]").forEach((el) => {
     fill(el, t(el.dataset.i18nHtml, lang));
   });
   root.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
     el.setAttribute("placeholder", t(el.dataset.i18nPlaceholder, lang));
   });
-  // A tooltip is also the accessible name, since everything carrying one is an icon with no label of
-  // its own — so one key writes both attributes and index.html says it once. The few whose spoken
-  // name should differ from the tooltip give their own data-i18n-aria-label and are left alone.
+  // A tooltip is also the accessible name — everything carrying one is an unlabelled icon. The few
+  // whose spoken name should differ give their own data-i18n-aria-label and are left alone.
   root.querySelectorAll("[data-i18n-title]").forEach((el) => {
     el.setAttribute("title", t(el.dataset.i18nTitle, lang));
     if (!el.dataset.i18nAriaLabel) el.setAttribute("aria-label", t(el.dataset.i18nTitle, lang));
@@ -166,13 +144,10 @@ function applyTranslations(lang, root = document) {
 }
 
 /**
- * Switch the app to a language, fetching its dictionary first if this is the first time it has been
- * asked for. Resolves once the UI has been retranslated, to the code actually in effect — callers
- * with text that walking [data-i18n] cannot reach (canvas charts, loaded documents) should await it
- * and then read getLanguage().
- *
- * Awaiting is optional. Until it resolves the UI stays in whatever language it was already showing,
- * which for a cold start is the English written into index.html.
+ * Switch the app to a language, fetching its dictionary if needed. Resolves once the UI is
+ * retranslated, to the code actually in effect — callers with text that walking [data-i18n] cannot
+ * reach (canvas charts) should await it and read getLanguage(). Awaiting is optional; until then the
+ * UI stays in the language it was showing.
  */
 async function setLanguage(lang) {
   const id = ++switchId;

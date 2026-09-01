@@ -1,27 +1,17 @@
 /**
  * The one element builder, shared by both pages.
  *
- * There used to be eight of these: seven copies of a three-argument
- * `el(tag, className, text)` scattered across both apps, and one richer
- * `el(tag, props, kids)` in the styling panel that could also set attributes, wire listeners and
- * take children. The three-argument form is the smaller idea — every time a call site needed an
- * `id`, a `title`, a `disabled`, or a click handler it had to fall out of the helper and set the
- * property on the next line, which is most of why the panel code reads the way it does. So the
- * richer one won and the rest were deleted.
- *
  *   el("div", {class: "pick-row"}, [icon, label])
  *   el("button", {class: "btn sm", title: t("picks.remove"), onclick: () => remove(id)})
- *   el("input", {type: "checkbox", checked: on, disabled: !available})
  *
- * `props` handling, in order: `class` and `text` are the two common cases and get their own
- * branches; `html` exists for the few places that assemble a string of markup and is deliberately
- * ugly to type; anything starting with `on` becomes an event listener; everything else becomes an
- * attribute. `null`, `undefined` and `false` skip the attribute entirely, so `{disabled: !ok}`
- * does the right thing in both directions rather than rendering `disabled="false"` — which is
- * still disabled, and is the bug this rule exists to prevent. `true` renders the bare attribute.
+ * `class`, `text` and `html` set the obvious things; `on*` becomes a listener; anything else an
+ * attribute. `null`/`undefined`/`false` skip the attribute rather than rendering `disabled="false"`
+ * — which is still disabled. `kids` takes a node or an array and skips falsy entries, so a
+ * conditional child can be written inline as `cond && el(...)`.
  *
- * `kids` accepts a single node or an array, and skips falsy entries so a conditional child can be
- * written inline as `cond && el(...)` without a filter.
+ * @param {string} tag
+ * @param {Object<string, *>} [props]
+ * @param {Node|Array<Node|false|null|undefined>} [kids]
  */
 export const el = (tag, props = {}, kids = []) => {
   const n = document.createElement(tag);
@@ -36,28 +26,13 @@ export const el = (tag, props = {}, kids = []) => {
   return n;
 };
 
-/**
- * A button, which is common enough in the panels to be worth its own name.
- *
- * `type="button"` is the point: a bare <button> inside a <form> submits it, and both pages put
- * buttons inside the search forms. Everything else is just el().
- */
+/** `type="button"` is the point: a bare <button> in the search forms would submit them. */
 export const button = ({class: cls, text, title, onclick, ...rest}) =>
   el("button", {type: "button", class: cls, text, title, onclick, ...rest});
 
-/** `document.getElementById`, which twelve modules had each defined for themselves. */
 export const $ = (id) => document.getElementById(id);
 
-/**
- * Bytes as megabytes, for the download sizes both pages report.
- *
- * One decimal, everywhere. There were three of these and two precisions, which is how the same
- * cached dataset came to read "38.1 MB" on the Settings row and "38.20 MB" in the explorer's
- * column. The worker in pages/hydrography-explorer/geomWorker.js keeps its own: it reports a bare number
- * that its callers put units on, and a worker that imports nothing is a worker that cannot break
- * on a DOM module.
- */
+/** One decimal everywhere, so a cached dataset does not read "38.1 MB" here and "38.20 MB" there. */
 export const mb = (bytes) => `${(bytes / 1e6).toFixed(1)} MB`;
 
-/** A count with the locale's thousands separators — every reach total either page prints. */
 export const fmt = (n) => n.toLocaleString();

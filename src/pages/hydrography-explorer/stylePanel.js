@@ -3,7 +3,6 @@ import {t, tf, tn} from '../../shared/i18n/i18n.js';
 import {compact, orderVisibilityWarning} from './streamAttributes.js';
 import {
   BASE_LAYER_ID,
-  cloneSpec,
   COLORS,
   defaultSpec,
   describeConditions,
@@ -570,11 +569,6 @@ export function createStylePanel({mount, onChange, selection, pmtiles}) {
       render();
     },
     getSpec: () => spec,
-    setSpec(next) {
-      spec = cloneSpec(next);
-      collapsed.clear();
-      restructured();
-    },
     options: () => ({highlight}),
     json,
     download,

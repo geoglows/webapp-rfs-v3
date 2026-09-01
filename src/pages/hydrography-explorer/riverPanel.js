@@ -1,15 +1,9 @@
 import {el} from "../../shared/dom.js";
 /**
- * What one clicked reach actually says.
- *
- * The click that picks an outlet hands back the feature's whole property bag, and until now only
- * the four fields the subset needs were ever shown. This renders the rest of it: every attribute
- * the tiles carry for that reach, under the same labels, units and notes the styling panel's field
- * list uses, in the same order — measures first, then categories, then the identifiers. The order
- * is the grouping: no headings are drawn over the runs, because the rows themselves are the list
- * you scan and a heading every few rows is what breaks that scan up.
- *
- * Everything is built as nodes. The values come out of the tiles, so none of them gets to be markup.
+ * Every attribute the tiles carry for a clicked reach, under the same labels, units and notes the
+ * styling panel uses and in the same order: measures, then categories, then identifiers. The order is
+ * the grouping — no headings, because the rows are the list you scan. Built as nodes, so nothing
+ * coming out of the tiles becomes markup.
  */
 import {compact, fieldInfo, roleRank} from './streamAttributes.js';
 
@@ -18,11 +12,8 @@ const isNum = v => typeof v === 'number' && isFinite(v);
 /** The exact number, grouped — what the compact form is standing in for. */
 const full = v => (isNum(v) ? v.toLocaleString(undefined, {maximumFractionDigits: 3}) : String(v));
 
-/**
- * An id is never abbreviated and never grouped: 760282970 is the thing you paste somewhere else,
- * and "760.3 M" is not. A measure is abbreviated, because 5384105885696 m² tells you nothing at a
- * glance — the exact figure is on the row's tooltip.
- */
+/** An id is never abbreviated or grouped — it is the thing you paste somewhere else. A measure is,
+ * because 5384105885696 m² tells you nothing at a glance; the exact figure is on the tooltip. */
 function valueOf(name, v, info) {
   if (v == null || v === '') return {text: '—', title: `${name} is not set on this reach`};
   if (!isNum(v)) return {text: String(v), title: `${name} = ${v}`};
@@ -43,13 +34,8 @@ function row(name, v) {
   return r;
 }
 
-/**
- * Repaint the panel for one feature's properties. Fields are ordered exactly as the styling panel
- * orders them, so the same attribute sits in the same place in both.
- *
- * `props` is null when nothing has been clicked yet: the section stays on the page, and its body is
- * empty until there is a reach to describe.
- */
+/** Repaint the panel for one feature's properties, in the styling panel's field order so the same
+ * attribute sits in the same place in both. `props` is null until something has been clicked. */
 export function renderRiverAttributes(mount, props) {
   if (props == null) return mount.replaceChildren();
   const names = Object.keys(props).sort((a, b) => {

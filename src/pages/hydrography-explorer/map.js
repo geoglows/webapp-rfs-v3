@@ -8,21 +8,15 @@ import {basemapStyle} from '../../shared/map/basemaps.js';
 import {logMapErrors} from '../../shared/map/errors.js';
 import {mapReady} from '../../shared/map/ready.js';
 
-// MapLibre 6 ships its worker as a separate module and locates it by resolving
-// ./maplibre-gl-worker.mjs against its own import.meta.url. That finds it inside node_modules under
-// `vite dev` and finds nothing in a build, where the library is bundled into assets/ and has no
-// such sibling — a map that never finishes loading its first tile. Handing it the URL Vite emits
-// removes the guess. Same reason, same line, as webapp-rfs-v3/src/map/map.js.
+// MapLibre 6 locates its worker by resolving ./maplibre-gl-worker.mjs against its own
+// import.meta.url, which finds nothing in a build — a map that never loads its first tile. Handing
+// it the URL Vite emits removes the guess. Same line as pages/data-viewer/map/map.js.
 setWorkerUrl(maplibreWorkerUrl);
 
 /**
- * The basemap this page opens on.
- *
- * Dark grey rather than the shared list's first entry, because the network is drawn in light
- * saturated colours that were chosen against a dark ground — on a light basemap they sit at about
- * 1.8:1 and wash out. The list itself is shared with the data viewer and keeps its own order:
- * light grey still reads first in the picker, where the order is about finding a basemap, not about
- * which one you start on.
+ * Dark grey rather than the shared list's first entry: the network is drawn in light saturated
+ * colours chosen against a dark ground, and on a light basemap they sit at ~1.8:1 and wash out. The
+ * picker keeps the shared order, which is about finding a basemap, not which one you start on.
  */
 const DEFAULT_BASEMAP = 'gray-dark';
 
@@ -36,12 +30,8 @@ const BASIN = '#14b8a6';
 let basinLayer = 'hydrobasins_level2';
 let basinIdField = 'HYBAS_ID';
 
-/**
- * The polygon regions a hover highlights, outermost first.
- *
- * The layer name of each archive is read off the archive when it attaches, so `sourceLayer` is a
- * getter rather than a value — by the time anything calls it the archive has been opened.
- */
+/** The polygon regions a hover highlights, outermost first. `sourceLayer` is a getter because each
+ * archive's layer name is only known once it has attached. */
 const REGIONS = [
   {
     key: 'basin', source: BASIN_SOURCE, layer: 'basin-fill', sourceLayer: () => basinLayer,
@@ -107,11 +97,8 @@ const PICK_LAYER = 'picked-outlet';
 /** The AOI subsetter's inlets: the reaches the selection is cut off above. */
 const INLET_LAYER = 'aoi-inlet';
 
-/**
- * What the restyled rule layers are inserted under. Everything in here paints the app's own state
- * — what is selected, what is collected, where an AOI is cut — and none of it may be painted over
- * by a style rule. Listed bottom to top: rule layers go under the first of them that exists.
- */
+/** What rule layers are inserted under: everything painting the app's own state, which no style rule
+ * may cover. Bottom to top — rule layers go under the first of them that exists. */
 const OVERLAYS = [PICK_UP_LAYER, PICK_LAYER, TOP_LAYER, INLET_LAYER];
 
 /** A filter that matches no reach — how a highlight layer is switched off. */
@@ -132,25 +119,13 @@ let layerOrder = [BASE_LAYER_ID];
 let applied = new Map();
 
 /**
- * The reference geography: the polygons drawn under the network, none of which the app needs in
- * order to work.
+ * The reference geography drawn under the network. Each is a separate PMTiles archive that may be
+ * absent, so none of them may hold the boot up: the map is built from what is certain — basemaps and
+ * the stream network — and each of these attaches if and when its archive answers. A 404 is skipped
+ * with a warning; one that never answers never attaches and costs nothing but its own layers.
  *
- * Each is a separate PMTiles archive on a separate URL, and each may be absent — HydroBASINS is
- * published beside the hydrography rather than inside a group, the catchments are optional, and a
- * dataset under construction may have none of them yet. **So none of them is allowed to hold the
- * boot up.** They used to be read with a `Promise.all` before the map was built, which meant one
- * unreachable reference layer cost the whole column: no map, no styling editor, no search, and no
- * way to tell that anything had gone wrong.
- *
- * Now the map is built from what is certain — the basemaps and the stream network — and each of
- * these attaches itself if and when its archive answers. An archive that 404s is skipped with a
- * warning. One that never answers at all simply never attaches, and costs nothing but its own
- * layers: no deadline to guess at, nothing cancelled, and an archive that takes thirty seconds
- * still gets its layers rather than being declared dead at some arbitrary second.
- *
- * `read` takes the archive metadata and settles the layer name and id field, which are read off the
- * archive rather than assumed; returning false means the archive answered but has nothing usable.
- * `source` and `layers` are functions because both depend on what `read` just settled.
+ * `read` settles the layer name and id field off the archive metadata, returning false when there is
+ * nothing usable. `source` and `layers` are functions because both depend on what `read` settled.
  */
 const REFERENCES = [
   {
@@ -258,12 +233,9 @@ const REFERENCES = [
 ];
 
 /**
- * Where the reference layers belong relative to each other, bottom first.
- *
- * They no longer arrive in a known order — whichever archive answers first attaches first — so the
- * stack cannot come from the order of insertion. Each layer is instead inserted *under* the first
- * layer above it in this list that is already on the map, which puts them in the same order however
- * the network behaves. The stream network is above all of them, and is the backstop.
+ * Where the reference layers belong relative to each other, bottom first. They arrive in whatever
+ * order their archives answer, so each is inserted *under* the first layer above it in this list that
+ * is already on the map. The stream network is above all of them and is the backstop.
  */
 const REFERENCE_STACK = [
   'basin-fill', 'basin-line',
@@ -279,13 +251,9 @@ const beneath = (id) => {
 };
 
 /**
- * Read one reference archive and, if it answers with something usable, put it on the map.
- *
- * Nothing awaits this and nothing checks whether it worked, so every way it can fail has to end
- * here: an archive that 404s (openArchive says so and returns null), one that answers with nothing
- * this app can draw (`read` returns false), and one that answers with a layer the style then
- * rejects — a source-layer name that is not in the tiles, say. The last is the one that has to be
- * caught rather than left to become an unhandled rejection.
+ * Read one reference archive and, if it answers with something usable, put it on the map. Nothing
+ * awaits this, so every failure has to end here: a 404, an archive with nothing drawable, and a layer
+ * the style rejects — the last would otherwise become an unhandled rejection.
  */
 async function attachReference(protocol, ref, onChange) {
   try {
@@ -304,12 +272,8 @@ async function attachReference(protocol, ref, onChange) {
   }
 }
 
-/**
- * Build the map from what is certain, and hand it back as soon as its style is up.
- *
- * `onReferenceLayers` fires each time one of the optional archives lands, so the layer switches can
- * stop reporting it as unpublished.
- */
+/** Build the map from what is certain and hand it back as soon as its style is up.
+ * `onReferenceLayers` fires as each optional archive lands, so the switches stop saying unpublished. */
 export async function initMap({onReferenceLayers} = {}) {
   const protocol = new Protocol({metadata: true});
   archive = new PMTiles(URLS.streamsPmtiles);
@@ -466,12 +430,9 @@ export function setSelectionHighlightVisible(visible) {
 
 // ── layer visibility ─────────────────────────────────────────────────────────
 /**
- * Whether the network is drawn at all.
- *
- * Kept here rather than read off the map, because the stream layers are torn down and rebuilt
- * whenever the style changes - a rule edit, a selection, the names mode going on - and a layer that
- * has just been added is visible. Without somewhere to remember the choice, the network would come
- * back every time anything else was touched. `applyStreamStyle` re-applies it on the way out.
+ * Whether the network is drawn at all. Kept here rather than read off the map: the stream layers are
+ * torn down and rebuilt on every restyle, and a newly added layer is visible, so without this the
+ * network would come back each time anything else was touched. `applyStreamStyle` re-applies it.
  */
 let streamsOn = true;
 
@@ -519,12 +480,9 @@ export function applyInlets(ids) {
 // ── the multi-select collection ──────────────────────────────────────────────
 let picked = [];
 
-/**
- * Paint every collected watershed: the whole upstream network of each in the pick colour, with the
- * outlet reach of each drawn over it. Both come off one `riverIndex` range per pick, the same range
- * the single selection is drawn from, so a collected watershed looks like a selected one that
- * stayed.
- */
+/** Paint every collected watershed in the pick colour with its outlet drawn over it, off the same
+ * one `riverIndex` range the single selection uses — so a collected watershed looks like one that
+ * stayed selected. */
 export function applyPicks(list) {
   picked = list ?? [];
   if (!map?.getLayer(PICK_LAYER)) return;
@@ -543,16 +501,10 @@ export function flyToPick({lon, lat}) {
 }
 
 /**
- * A river found by name, which is a whole river rather than a reach — so the camera frames its
- * published extent instead of travelling to a point on it.
- *
- * The names table carries the bounding box of every reach the name covers, which is the only way
- * either app can frame a river at all: the reaches are in vector tiles that are not loaded until the
- * camera is already looking at them. Flying to the mouth instead would put the Amazon on screen as
- * an estuary, with the river off the west edge.
- *
- * Falls back to the point when a row carries no box — an older release of the table has none, and a
- * river is still worth going to.
+ * A river found by name is a whole river, so the camera frames its published extent. The names table
+ * carries the bounding box, which is the only way to frame one at all — the reaches live in tiles not
+ * loaded until the camera is already there, and flying to the mouth would show the Amazon as an
+ * estuary. Falls back to the point when a row carries no box.
  */
 export function fitRiverBounds(bbox, at) {
   if (!map) return;

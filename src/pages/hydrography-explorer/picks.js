@@ -1,14 +1,8 @@
 /**
- * The collected watershed outlets.
- *
- * Single-select answers "what is upstream of this reach". Multi-select answers a different
- * question: which watersheds, anywhere in the world, belong on a list you keep somewhere else —
- * an exclusion list, a QA queue, a set of basins to reprocess. So what this holds is not a map
- * state but a working set: it survives a reload, it is added to a click at a time over a long
- * session, and the point of it is what comes out — the outlet riverIds, in a form another tool
- * will take.
- *
- * A pick is keyed by its outlet riverId, so clicking the same reach twice never doubles it.
+ * The collected watershed outlets: which watersheds belong on a list kept somewhere else — an
+ * exclusion list, a QA queue, a set of basins to reprocess. Not map state but a working set, so it
+ * survives a reload and the point of it is what comes out. Keyed by outlet riverId, so clicking the
+ * same reach twice never doubles it.
  */
 const KEY = 'rfs-hydrography-picks';
 const MODE_KEY = 'rfs-hydrography-multiselect';
@@ -125,23 +119,3 @@ export const picks = {
 const exportOrder = () => [...list].reverse();
 
 export const idsText = () => exportOrder().map(p => p.outletId).join('\n');
-
-export const idsJson = () => JSON.stringify(exportOrder().map(p => p.outletId));
-
-const CSV_COLUMNS = [
-  ['outletRiverId', p => p.outletId],
-  ['groupId', p => p.groupId],
-  ['strahlerOrder', p => p.strahlerOrder],
-  ['reachCount', p => p.count],
-  ['riverIndexLo', p => p.lo],
-  ['riverIndexHi', p => p.hi],
-  ['lon', p => (p.lon == null ? null : p.lon.toFixed(5))],
-  ['lat', p => (p.lat == null ? null : p.lat.toFixed(5))],
-];
-
-/** Every number the app knows about each pick — ids alone are enough to exclude by, the rest is
- *  what makes the list reviewable a week later. */
-export const csv = () => [
-  CSV_COLUMNS.map(c => c[0]).join(','),
-  ...exportOrder().map(p => CSV_COLUMNS.map(c => c[1](p) ?? '').join(',')),
-].join('\n');

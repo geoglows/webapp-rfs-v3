@@ -1,21 +1,12 @@
 /**
- * The basemaps, and the one mechanism both pages switch them with.
+ * The basemaps, and the one mechanism both pages switch them with. Every raster set is declared in
+ * the initial style and switched by `visibility`: nothing is torn down, so a switch cannot lose the
+ * layer order the rest of the app was inserted into, and already-fetched tiles stay cached.
  *
- * There used to be two of these — the data viewer's, which removed the current basemap's layers
- * and added the next one's, and the hydrography page's, which declared every raster set in the
- * initial style and toggled `visibility`. The second is the one that survived: nothing is torn
- * down, so a switch cannot lose the layer order the rest of the app was inserted into, and the
- * tiles a basemap already fetched are still in MapLibre's cache when it is picked again.
+ * The Esri vector basemap is the exception. `setGlyphs` and `setSprite` are *global* map state, so
+ * its style can only be adopted once — it is added the first time it is chosen and toggled after.
  *
- * The Esri vector basemap is the exception the mechanism has to bend around. `setGlyphs` and
- * `setSprite` are *global* map state rather than per-layer, so its style can only be adopted once —
- * it is therefore added the first time it is chosen and from then on only toggled, like the rasters
- * that were there from the start.
- *
- * The list is shared; the basemap a page *opens* on is not. The data viewer opens on the Esri
- * vector basemap (VITE_MAP_DEFAULT_BASEMAP), the hydrography explorer on dark grey, because its
- * network is drawn in light saturated colours picked against a dark ground — on the light basemap
- * they sit at about 1.8:1 and wash out. Each page passes its own to basemapStyle().
+ * The list is shared; the basemap a page *opens* on is not, and each passes its own to basemapStyle().
  */
 import {VectorTileLayer} from "@esri/maplibre-arcgis";
 import {el} from "../dom.js";
@@ -23,11 +14,8 @@ import {calciteIcon} from "../icons/calcite.js";
 import {t} from "../i18n/i18n.js";
 import {wireMenu} from "../ui/menu.js";
 
-/**
- * The raster tile services, one entry per service rather than per basemap: the two grey canvases
- * are a base plus a separate labels layer, and Imagery is offered both bare and with Esri's
- * boundaries and place names over it, so several basemaps below name the same set.
- */
+/** One entry per service rather than per basemap: the grey canvases are a base plus a labels layer,
+ * and Imagery is offered bare and labelled, so several basemaps name the same set. */
 const TILE_SETS = {
   "gray-light": {
     tiles: ["https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}"],
@@ -83,11 +71,8 @@ const TILE_SETS = {
   }
 };
 
-/**
- * Esri's Environment basemap: three vector tile layers off ArcGIS portal items, with a raster
- * hillshade under them. Not a tile set, because it is not one raster service — it is a style, and
- * adopting a style is the thing that can only happen once. See addEnvironment().
- */
+/** Esri's Environment basemap: three vector tile layers off portal items over a raster hillshade.
+ * Not a tile set — it is a style, and adopting one can only happen once. See addEnvironment(). */
 const ENVIRONMENT = {
   itemIds: [
     "005b8960ddd04ae781df8d471b6726b3", // Environment Base

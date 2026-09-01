@@ -1,15 +1,10 @@
 /* ── Tokens ───────────────────────────────────────────────────────────────
-   One palette for both pages, so the data viewer and the hydrography explorer sit next to each
-   other in the GEOGLOWS portal as one product rather than two that happen to share a subject.
+   One palette for both pages, so they sit next to each other in the GEOGLOWS portal as one product.
 
-   The first block is what the tokens mean in the dark theme, and doubles as the fallback for a
-   document that has never had data-theme set on it. The theme is chosen by the header's sun/moon
-   button and remembered per device; both pages read the same key.
+   The first block is the dark theme, and doubles as the fallback for a document that has never had
+   data-theme set. The theme is the header's sun/moon button, remembered per device against one key.
 
-   Three scales below are new. Before them the two stylesheets between them used 26 distinct
-   font-size values (including half-pixels like 9.5 and 13.5) — now seven — 11 distinct border-radii, and wrote
-   the panel width as a literal 380px into three unrelated rules. Every one of those is now a step
-   on a scale, which is most of what "simpler" turned out to mean here. */
+   Font size, radius and the panel width are scales: every value in either stylesheet is a step. */
 :root, :root[data-theme="dark"] {
     /* Ground and surfaces */
     --bg: #0a0e17;
@@ -28,18 +23,14 @@
     /* Accent */
     --accent: #38bdf8;
     /* The colour the open-source library list is written in. */
-    --library: #38bdf8;
     --accent-dim: #0ea5e9;
-    --accent-soft: rgba(56, 189, 248, .14);
     --on-accent: #04121b;
 
     /* Status */
     --success: #10b981;
-    --success-bright: #34d399;
     --danger: #ef4444;
     --danger-text: #fca5a5;
     /* The danger colour at a wash, behind a rule the styling editor has flagged. */
-    --danger-bg: rgba(239, 68, 68, .09);
     --warn: #f59e0b;
     --warn-text: #fcd34d;
 
@@ -48,11 +39,10 @@
     --swatch-ring: rgba(255, 255, 255, .15);
     --shadow-color: 0, 0, 0;
 
-    /* The map's own colours. These are data, not chrome: a stream is the same blue in both themes,
-       because it is the same stream, and the legend swatch beside it has to be the colour the line
-       on the map actually is. --stream is overwritten at runtime by the styling panel's base
-       colour, which is why the legend follows a restyle. Only --selected-text is themed: it is the
-       one of the pair that has to hold as type at 11px rather than as a line on a map. */
+    /* The map's own colours — data, not chrome: a stream is the same blue in both themes, and the
+       legend swatch has to be the colour the line actually is. --stream is overwritten at runtime by
+       the styling panel, which is why the legend follows a restyle. Only --selected-text is themed,
+       because it has to hold as 11px type rather than as a line on a map. */
     --stream: #3B82F6;
     --upstream: #F5A623;
     --selected: #B45309;
@@ -60,9 +50,6 @@
     --group: #F97316;
     --basin: #14b8a6;
     --catchment: #D55E00;
-    --inlet: #34d399;
-    --outlet: #f472b6;
-    --corridor: #fbbf24;
 
     /* PUBLIC CONTRACT — do not rename. The riverforecastsystem package ships no CSS of its own and
        reads these to theme the charts it renders. They look unused to a static scan. They are not. */
@@ -72,7 +59,6 @@
 
     /* Type scale */
     --fs-2xs: 10px;
-    --fs-xs: 11px;
     --fs-sm: 12px;
     --fs-md: 13px;
     --fs-base: 14px;
@@ -86,7 +72,6 @@
 
     /* Space, control sizing, layout */
     --gap: 8px;
-    --pad: 12px;
     --size: 36px;
     --icon: 20px;
     /* The control column's width, shared by both pages: a quarter of the window, floored at the
@@ -106,25 +91,19 @@
     --border: #cbd5e1;
     --border-soft: rgba(148, 163, 184, .55);
 
-    /* Black for both of the top two ranks, which is the data viewer's long-standing decision:
-       on a light ground a "dimmed" grey is just lower contrast, not hierarchy. The third rank
-       stays grey — it carries counts and units, where the drop really is a drop in importance
-       rather than a drop in legibility. */
+    /* Black for both of the top two ranks: on a light ground a "dimmed" grey is lower contrast, not
+       hierarchy. The third stays grey — it carries counts and units, where the drop is real. */
     --text: #000000;
     --text-dim: #000000;
     --text-faint: #64748b;
 
     --accent: #0284c7;
-    --library: #0284c7;
     --accent-dim: #0369a1;
-    --accent-soft: rgba(2, 132, 199, .12);
     --on-accent: #ffffff;
 
     --success: #059669;
-    --success-bright: #10b981;
     --danger: #dc2626;
     --danger-text: #b91c1c;
-    --danger-bg: rgba(220, 38, 38, .08);
     --warn: #f59e0b;
     --warn-text: #b45309;
 
@@ -133,9 +112,6 @@
     --shadow-color: 100, 116, 139;
 
     --selected-text: #B45309;
-    --inlet: #059669;
-    --outlet: #db2777;
-    --corridor: #d97706;
 
     --rfs-chart-axis: var(--text);
     --rfs-chart-text: var(--text);

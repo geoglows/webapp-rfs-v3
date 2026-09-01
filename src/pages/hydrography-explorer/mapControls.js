@@ -1,16 +1,11 @@
 /**
- * What is drawn on the map, and what says so: the layer switches in the column, the basemap picker
- * floating over the map, and the legend in its bottom corner.
+ * What is drawn on the map and what says so: the layer switches in the column, the basemap picker
+ * over the map, and the legend in its corner. The basemap picker is shared with the data viewer in
+ * shared/map/basemaps.js.
  *
- * The basemap is a picker over the map because that is where RFS v3 puts it, and because choosing
- * one is a glance at the map rather than a trip to the column — and it is now literally RFS v3's:
- * one list, one mechanism, one picker, in shared/map/basemaps.js. The layer switches are in the
- * column with the rest of the controls — they are read against the section under them, not against
- * the tiles.
- *
- * The layer list is here rather than in the markup because three things read it: the row that
- * switches a layer on, the legend row that names its colour, and the sync that greys out both when
- * the open dataset does not publish those tiles.
+ * The layer list lives here rather than in the markup because three things read it: the row that
+ * switches a layer on, the legend row naming its colour, and the sync that greys out both when the
+ * open dataset does not publish those tiles.
  */
 import {layersPresent, layersVisible, map, setLayersVisible, setStreamsVisible,
   streamLayerIds} from './map.js';
@@ -20,10 +15,9 @@ import {t} from '../../shared/i18n/i18n.js';
 
 const LAYERS = [
   {
-    // First, because it is the layer the app is about: everything else is drawn to be read against
-    // it. `layers` is a function here rather than a list - the styled network is recompiled on
-    // every rule edit and selection, so its layer ids are only knowable at the moment of asking -
-    // and `onToggle` goes through map.js so the choice outlives those rebuilds.
+    // First, because it is the layer the app is about. `layers` is a function rather than a list:
+    // the styled network is recompiled on every edit, so its ids are only knowable when asked — and
+    // `onToggle` goes through map.js so the choice outlives those rebuilds.
     labelKey: 'layers.streams',
     layers: streamLayerIds,
     onToggle: setStreamsVisible,
@@ -88,11 +82,8 @@ function initLayerPicker() {
   }
 }
 
-/**
- * Point the switches and the legend at what the map is actually drawing. Called once the map is up,
- * and again after every switch, because a layer the open dataset does not publish cannot be
- * switched on however many times it is clicked.
- */
+/** Point the switches and legend at what the map is actually drawing — a layer the open dataset does
+ * not publish cannot be switched on however often it is clicked. */
 export function syncLayerPicker() {
   for (const layer of LAYERS) {
     const ids = layerIds(layer);

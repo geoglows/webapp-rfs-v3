@@ -1,0 +1,15 @@
+<!-- The panel header: portal logo, page title, and a row of actions the page fills in. The logo is
+     read from the environment so a rebrand is one .env edit rather than one per page.
+
+     params · title, titleAttrs, children (the action buttons, in the order this page wants them) -->
+<header>
+  <div class="brand">
+    <a href="%VITE_LOGO_HREF%" data-i18n-title="common.portal" title="GEOGLOWS apps">
+      <img src="%VITE_LOGO_SRC%" alt="%VITE_LOGO_ALT%" width="%VITE_LOGO_WIDTH%" height="%VITE_LOGO_HEIGHT%"/>
+    </a>
+  </div>
+  <h1 {{titleAttrs}}>{{title}}</h1>
+  <div class="row">
+    {{children}}
+  </div>
+</header>

@@ -146,10 +146,10 @@ function createChartsDock({map, streams, getForecastDate}) {
     }
     if (tab === "forecast") {
       panel.innerHTML = chartsLoading("charts-fc-block", t("charts.loading"));
-      loadForecast("charts-fc-block");
+      void loadForecast("charts-fc-block");
     } else {
       panel.innerHTML = chartsLoading("charts-ts-block", t("charts.loading"));
-      loadRetro("charts-ts-block");
+      void loadRetro("charts-ts-block");
     }
   }
 

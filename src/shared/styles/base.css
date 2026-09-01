@@ -8,9 +8,7 @@
 }
 
 /* !important because the classes that lay a thing out set display themselves — .btn.icon is a flex
-   box, .dock a flex column — and would otherwise outrank both of these. This is the only
-   !important in the app; the six that used to sit on .rule-name went away when the selector it was
-   fighting (#style-body select, …) stopped being an id. */
+   box, .dock a flex column — and would otherwise outrank both of these. The only !important here. */
 .hidden, [hidden] {
     display: none !important;
 }
@@ -74,11 +72,8 @@ body {
 }
 
 /* ── Type ──
-   The app title, then one small mono eyebrow used for every heading below it, then the title of a
-   modal or dock. The eyebrow is the load-bearing one: the hydrography page had no global heading
-   rule at all and so restated these six declarations thirteen times, which was the single largest
-   block of duplication in either stylesheet. `.eyebrow` exists for the places that need the look
-   on something that is not an h2 or h4. */
+   The app title, one small mono eyebrow for every heading below it, then the title of a modal or
+   dock. `.eyebrow` exists for the places needing the look on something that is not an h2 or h4. */
 h1 {
     font-family: var(--mono);
     font-size: var(--fs-xl);

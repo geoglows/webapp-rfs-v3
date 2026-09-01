@@ -1,9 +1,7 @@
 /* ── The data viewer's own styles ──────────────────────────────────────
-   Everything shared with the hydrography explorer — the tokens, the page frame, the control column,
-   the buttons, fields, cards, modals, menus, map overlays, legend swatches and progress bars — is
-   in src/shared/styles/. What is left here is what only this page has: the prose and tables the
-   docks render, the flood-mapping controls, the timeseries player, the charts, the docks
-   themselves, and the layout the page rearranges into while one of them is open. */
+   Everything shared with the hydrography explorer is in src/shared/styles/. What is left here is
+   what only this page has: the prose and tables the docks render, the flood-mapping controls, the
+   player, the charts, the docks, and the layout the page rearranges into while one is open. */
 
 .warning {
     font-size: 14px;
@@ -142,11 +140,9 @@
     border-bottom: none;
 }
 
-/* One rhythm for everything a section stacks — heading, labelled field, row of buttons, the flood
-   controls, which carry it inward so that turning flood mapping on extends the same stack rather
-   than starting a differently-spaced one. Owned by the container rather than by each block type:
-   when the blocks carried their own margins they disagreed on both the size and the direction, so
-   what sat between two of them depended on which two they were. The depth legend opts out below. */
+/* One rhythm for everything a section stacks, the flood controls included, so turning flood mapping
+   on extends the same stack. Owned by the container rather than by each block type, or the gap
+   between two blocks depends on which two they are. The depth legend opts out below. */
 #panel section > * + *, #flood-controls > * + * {
     margin-top: 12px;
 }
@@ -348,6 +344,7 @@
 }
 
 /* Emitted by the plotting library (riverforecastsystem), so these names are its call, not ours. */
+/* Emitted by the plotting library (riverforecastsystem), so these names are its call, not ours. */
 .plot-block {
     margin-bottom: 20px;
 }
@@ -386,11 +383,9 @@
 
 /* ── Docks · charts · notable rivers · saved rivers
    The docks live inside the left panel. When one opens the panel grows to half the viewport and the
-   dock grows in *beneath* the hydrology controls (date picker · stream style · action buttons),
-   which stay pinned so you can retune the forecast while reading the charts. The other control
-   sections give way to it. Only one shows at a time: `dock-open` on <body> drives the shared
-   layout, `charts-open` / `bookmarks-open` / `saved-open` / `help-open` pick which one (see docks/dock.js, which
-   also calls map.resize() to track the width change). ── */
+   dock grows in *beneath* the hydrology controls, which stay pinned so the forecast can be retuned
+   while reading the charts. Only one shows at a time: `dock-open` on <body> drives the layout and
+   `<name>-open` picks which — see docks/dock.js, which also calls map.resize(). ── */
 .dock {
     display: none;
     flex: 1 1 auto;
@@ -504,10 +499,9 @@ body.help-open #scroll > section:not(#hydrology-section, #flood-section) {
     margin-top: 10px;
 }
 
-/* ── Spotlight · the control a hovered help passage is about (docks/help.js). An outline rather
-   than a border so nothing shifts, with a big, bright halo around it that fades out to nothing
-   and pulses between two shades of the same colour to pull the eye. Layered box-shadows with
-   growing blur are what make the fade: each ring is softer and fainter than the one inside it. ── */
+/* ── Spotlight · the control a hovered help passage is about (docks/help.js). An outline rather than
+   a border so nothing shifts, haloed by layered box-shadows of growing blur and pulsed to pull the
+   eye. ── */
 /* Hot, high-contrast shades that stand out against both the blue-grey panel and the map, neither of
    which has any warm colour in it. The pulse runs between a bright yellow and a light orange. */
 :root {
@@ -558,10 +552,9 @@ body.dock-open #hydrology-section .field {
     flex: 1 1 220px;
 }
 
-/* The flood section (on screen only under the help dock) follows the same rhythm: the mode button
-   and the style picker share a row, and everything after them wraps onto full-width rows. The
-   selector matches the specificity of the `body.dock-open #scroll > section:not(...)` rule that
-   hides the other sections, and sits after it, so this is the one that wins. */
+/* The flood section (on screen only under the help dock) follows the same rhythm. The selector
+   matches the specificity of the `body.dock-open #scroll > section:not(...)` rule that hides the
+   other sections and sits after it, so this one wins. */
 body.help-open #scroll > section#flood-section {
     display: flex;
     flex-wrap: wrap;

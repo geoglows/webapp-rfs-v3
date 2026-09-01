@@ -1,19 +1,9 @@
 /* ── The hydrography explorer's own styles ─────────────────────────────────
-   Everything shared with the data viewer — the tokens, the page frame, the control column, the
-   buttons, fields, cards, modals, menus, map overlays, legend swatches and progress bars — is in
-   src/shared/styles/. What is left here is what only this page has: the four selection methods and
-   their readouts, the collected-picks and AOI lists, the river attribute table, the staged export
-   block, and the styling rule editor, which is most of the file.
+   Everything shared with the data viewer is in src/shared/styles/. What is left here is what only
+   this page has: the four selection methods and their readouts, the picks and AOI lists, the river
+   attribute table, the staged export block, and the styling rule editor.
 
-   The column itself is #panel, the same id and the same markup as the data viewer, so both are
-   laid out by one rule in shared/styles/components.css rather than by two that disagreed about the
-   width. The classes below only ever add to that. */
-
-/* A row of buttons that share a line — the export actions at the head of the column. */
-.btn-row {
-    display: flex;
-    gap: 8px
-}
+   The column is #panel, laid out by one shared rule; the classes below only add to it. */
 
 /* The export is the thing the app is for, and the only button that does any work, so it takes the
    accent and the width of the row; Clear is the plain one beside it. */
@@ -110,14 +100,10 @@
 }
 
 /* ── the staged export block ───────────────────────────────────────────────
-   Two bars — bytes off the wire, and work done on them — with the phases of each listed under it.
-   The whole plan is on screen from the start: pending phases sit greyed out, the running one is the
-   only line that moves, and finished ones keep the number they finished with. That is the point of
-   the block over a single bar — you can see which step is slow, and what is still to come.
-
-   The indeterminate stripe both bars use — one synchronous call that has either returned or not,
-   where a percentage would be invented — is the shared `.indeterminate .progress-fill`, and both
-   `#progress` and `.stage-line` carry the class that triggers it. */
+   Two bars — bytes off the wire, work done on them — with each one's phases listed under it. The
+   whole plan is on screen from the start, so you can see which step is slow and what is still to
+   come. The indeterminate stripe is the shared `.indeterminate .progress-fill`, carried by both
+   `#progress` and `.stage-line`, for a synchronous call where a percentage would be invented. */
 #stages {
     display: none;
     padding: 10px 20px 12px;
@@ -153,12 +139,9 @@
 
 .stage-bar {
     height: 5px;
-}/* One phase. The 2px rule under each line is that phase's own progress — enough to see movement
-   without turning seven lines into seven full-weight bars.
-
-   The name column is max-content: a phase whose name is clipped is a phase you cannot identify,
-   which defeats the whole point of listing them. The detail takes what is left and ellipsises,
-   with the full text on the row's title. */
+}/* One phase. The 2px rule under each line is that phase's own progress. The name column is
+   max-content — a clipped phase name cannot be identified — and the detail takes what is left and
+   ellipsises, with the full text on the row's title. */
 .stage-line {
     display: grid;
     grid-template-columns:12px max-content minmax(0, 1fr);
@@ -215,10 +198,6 @@
     color: var(--accent)
 }
 
-.stage-line.active .stage-detail {
-    color: var(--text-dim)
-}
-
 .stage-line.done {
     color: var(--text-dim)
 }
@@ -270,9 +249,8 @@
 }
 
 /* ── the selection actions ─────────────────────────────────────────────────
-   Under the heading and above the four methods, inside the same card. What they act on is the
-   current selection, whichever method made it, so they belong to the block as a whole rather than
-   to any one row of it. */
+   They act on the current selection whichever method made it, so they belong to the block as a
+   whole rather than to any one row of it. */
 #selection-actions {
     display: flex;
     gap: 6px;
@@ -290,13 +268,9 @@
 }
 
 /* ── the selection methods ────────────────────────────────────────────────
-   Four rows, one per answer a click on the map can give — the reach, its watershed, a collection of
-   watersheds, an area cut out of one. They are four answers to the same question, not four features
-   that stack, so they are drawn as one control and not as four panels: no rules between the rows,
-   nothing to fold, and the row reading On is what a click means.
-
-   Whatever the chosen method has to show sits under all four rows, in the one place, so choosing a
-   different method never moves the list you chose it from. */
+   Four answers to the same question, not four features that stack — so one control, not four
+   panels: no rules between the rows, nothing to fold, and the row reading On is what a click means.
+   Whatever the chosen method shows sits under all four rows, so switching never moves the list. */
 #selectors-card {
     display: flex;
     flex-direction: column;
@@ -425,14 +399,11 @@
 }
 
 /* ── the river names section ───────────────────────────────────────────────
-   Built like every other card in the column. Its switch is the same On/Off control the three
-   selection methods wear, because it is the same kind of thing to operate — but the edge it puts on
-   the card is a name colour, not the selection orange, since turning it on changes what the map is
-   coloured by and not what a click on it does. */
+   The same On/Off control the selection methods wear, but edged in a name colour rather than the
+   selection orange: it changes what the map is coloured by, not what a click on it does. */
 /* ── styling options ──────────────────────────────────────────────────────
-   Two ways of changing what the network looks like — the names table's colours, and the rule
-   editor that draws everything the names do not — under one heading, because they are one subject
-   and you arrive at the column looking for "how this is drawn" rather than for either by name. */
+   The names table's colours and the rule editor, under one heading: you arrive looking for "how
+   this is drawn" rather than for either by name. */
 #styling-card {
     padding: 13px 18px 10px;
     border-top: 1px solid var(--border)
@@ -508,14 +479,10 @@
 }
 
 /* ── the styling panel ─────────────────────────────────────────────────────
-   The one section of the column that holds a form. It takes whatever height the switches above and
-   the export block below leave, and scrolls inside itself, so a style with a dozen rules never
-   pushes the layer list off the top or the run report off the bottom.
-
-   Everything in here is deliberately smaller and denser than the rest of the app: this is the panel
-   you work in with the map beside it, and every row that fits is a row you do not have to scroll to.
-   Zoom controls are always selects, never number inputs — the half-step grid is enforced by having
-   nothing else to pick from. */
+   Takes whatever height the switches above and the export block below leave, and scrolls inside
+   itself, so a dozen rules never push the layer list or the run report off screen. Deliberately
+   denser than the rest of the app — every row that fits is a row you do not scroll to. Zoom controls
+   are always selects: the half-step grid is enforced by having nothing else to pick from. */
 #style-card {
     display: flex;
     flex-direction: column
@@ -541,9 +508,8 @@
 }
 
 /* ── the AOI subsetter ─────────────────────────────────────────────────────
-   The same folding card as multi-select below it, and for the same reason: the mode switch in its
-   heading is how the feature is found. It is a shorter list — an outlet and its inlets — so it is
-   laid out with the pick rows rather than with a set of its own. */
+   The same folding card as multi-select below it. A shorter list — an outlet and its inlets — so it
+   is laid out with the pick rows rather than with a set of its own. */
 #aoi-body {
     display: flex;
     flex-direction: column;
@@ -637,15 +603,11 @@
     color: var(--text-faint);
     font-size: 9.5px
 }/* ── the clicked reach ─────────────────────────────────────────────────────
-   Same shape as the styling section below it — an eyebrow that folds the body away — because it is
-   the same kind of thing: a block you open when you want it and leave shut when you do not. It is
-   always on the page, empty until a river is clicked, and it never grows past a third of the
-   column, so the styling editor under it keeps its room. */
+   An eyebrow that folds the body away, like the styling section below it. Always on the page, empty
+   until a river is clicked, and never more than a third of the column. */
 /* ── the layer switches ────────────────────────────────────────────────────
-   What is drawn over the basemap. In the column rather than over the map: these are read against
-   the sections under them, and the map is where you look to see what they did.
-
-   First of the folding sections, so no rule along its top — the header above it draws one. */
+   In the column rather than over the map: they are read against the sections under them. First of
+   the folding sections, so no rule along its top — the header above it draws one. */
 #layers-card {
     flex: 0 0 auto;
     padding: 13px 18px 12px
@@ -774,12 +736,6 @@
     font-weight: 600;
     text-align: right;
     overflow-wrap: anywhere
-}
-
-/* Identifiers are the row you copy out, not the row you read a number off: dimmer key, accent value. */
-.river-identity .river-v {
-    color: var(--accent);
-    font-weight: 400
 }
 
 #river-body .hint {
@@ -968,11 +924,6 @@
     font-size: 9.5px;
     margin-top: 1px;
     line-height: 1.4
-}
-
-.attr-identity .attr-label {
-    color: var(--text-dim);
-    font-weight: 400
 }
 
 .style-section {

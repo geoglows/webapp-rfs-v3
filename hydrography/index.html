@@ -1,48 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"/>
-  <meta content="width=device-width, initial-scale=1" name="viewport"/>
-  <title data-i18n="explorer.title">RFS Hydrography Explorer</title>
-  <meta content="Explore the GEOGLOWS River Forecast System v3 hydrography." name="description"/>
-  <link href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230d1520'/%3E%3Cg fill='none' stroke='%234A90E2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M30 20L25 18.7L16.5 15.2' stroke-width='3.8'/%3E%3Cpath d='M16.5 15.2L11 9.5L7 6.5' stroke-width='2.6'/%3E%3Cpath d='M16.5 15.2L12 21.5L9.5 25.5' stroke-width='2.6'/%3E%3Cpath d='M11 9.5L4.5 9.5' stroke-width='1.7'/%3E%3Cpath d='M12 21.5L5.5 19.5' stroke-width='1.7'/%3E%3Cpath d='M25 18.7L22.8 12' stroke-width='1.7'/%3E%3Cpath d='M21.3 17L19 22.5' stroke-width='1.7'/%3E%3C/g%3E%3C/svg%3E" rel="icon"/>
+  <!-- @include head.html titleAttrs="data-i18n='explorer.title'" title="RFS Hydrography Explorer" description="Explore the GEOGLOWS River Forecast System v3 hydrography." script="/src/pages/hydrography-explorer/main.js" -->
 </head>
 <body>
 
-<!-- The control column is structurally identical to the data viewer's: same #panel id, same
-     <header> over <main>, same pinned-header/scrolling-body split, and therefore the same CSS,
-     which now lives in shared/styles/components.css rather than being written twice at two
-     different widths. What is inside the column is this page's own. -->
 <div id="panel">
-  <header>
-    <div class="brand">
-      <a href="/" data-i18n-title="common.portal" title="GEOGLOWS apps">
-        <img alt="GEOGLOWS" height="60" src="https://cdn.apps.geoglows.org/static/images/geoglows-logo-nav.webp" width="354"/>
-      </a>
-    </div>
-    <h1 data-i18n="explorer.title">RFS Hydrography Explorer</h1>
-    <div class="row">
-      <!-- off until the map is up: a river found before there is a map to paint it on is not found -->
-      <button aria-label="Find a river by name or ID" class="btn icon" data-icon-name="magnifying-glass" disabled id="btn-search"
-              data-i18n-title="search.label" data-i18n-aria-label="search.aria"
-              title="Find a river by name or ID"></button>
-      <!-- The same picker, the same classes and the same ids as the data viewer: one
-           initLanguagePicker() in shared/settings drives both, and LANGUAGES is read off these
-           buttons, so the two headers stay one control rather than two that resemble each other. -->
-      <div class="anchor">
-        <button id="btn-language" class="btn icon" data-icon-name="language" data-i18n-title="lang.title"
-                data-i18n-aria-label="lang.aria" title="Language" aria-label="Change language"
-                aria-haspopup="true" aria-expanded="false"></button>
-        <div id="lang-menu" class="card menu hidden" role="menu">
-          <button class="opt" role="menuitemradio" data-lang="en">English</button>
-          <button class="opt" role="menuitemradio" data-lang="es">Español</button>
-          <button class="opt" role="menuitemradio" data-lang="fr">Français</button>
-        </div>
-      </div>
-      <button class="btn icon" id="btn-theme" data-i18n-title="theme.toggle" title="Toggle light / dark theme"></button>
-      <button class="btn icon" id="btn-settings" data-icon-name="cog-6-tooth" data-i18n-title="settings.label" title="Settings"></button>
-    </div>
-  </header>
+  <!-- @include header.html titleAttrs="data-i18n='explorer.title'" title="RFS Hydrography Explorer" -->
+    <!-- off until the map is up: a river found before there is a map to paint it on is not found -->
+    <button id="btn-search" class="btn icon" data-icon-name="magnifying-glass" disabled
+            data-i18n-title="search.label" data-i18n-aria-label="search.aria"
+            title="Find a river by name or ID" aria-label="Find a river by name or ID"></button>
+    <!-- @include button-language.html -->
+    <!-- @include button-theme.html -->
+    <!-- @include button-settings.html -->
+  <!-- @endinclude header.html -->
   <main>
     <div id="scroll">
       <div id="layers-card">
@@ -55,21 +27,12 @@
         <div id="layers-body"></div>
       </div>
 
-      <!-- SELECTION METHODS · four rows, one per answer a click can give. They are not four features
-           that stack, so they read as one list you choose from: the row that is On is what a click on
-           the map means. Download, copy and clear sit above the four, because they act on whichever
-           method is on rather than on one of them; whatever the chosen method has to show — the reach,
-           the count, the collection, the inlets — is shown under all four, in the one place, so the
-           list never moves as you switch between them. -->
       <div id="selectors-card">
         <h2><span class="title" data-i18n="explorer.heading.selection">River Selection Explorer</span></h2>
-
-        <!-- One word each, so the three sit on one line. What each one actually does is in its
-             title — the download in particular is two GeoParquet files, not one. -->
         <div id="selection-actions">
           <button class="btn primary" disabled id="btn-geoparquet"
                   data-i18n="explorer.action.download" data-i18n-title="explorer.action.download.about"
-                  title="Download GeoParquet: two files, the selected reaches and the catchment polygon each of them drains.">
+                  title="Download GeoParquet">
             Download
           </button>
           <button class="btn" disabled id="btn-copy"
@@ -145,8 +108,8 @@
         <div id="river-body"></div>
       </div>
 
-      <!-- STYLING OPTIONS · the two things that change how the network is drawn, under one heading:
-           colouring it by the river names table, and the rule editor that draws everything else. -->
+      <!-- STYLING OPTIONS · colouring by the river names table, and the rule editor that draws
+           everything else. -->
       <div id="styling-card">
         <h2><span class="title" data-i18n="explorer.heading.styling">Styling Options</span></h2>
 
@@ -178,8 +141,7 @@
       </div>
     </div>
 
-    <!-- Pinned under the scrolling body rather than at the end of it: an export reporting its
-         progress should not scroll away while it runs. -->
+    <!-- Pinned under the scrolling body: an export reporting progress should not scroll away. -->
     <div id="panel-foot">
       <div id="progress">
         <div id="progress-head">
@@ -198,16 +160,7 @@
 
 <div id="map"></div>
 
-<!-- MAP OVERLAYS · the basemap picker and the legend float over the map, the way RFS v3 floats its
-     own. The picker is one button, and its menu opens to the left of it, into the map. -->
-<div id="map-controls" class="col map-overlay">
-  <div class="anchor">
-    <button aria-expanded="false" aria-haspopup="true" class="btn map" id="basemap-btn"
-            data-i18n-title="basemap.about" data-i18n-aria-label="basemap.label"
-            title="Basemap" aria-label="Basemap"></button>
-    <div class="card menu hidden" id="basemap-menu" role="menu"></div>
-  </div>
-</div>
+<!-- @include map-controls.html -->
 
 <div class="card map-overlay" id="legend-overlay">
   <h2 data-i18n="explorer.heading.legend">Legend</h2>
@@ -218,69 +171,13 @@
   </div>
 </div>
 
-<!-- Two boxes, because a name and an ID are two different questions — see src/riverSearch.js. -->
-<div class="backdrop hidden" id="search-modal">
-  <div aria-labelledby="search-modal-title" aria-modal="true" class="card modal entry" role="dialog">
-    <div class="modal-head">
-      <h3 id="search-modal-title" data-i18n="search.heading">Find a river</h3>
-      <button aria-label="Close" data-i18n-aria-label="common.close" class="btn sm" data-close="search-modal">✕</button>
-    </div>
-    <div class="modal-body">
-      <form autocomplete="off" class="field" id="search-name-form">
-        <label for="search-river-name" data-i18n="search.nameLabel">River name</label>
-        <div class="row">
-          <input aria-autocomplete="list" aria-controls="search-results" aria-expanded="false"
-                 id="search-river-name" placeholder="e.g. Colorado" data-i18n-placeholder="search.namePlaceholder" role="combobox" type="text"/>
-          <button class="btn primary" type="submit" data-i18n="search.submit">Search</button>
-          <button class="btn" id="search-clear" type="button" data-i18n="search.clear"
-                  data-i18n-title="search.clearHint"
-                  title="Remove the highlighted river from the map">Clear</button>
-        </div>
-      </form>
-      <div aria-label="Matching rivers" data-i18n-aria-label="search.results" class="search-results hidden" id="search-results"
-           role="listbox"></div>
-      <div aria-live="polite" class="hint status" id="search-name-status" role="status"></div>
+<!-- @include search-modal.html -->
+<!-- @include settings-modal.html -->
+  <label class="row">
+    <input type="checkbox" id="set-legend"/>
+    <span data-i18n="settings.mapLegend">Show the map legend</span>
+  </label>
+<!-- @endinclude settings-modal.html -->
 
-      <form autocomplete="off" class="field search-second" id="search-id-form">
-        <label for="search-river-id" data-i18n="search.idLabel">River ID</label>
-        <div class="row">
-          <input id="search-river-id" inputmode="numeric" placeholder="e.g. 760021611" data-i18n-placeholder="search.idPlaceholder" type="text"/>
-          <button class="btn primary" type="submit" data-i18n="search.submit">Search</button>
-        </div>
-      </form>
-      <div aria-live="polite" class="hint status" id="search-id-status" role="status"></div>
-    </div>
-  </div>
-</div>
-<div class="backdrop hidden" id="settings-modal">
-  <div aria-labelledby="settings-modal-title" aria-modal="true" class="card modal" role="dialog">
-    <div class="modal-head">
-      <h3 id="settings-modal-title" data-i18n="settings.label">Settings</h3>
-      <button aria-label="Close" data-i18n-aria-label="common.close" class="btn sm" data-close="settings-modal">✕</button>
-    </div>
-    <div class="modal-body">
-      <h4 data-i18n="settings.display">Display</h4>
-      <label class="row">
-        <input id="set-legend" type="checkbox"/>
-        <span data-i18n="settings.mapLegend">Show the map legend</span>
-      </label>
-      <!-- stamped at build time by stampBuildDate() in vite.config.js; filled in initSettings() -->
-      <h4 data-i18n="settings.data">Downloaded Data</h4>
-      <p class="hint" data-i18n="settings.data.hint">This site keeps local copies of some datasets for better performance. They are shared with the RFS v3 hydroviewer, can be redownloaded at any time, and are safe to delete.</p>
-      <!-- rows built by createDataSettings() in src/dataSettings.js, from the registry in datasets.js -->
-      <div class="col" id="data-list"></div>
-      <div class="col data-foot">
-        <div class="hint status" id="data-foot-status"></div>
-        <div class="row wrap">
-          <button class="btn" id="btn-download-all" data-i18n="settings.data.downloadAll">Download everything</button>
-          <button class="btn" id="btn-delete-all" data-i18n="settings.data.deleteAll">Delete everything</button>
-        </div>
-      </div>
-      <p class="hint build-stamp"><span data-i18n="settings.build">Build</span> <span id="build-date"></span></p>
-    </div>
-  </div>
-</div>
-
-<script src="/src/pages/hydrography-explorer/main.js" type="module"></script>
 </body>
 </html>

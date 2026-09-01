@@ -1,42 +1,19 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>%VITE_APP_TITLE%</title>
-  <link href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230d1520'/%3E%3Cg fill='none' stroke='%234A90E2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M30 20L25 18.7L16.5 15.2' stroke-width='3.8'/%3E%3Cpath d='M16.5 15.2L11 9.5L7 6.5' stroke-width='2.6'/%3E%3Cpath d='M16.5 15.2L12 21.5L9.5 25.5' stroke-width='2.6'/%3E%3Cpath d='M11 9.5L4.5 9.5' stroke-width='1.7'/%3E%3Cpath d='M12 21.5L5.5 19.5' stroke-width='1.7'/%3E%3Cpath d='M25 18.7L22.8 12' stroke-width='1.7'/%3E%3Cpath d='M21.3 17L19 22.5' stroke-width='1.7'/%3E%3C/g%3E%3C/svg%3E" rel="icon"/>
-  <meta name="description" content="%VITE_APP_DESCRIPTION%"/>
-  <script type="module" src="/src/pages/data-viewer/main.js" async defer></script>
+  <!-- @include head.html title="%VITE_APP_TITLE%" description="%VITE_APP_DESCRIPTION%" script="/src/pages/data-viewer/main.js" -->
 </head>
 <body>
 
 <div id="panel">
-  <header>
-    <div class="brand">
-      <a href="%VITE_LOGO_HREF%">
-        <img src="%VITE_LOGO_SRC%" alt="%VITE_LOGO_ALT%" width="%VITE_LOGO_WIDTH%" height="%VITE_LOGO_HEIGHT%"/>
-      </a>
-    </div>
-    <h1>%VITE_APP_TITLE%</h1>
-    <div class="row">
-      <div id="auth-action"></div>
-      <button id="btn-settings" class="btn icon" data-icon-name="cog-6-tooth" data-i18n-title="settings.label" title="Settings"></button>
-      <div class="anchor">
-        <button id="btn-language" class="btn icon" data-icon-name="language" data-i18n-title="lang.title"
-                data-i18n-aria-label="lang.aria" title="Language" aria-label="Change language"
-                aria-haspopup="true" aria-expanded="false"></button>
-        <!-- see initLanguagePicker() in src/settings/settings.js -->
-        <div id="lang-menu" class="card menu hidden" role="menu">
-          <button class="opt" role="menuitemradio" data-lang="en">English</button>
-          <button class="opt" role="menuitemradio" data-lang="es">Español</button>
-          <button class="opt" role="menuitemradio" data-lang="fr">Français</button>
-        </div>
-      </div>
-      <button id="btn-theme" class="btn icon" data-i18n-title="theme.toggle" title="Toggle light / dark theme"></button>
-      <button id="btn-help" class="btn icon" data-icon-name="question-mark-circle" data-i18n-title="help.label" data-i18n-aria-label="help.aria"
-              title="Help and about" aria-label="Help and about this site"></button>
-    </div>
-  </header>
+  <!-- @include header.html title="%VITE_APP_TITLE%" -->
+    <div id="auth-action"></div>
+    <!-- @include button-settings.html -->
+    <!-- @include button-language.html -->
+    <!-- @include button-theme.html -->
+    <button id="btn-help" class="btn icon" data-icon-name="question-mark-circle" data-i18n-title="help.label" data-i18n-aria-label="help.aria"
+            title="Help and about" aria-label="Help and about this site"></button>
+  <!-- @endinclude header.html -->
   <main>
     <div id="scroll">
       <section id="hydrology-section">
@@ -167,15 +144,6 @@
         <h3 data-i18n="help.heading">Help and about</h3>
         <button class="btn sm" id="help-close" data-i18n-aria-label="common.close" aria-label="Close">✕</button>
       </div>
-      <!-- Prose, so the elements are empty and every sentence is a key in src/i18n/locales/.
-           data-i18n-html rather than data-i18n where a sentence emphasises the control it names.
-           The credits are here so each URL is written once; `{0}` in a sentence stands for that
-           element's first child link, which lets a translation put it wherever its word order wants.
-           A credit that is only a product name needs no key at all.
-           This markup is the source of the help text's structure; the sentences themselves live in
-           src/i18n/locales/ under the help.* keys. Credits last. Each section is a hover target for
-           the control it is about (data-spotlight); passages inside it can point at something more
-           specific. -->
       <div class="modal-body prose">
         <section class="help-section">
           <h4 data-i18n="help.about.h"></h4>
@@ -307,18 +275,12 @@
 <div id="map"></div>
 
 <!-- MAP CONTROL OVERLAYS · all share .map-overlay and differ only in where they sit -->
-<div id="map-controls" class="col map-overlay">
+<!-- @include map-controls.html -->
   <div class="anchor">
     <button id="layer-btn" class="btn map" aria-haspopup="true" aria-expanded="false" data-i18n-title="layers.label" title="Map layers"></button>
     <div id="layer-menu" class="card menu hidden" role="menu"></div>
   </div>
-  <div class="anchor">
-    <button id="basemap-btn" class="btn map" aria-haspopup="true" aria-expanded="false"
-            data-i18n-title="basemap.about" data-i18n-aria-label="basemap.label"
-            title="Basemap" aria-label="Basemap"></button>
-    <div id="basemap-menu" class="card menu hidden" role="menu"></div>
-  </div>
-</div>
+<!-- @endinclude map-controls.html -->
 <div id="legend-overlay" class="card map-overlay">
   <h2 data-i18n="legend.returnPeriod">Forecast return period</h2>
   <div id="legend-items"></div>
@@ -346,40 +308,7 @@
 </div>
 
 <!-- MODALS -->
-<div id="search-modal" class="backdrop hidden">
-  <div class="card modal entry" role="dialog" aria-modal="true" aria-labelledby="search-modal-title">
-    <div class="modal-head">
-      <h3 id="search-modal-title" data-i18n="search.heading">Find a river</h3>
-      <button class="btn sm" data-close="search-modal" data-i18n-aria-label="common.close" aria-label="Close">✕</button>
-    </div>
-    <div class="modal-body">
-      <form id="search-name-form" class="field" autocomplete="off">
-        <label for="search-river-name" data-i18n="search.nameLabel">River name</label>
-        <div class="row">
-          <input id="search-river-name" type="text" role="combobox" aria-expanded="false"
-                 aria-controls="search-results" aria-autocomplete="list"
-                 data-i18n-placeholder="search.namePlaceholder" placeholder="e.g. Colorado"/>
-          <button type="submit" class="btn primary" data-i18n="search.submit">Search</button>
-          <button type="button" id="search-clear" class="btn" data-i18n="search.clear"
-                  data-i18n-title="search.clearHint" title="Remove the highlighted river from the map">Clear</button>
-        </div>
-      </form>
-      <div id="search-results" class="search-results hidden" role="listbox"
-           data-i18n-aria-label="search.results" aria-label="Matching rivers"></div>
-      <div id="search-name-status" class="hint status" role="status" aria-live="polite"></div>
-
-      <form id="search-id-form" class="field search-second" autocomplete="off">
-        <label for="search-river-id" data-i18n="search.idLabel">River ID</label>
-        <div class="row">
-          <input id="search-river-id" type="text" inputmode="numeric"
-                 data-i18n-placeholder="search.idPlaceholder" placeholder="e.g. 760021611"/>
-          <button type="submit" class="btn primary" data-i18n="search.submit">Search</button>
-        </div>
-      </form>
-      <div id="search-id-status" class="hint status" role="status" aria-live="polite"></div>
-    </div>
-  </div>
-</div>
+<!-- @include search-modal.html -->
 <div id="save-river-modal" class="backdrop hidden">
   <div class="card modal entry" role="dialog" aria-modal="true" aria-labelledby="save-river-title">
     <div class="modal-head">
@@ -399,38 +328,15 @@
     </div>
   </div>
 </div>
-<div id="settings-modal" class="backdrop hidden">
-  <div class="card modal wide" role="dialog" aria-modal="true" aria-labelledby="settings-modal-title">
-    <div class="modal-head">
-      <h3 id="settings-modal-title" data-i18n="settings.label">Settings</h3>
-      <button class="btn sm" data-close="settings-modal" data-i18n-aria-label="common.close" aria-label="Close">✕</button>
-    </div>
-    <div class="modal-body">
-      <h4 data-i18n="settings.display">Display</h4>
-      <label class="row">
-        <input type="checkbox" id="set-shaded-warning-levels"/>
-        <span data-i18n="settings.shadedWarningLevels">Shade warning levels on the forecast chart</span>
-      </label>
-      <label class="row">
-        <input type="checkbox" id="set-saved-highlight"/>
-        <span data-i18n="settings.savedHighlight">Outline my saved rivers on the map</span>
-      </label>
-      <h4 data-i18n="settings.data">Downloaded Data</h4>
-      <p class="hint" data-i18n="settings.data.hint">
-        This site keeps local copies of some datasets for better performance. These can be redownloaded at any time and are safe to delete.
-      </p>
-      <div id="data-list" class="col"></div>
-      <div class="col data-foot">
-        <div id="data-foot-status" class="hint status"></div>
-        <div class="row wrap">
-          <button id="btn-download-all" class="btn" data-i18n="settings.data.downloadAll">Download everything</button>
-          <button id="btn-delete-all" class="btn" data-i18n="settings.data.deleteAll">Delete everything</button>
-        </div>
-      </div>
-      <!-- stamped at build time by stampBuildDate() in vite.config.js; filled in initSettings() -->
-      <p class="hint build-stamp"><span data-i18n="settings.build">Build</span> <span id="build-date"></span></p>
-    </div>
-  </div>
-</div>
+<!-- @include settings-modal.html class="wide" -->
+  <label class="row">
+    <input type="checkbox" id="set-shaded-warning-levels"/>
+    <span data-i18n="settings.shadedWarningLevels">Shade warning levels on the forecast chart</span>
+  </label>
+  <label class="row">
+    <input type="checkbox" id="set-saved-highlight"/>
+    <span data-i18n="settings.savedHighlight">Outline my saved rivers on the map</span>
+  </label>
+<!-- @endinclude settings-modal.html -->
 </body>
 </html>

@@ -4,14 +4,10 @@ import {t, tf} from '../../shared/i18n/i18n.js';
 export const SOURCE_LAYER = 'streams';
 
 /**
- * What the app knows about the fields the tiles carry.
- *
- * The name is the key, and the key is also the i18n key: `explorer.attr.<name>` is the label and
- * `explorer.attr.<name>.note` the sentence under it, so a field is documented by being listed here
- * and translated in the locale files rather than in two places. `note: true` says the field has
- * one; `note` as a function is a sentence with numbers from the tile ladder in it.
- *
- * Everything else — role, unit — is not language, so it stays here.
+ * What the app knows about the fields the tiles carry. The name is also the i18n key:
+ * `explorer.attr.<name>` is the label and `.note` the sentence under it, so a field is documented by
+ * being listed here and translated in the locale files. `note: true` says the field has one; `note`
+ * as a function is a sentence with numbers from the tile ladder in it.
  */
 const LADDER = () => [
   tf('explorer.attr.ladder.first',
@@ -70,7 +66,7 @@ export const compact = v => {
   return String(Number(v.toPrecision(3)));
 };
 
-export function suggestedThreshold({type, min, max, values}) {
+function suggestedThreshold({type, min, max, values}) {
   if (type === 'string') return values?.[0] ?? '';
   if (min == null || max == null) return 0;
   if (max - min <= 12) return Math.max(min, Math.round((min + max) / 2));

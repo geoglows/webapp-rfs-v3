@@ -11,43 +11,22 @@ import {locate} from "../data/riverLocation";
 const TYPING_MS = 120;
 
 /**
- * Find a reach by name, or by ID — two boxes, because they are two different questions.
+ * Find a reach by name, or by ID — two boxes, because they are two different questions. A name is
+ * answered loosely from a ~100 kB table already on the device and can return a dozen rivers; an ID is
+ * exact and has to be resolved against the riverId axis, a one-time ~17 MB download. Each half has
+ * its own status line, because "no named river matches that" and "no river has that ID" are different
+ * answers. Only the name box is worth typing into as you go.
  *
- * They are kept apart rather than merged into one field that guesses from what was typed, because
- * almost nothing about them is the same. A name is answered from a ~100 kB table the app keeps on
- * the device, matches loosely, can return a dozen rivers, and needs a list to choose from. An ID is
- * exact, returns one reach or none, and has to be resolved against the riverId axis — a one-time
- * ~17 MB download on a device without the lookup. One box would have to be a name box that
- * sometimes takes 17 MB, with a results list that sometimes appears, under a label that could only
- * describe both vaguely.
+ * onFound({riverId, riverIndex, lat, lon}, {bbox, span}) hands the resolved reach on. The first
+ * argument is the reach and nothing else, in the shape a saved river has, because the charts dock
+ * renders its fields as attributes; the second is only sent for a name, where `bbox` frames the whole
+ * river and `span` paints it. onClear() takes that highlight back off — it outlives the dialog, so
+ * nothing else will notice the user is done with it.
  *
- * The split is also what lets each say the right thing when it fails: "no named river matches that"
- * and "no river has that ID" are different answers, and neither belongs under the other's box. So
- * each half has its own status line.
- *
- * Only the name box is worth typing into as you go — its answers are already on the device, and
- * every row carries the mouth's `riverIndex`, so a name hit needs no lookup at all.
- *
- * onFound({riverId, riverIndex, lat, lon}, {bbox, span}) hands the resolved reach on — main.js
- * points it at the charts dock, the camera and the map highlight. The first argument is the reach
- * and nothing else, in the shape a saved river has, because the charts dock renders its fields as
- * the river's attributes. The second is only sent for a river found by name: `bbox` frames the
- * whole river instead of its mouth, `span` paints all of it.
- *
- * onClear() takes that highlight back off. It needs asking for: the painted river stays after this
- * dialog closes, which is the point of painting it, so nothing else in the app is going to notice
- * that the user is done with it.
- *
- * The two options exist because the hydrography explorer asks this dialog a different question.
- *
- * `locateOnPick` — a named river's row already carries everything that page needs (the span is the
- * selection, and `hi - lo` is the upstream count), so it reads nothing when a name is picked. This
- * page needs the mouth's coordinate as well, because a found river has to be savable. Off means the
- * name path touches no store at all.
- *
- * `requireLocationById` — when the metadata store will not say where a reach is, this page still
- * goes: the charts only need the riverIndex. The explorer cannot, because the same read is where
- * its upstream count comes from and there is no selection without one. On means say so and stop.
+ * `locateOnPick` — a named river's row already carries what the explorer needs, so it reads no store
+ * on a name pick; this page also wants the mouth's coordinate, to make a found river savable.
+ * `requireLocationById` — this page goes without a location, since the charts only need the
+ * riverIndex; the explorer cannot, because the same read is where its upstream count comes from.
  */
 function createRiverSearch({onFound, onClear, locateOnPick = true, requireLocationById = false}) {
   const modal = $("search-modal");
@@ -73,12 +52,9 @@ function createRiverSearch({onFound, onClear, locateOnPick = true, requireLocati
   let highlighted = false;
 
   /**
-   * A status line carries everything its box has to say, so a rejection has to look different from
-   * "Searching…" — same element, same dim hint styling otherwise, and a "no such river" that reads
-   * as progress text is a message the user does not register.
-   *
-   * `error` is for answers the user has to act on: a malformed ID, an ID the network doesn't have.
-   * A slow first search is not one — it is progress, and it says so in the same place.
+   * One status line per box, so a rejection has to look different from "Searching…" or it reads as
+   * progress text and goes unregistered. `error` is for answers the user has to act on — a malformed
+   * ID, an ID the network doesn't have — and a slow first search is not one.
    */
   function say(line, input, text, {error = false} = {}) {
     line.textContent = text;
@@ -93,12 +69,8 @@ function createRiverSearch({onFound, onClear, locateOnPick = true, requireLocati
 
   const close = () => modal.classList.add("hidden");
 
-  /**
-   * Take the highlighted river off the map, and empty the box that put it there.
-   *
-   * Both, because a cleared map under a box still showing "Severn" and its results looks like the
-   * search failed rather than like the highlight was removed.
-   */
+  /** Take the highlighted river off the map and empty the box that put it there — a cleared map under
+   * a box still reading "Severn" looks like the search failed. */
   function clearHighlight() {
     highlighted = false;
     nameInput.value = "";
@@ -124,13 +96,9 @@ function createRiverSearch({onFound, onClear, locateOnPick = true, requireLocati
   }
 
   /**
-   * The line under a name that says which river this one is.
-   *
-   * Two Severns and three Verdes are in the table, so the name alone is not an answer. What
-   * separates them, in the order a person actually reads: the country it is in, then the river it
-   * flows into if it is a tributary, then the system it belongs to. The watershed is dropped when
-   * it only repeats one of the other two, which is the common case for a river that names its own
-   * basin — "Severn · United Kingdom" rather than "Severn · United Kingdom · Severn".
+   * Which river this one is — the table holds two Severns and three Verdes, so the name alone is not
+   * an answer. Country, then what it flows into, then its system. The watershed is dropped when it
+   * only repeats one of the others: "Severn · United Kingdom", not "… · Severn".
    */
   function describe(river) {
     const parts = [river.country, river.parentName && t("search.tributaryOf").replace("{name}", river.parentName)];
@@ -141,13 +109,10 @@ function createRiverSearch({onFound, onClear, locateOnPick = true, requireLocati
   }
 
   /**
-   * Go to a river the user picked out of the list.
-   *
-   * The row already carries the mouth's riverIndex, so the charts can open without any lookup. Its
-   * coordinate is read the same way the ID path reads one — off the metadata store, by index — and
-   * for the same reason: it is what makes a found river savable, and it is a small read the names
-   * table has no business carrying a second copy of. A river is still worth going to if it fails,
-   * because the bounding box, not the point, is what the camera uses here.
+   * Go to a river the user picked out of the list. The row carries the mouth's riverIndex, so the
+   * charts open with no lookup; the coordinate is read off the metadata store by index, as the ID path
+   * does, because that is what makes a found river savable. A failure is survivable — the camera uses
+   * the bounding box, not the point.
    */
   async function pick(river) {
     close();
@@ -157,13 +122,9 @@ function createRiverSearch({onFound, onClear, locateOnPick = true, requireLocati
         return null;
       })
       : null;
-    // Two arguments, not one object. The first is the reach, and it is handed straight to the
-    // charts dock, which renders every field it carries in the Details tab — so anything that is
-    // not an attribute of the reach cannot travel in it. The extent and the span are instructions
-    // to the map, not facts about the river, and go beside it.
-    //
-    // The upstream count is read off the row rather than the store: the span is every reach that
-    // drains through this one, so its length is the count, already in hand.
+    // Two arguments, not one object: the charts dock renders every field of the first in its Details
+    // tab, so anything that is not an attribute of the reach cannot travel in it. The upstream count
+    // comes off the row — the span's length is the count, already in hand.
     onFound?.(
       {
         riverId: river.riverId,

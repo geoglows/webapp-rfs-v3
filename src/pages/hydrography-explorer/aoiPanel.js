@@ -1,12 +1,8 @@
 import {button, el, fmt} from "../../shared/dom.js";
 /**
- * The AOI subsetter's readout: where the outlet is, what the inlets took off, and how much is left.
- *
- * Every row is a reason to take an inlet back off — which reach it is, and how much of the AOI it
- * is holding back — because that is the only decision left once the outlet is placed. Clearing is
- * the column's one Clear button, shared with the other three methods.
- *
- * Built as nodes; the ids come out of the tiles, so nothing from the data becomes markup.
+ * The AOI readout: where the outlet is, what the inlets took off, how much is left. Every row is a
+ * reason to take an inlet back off, the only decision left once the outlet is placed. Built as nodes,
+ * so nothing coming out of the tiles becomes markup.
  */
 import {inletCut} from './aoi.js';
 import {t, tf, tn} from '../../shared/i18n/i18n.js';

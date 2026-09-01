@@ -1,15 +1,9 @@
 import {button, el, fmt} from "../../shared/dom.js";
 /**
- * The multi-select list: what has been collected.
- *
- * The rows are the working set — newest first, because the one you just clicked is the one you are
- * checking. Everything a row shows is the reason you would take it back off the list: which Group
- * it is in, how big the watershed is, what order the outlet is.
- *
- * Copying, downloading and clearing are not here: those are one button each at the head of the
- * column, shared by all four selection methods, because they mean the same thing in each of them.
- *
- * Built as nodes; the ids come out of the tiles, so nothing from the data becomes markup.
+ * The multi-select list. Newest first, because the one just clicked is the one being checked, and
+ * every column is a reason to take a pick back off: its Group, the watershed size, the outlet order.
+ * Copy, download and clear are at the head of the column, shared by all four methods. Built as nodes,
+ * so nothing coming out of the tiles becomes markup.
  */
 import {MAX_PICKS, picks} from './picks.js';
 import {t, tf, tn} from '../../shared/i18n/i18n.js';

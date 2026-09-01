@@ -4,13 +4,7 @@
 
 /* ── Buttons · one look for every clickable thing that isn't a link ──
    .icon / .sm / .auto / .tab / .map / .round / .mini / .seg size it;
-   .primary / .toggle / .active / .danger / .saved / .on colour it.
-
-   The hydrography page arrived with six parallel button systems (.btn, .btn.sm.mode, .mini,
-   button.seg, .style-footer button, and its own .opt), between them 33 rule blocks that each
-   restated padding, font-size, background, border and radius. They are all variants of this one
-   now. .mini and .seg had already converged on their own — they shared six of eight declarations
-   and differed only in padding. */
+   .primary / .toggle / .active / .danger / .saved / .on colour it. */
 .btn, .chart-btn {
     display: inline-flex;
     align-items: center;
@@ -165,9 +159,7 @@
 
 /* ── Menu rows ──
    Declared in full rather than derived from .btn: a menu row is left-aligned, full-width,
-   transparent and lighter-weight, which is most of .btn overridden. The data viewer used to
-   derive it and then override seven properties, which quietly dropped border-radius, cursor,
-   transition, width and text-align the moment .btn changed. */
+   transparent and lighter-weight, which would be most of .btn overridden. */
 .opt {
     display: flex;
     align-items: center;
@@ -394,15 +386,11 @@ input[aria-invalid="true"] {
 }
 
 /* ── The control column ──
-   Both pages are the same page frame: a fixed column on the left, the map filling the rest. The
-   two used to write this out separately and disagree about the width — 380px flat on one, a clamp
-   on the other — so the same browser window gave the two apps two different columns. One rule now,
-   and the clamp wins: it holds a readable measure on a laptop and gives the styling editor room on
-   a large display, where a flat 380px was simply narrow.
+   Both pages are the same frame: a fixed column on the left, the map filling the rest. The width is
+   a clamp — a readable measure on a laptop, room for the styling editor on a large display.
 
-   The structure is fixed too, and both pages' markup matches it: <header> pinned, <main> taking
-   the rest, #scroll doing the scrolling inside it. Anything a page wants pinned under the scroll —
-   the hydrography export's progress block — is a sibling of #scroll inside <main>. */
+   The structure is fixed and both pages' markup matches it: <header> pinned, <main> taking the rest,
+   #scroll scrolling inside it. Anything pinned under the scroll is a sibling of #scroll. */
 #panel {
     flex: 0 0 var(--panel-w);
     z-index: 10;
@@ -646,12 +634,8 @@ input[aria-invalid="true"] {
 }
 
 /* ── Progress ──
-   One bar. The hydrography page shipped two complete implementations of this — a download bar and
-   a staged-export bar — whose fills were declaration-identical and which carried a copy each of the
-   indeterminate animation and the reduced-motion override, 276 lines for one component. The
-   data viewer had a third, a 2px sliver in the player card, which is now .progress.thin.
-
-   Both pages also used #progress-bar as an id, for two unrelated things. Neither does now. */
+   One bar for all three uses: the download bar, the staged-export bar, and the 2px sliver in the
+   player card, which is .progress.thin. */
 .progress-track {
     height: 6px;
     background: var(--surface2);
@@ -687,9 +671,7 @@ input[aria-invalid="true"] {
 }
 
 /* ── MapLibre's own chrome ──
-   Neither app themed these, so both shipped MapLibre's stock light controls over a dark UI. Doing
-   it here is also what lets the hydrography page's legend drop the `bottom: 38px` it carried purely
-   to dodge an unreadable attribution bar. */
+   Themed here, or both pages ship stock light controls over a dark UI. */
 .maplibregl-ctrl-group {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -700,19 +682,30 @@ input[aria-invalid="true"] {
     border-top-color: var(--border);
 }
 
-.maplibregl-ctrl-group button .maplibregl-ctrl-icon {
-    filter: var(--ctrl-icon-filter, invert(1) opacity(.75));
-}
-
-:root[data-theme="light"] .maplibregl-ctrl-group button .maplibregl-ctrl-icon {
+/* Set on :root rather than on the icon, so the attribution's own (i) button inherits it too. */
+:root[data-theme="light"] {
     --ctrl-icon-filter: none;
 }
 
+.maplibregl-ctrl-group button .maplibregl-ctrl-icon,
+.maplibregl-ctrl-attrib-button {
+    filter: var(--ctrl-icon-filter, invert(1) opacity(.75));
+}
+
+/* The compact attribution carries MapLibre's own `background-color:#fff` at (0,2,0), so it has to
+   be named here or the theme loses: the bar stays white, our dim link colour lands on it, and the
+   pair measures 2.6:1. Opaque like MapLibre's own compact style, because a translucent bar puts
+   11px type over whatever basemap happens to be under it. */
 .maplibregl-ctrl-attrib,
+.maplibregl-ctrl-attrib.maplibregl-compact,
 .maplibregl-ctrl-scale {
     color: var(--text-dim);
-    background: color-mix(in srgb, var(--surface) 85%, transparent);
+    background: var(--surface);
     border-color: var(--border);
+}
+
+.maplibregl-ctrl-attrib-button {
+    background-color: transparent;
 }
 
 .maplibregl-ctrl-attrib a {

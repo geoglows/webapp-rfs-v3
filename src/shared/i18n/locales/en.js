@@ -1,11 +1,7 @@
 /**
- * English — the fallback for every other language and the language the HTML in index.html is
- * written in, so this one is bundled rather than fetched: t() reads it synchronously for any key a
- * translation is missing, and it is what the app shows before a chosen translation lands.
- *
- * Every other language is a JSON file beside this one, loaded only if it is chosen. Adding one
- * means a <locale>.json here and a button in #lang-menu (index.html) — nothing imports them by
- * name. Keys are this file: a translation that lacks one falls back here rather than breaking.
+ * English — bundled rather than fetched, because t() reads it synchronously as the fallback for any
+ * missing key and it is the language the HTML is written in. Every other language is a JSON file
+ * beside this one, fetched only if chosen: adding one is that file plus a button in #lang-menu.
  */
 export default {
   "common.close": "Close",

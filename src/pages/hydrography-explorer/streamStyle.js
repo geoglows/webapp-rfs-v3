@@ -5,19 +5,15 @@ import {t, tf} from '../../shared/i18n/i18n.js';
 export const SOURCE = 'streams';
 export const SOURCE_LAYER = 'streams';
 export const BASE_LAYER_ID = 'streams';
-export const RULE_LAYER_PREFIX = 'stream-rule-';
+const RULE_LAYER_PREFIX = 'stream-rule-';
 export const ruleLayerId = i => `${RULE_LAYER_PREFIX}${i + 1}`;
 
 export const COLORS = {
   /**
-   * Amber against the blue of the network, because that pair survives every common form of colour
-   * blindness — the one distinction on this map that has to hold is selected from not selected.
-   * Both ends stay on the yellow side of orange: a red-leaning dark end is the one thing that
-   * would put the pair back into a red/blue clash.
-   * Everything a selection is made of is one hue at two depths: `upstream` is the area it covers,
-   * `outlet` is the reaches that bound it — the one it drains to and the inlets it stops above.
-   * The multi-select collection is drawn in the same two, because a collected watershed is the
-   * same kind of thing as a selected one; the map tells them apart by which is on it at the time.
+   * Amber against the network's blue, a pair that survives every common form of colour blindness —
+   * selected from not selected is the one distinction that has to hold. Both ends stay on the yellow
+   * side of orange; a red-leaning dark end would put the pair back into a red/blue clash. One hue at
+   * two depths: `upstream` is the area, `outlet` the reaches bounding it. Picks use the same two.
    */
   stream: '#3B82F6', upstream: '#F5A623', outlet: '#B45309',
 };
@@ -34,25 +30,25 @@ export const ZOOM_STEPS = (() => {
   return out;
 })();
 
-export const snapZoom = z => {
+const snapZoom = z => {
   const n = Number(z);
   if (!isFinite(n)) return MIN_ZOOM;
   return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Math.round(n / ZOOM_STEP) * ZOOM_STEP));
 };
 
-export const isGridZoom = z => Number.isFinite(Number(z)) && Math.abs(Number(z) - snapZoom(z)) < 1e-9;
+const isGridZoom = z => Number.isFinite(Number(z)) && Math.abs(Number(z) - snapZoom(z)) < 1e-9;
 
 /** z6 and z6.5, never z6.0 — the trailing zero reads as precision that is not on offer. */
 export const fmtZoom = z => (Number.isInteger(z) ? `z${z}` : `z${z.toFixed(1)}`);
 
 // ── conditions ───────────────────────────────────────────────────────────────
-export const NUMBER_OPS = [
+const NUMBER_OPS = [
   {op: '>=', label: '≥'}, {op: '>', label: '>'},
   {op: '<=', label: '≤'}, {op: '<', label: '<'},
   {op: '==', label: '='}, {op: '!=', label: '≠'},
   {op: 'between', get label() { return t('explorer.op.inRange'); }, arity: 2},
 ];
-export const STRING_OPS = [
+const STRING_OPS = [
   {op: '==', get label() { return t('explorer.op.is'); }},
   {op: '!=', get label() { return t('explorer.op.isNot'); }},
   {op: 'in', get label() { return t('explorer.op.isOneOf'); }, list: true},
@@ -70,7 +66,7 @@ export const newCondition = attr => ({
 const listValues = v => (Array.isArray(v) ? v : String(v ?? '').split(','))
   .map(s => String(s).trim()).filter(Boolean);
 
-export function conditionExpr(c) {
+function conditionExpr(c) {
   if (!c?.attribute || !c.op) return null;
   const get = ['get', c.attribute];
   const has = ['has', c.attribute];
@@ -94,7 +90,7 @@ export const MATCH_MODES = [
   {mode: 'any', get label() { return t('explorer.match.any'); }, get hint() { return t('explorer.match.any.hint'); }},
 ];
 
-export const conditionsExpr = (list, match = 'all') => {
+const conditionsExpr = (list, match = 'all') => {
   const parts = (list ?? []).map(conditionExpr).filter(Boolean);
   if (!parts.length) return true;
   if (parts.length === 1) return parts[0];
@@ -138,7 +134,7 @@ const coerce = (prop, v) => {
   return isFinite(n) ? clamp(n, lim.min, lim.max) : lim.min;
 };
 
-export function normalizeStops(prop, stops) {
+function normalizeStops(prop, stops) {
   const byZoom = new Map();
   for (const s of stops ?? []) {
     if (s == null) continue;
@@ -155,13 +151,13 @@ function ramp(prop, stops, out = v => v) {
 }
 
 // ── the spec ─────────────────────────────────────────────────────────────────
-export const SPEC_VERSION = 1;
-export const SPEC_FORMAT = 'rfs-hydrography-explorer/stream-style';
+const SPEC_VERSION = 1;
+const SPEC_FORMAT = 'rfs-hydrography-explorer/stream-style';
 
 const stop = (zoom, value) => ({zoom: snapZoom(zoom), value});
 
 /** New rules cycle these — saturated mid-tones, all of which hold up on the light gray basemap. */
-export const RULE_PALETTE = ['#1d4ed8', '#0e7490', '#15803d', '#b45309', '#be123c', '#7c3aed'];
+const RULE_PALETTE = ['#1d4ed8', '#0e7490', '#15803d', '#b45309', '#be123c', '#7c3aed'];
 
 let ruleSeq = 0;
 export const newRule = ({name, conditions = [], match = 'all', color, minZoom = null, maxZoom = null, width, opacity} = {}) => ({
@@ -206,11 +202,8 @@ const spanExpr = ({lo, hi}) => [
   ['<=', ['get', 'riverIndex'], hi],
 ];
 
-/**
- * Every reach a selection holds. A watershed is one contiguous run of riverIndex, and passes as
- * `{lo, hi}`; an AOI is that run with the run above each of its inlets cut out, and passes the runs
- * it has left as `spans`. One run compiles to the same expression it always did.
- */
+/** Every reach a selection holds: a watershed passes its one run as `{lo, hi}`, an AOI passes what
+ * its inlets left as `spans`. One run compiles to the same expression it always did. */
 export const inRangeExpr = sel => {
   const spans = sel.spans ?? [{lo: sel.lo, hi: sel.hi}];
   // A selection with no runs left holds no reaches. aoi.js will not build one — it refuses to make
@@ -220,11 +213,9 @@ export const inRangeExpr = sel => {
 };
 
 /**
- * `names` swaps every rule's colour for one expression over riverIndex - the River Names mode. It
- * replaces the spec's colours rather than filtering anything, so the network stays exactly as wide
- * and as filtered as the panel left it and only the hue changes. The selection highlight still wins
- * over it: selected from not selected is the one distinction on this map that has to hold, whatever
- * else is being shown.
+ * `names` swaps every rule's colour for one expression over riverIndex — the River Names mode. It
+ * replaces colours rather than filtering, so the network stays as wide and as filtered as the panel
+ * left it. The selection highlight still wins over it.
  */
 export function compileLayers(spec, {highlight = false, selection = null, names = null} = {}) {
   const rules = (spec.rules ?? []).filter(r => r.enabled !== false);
@@ -240,10 +231,8 @@ export function compileLayers(spec, {highlight = false, selection = null, names 
     return on ? ['case', isUp, COLORS.upstream, base] : base;
   };
   const widthOut = v => {
-    // A named reach is drawn several points heavier than the rest of the network, so the extent a
-    // name covers is legible at a glance instead of being a colour you have to hunt for. The
-    // selection keeps its own bump on top: an upstream reach is the selection's width whether or
-    // not it happens to be named.
+    // Named reaches are drawn heavier so the extent a name covers is legible at a glance. The
+    // selection keeps its own bump on top, named or not.
     const wide = names ? ['case', names.named, Math.round(v * names.scale * 100) / 100, v] : v;
     return on ? ['case', isUp, Math.round(v * UP_WIDTH_SCALE * 100) / 100, wide] : wide;
   };
@@ -411,7 +400,7 @@ export function parseStyleJson(obj) {
 }
 
 // ── presets ──────────────────────────────────────────────────────────────────
-export const PRESETS = [
+const PRESETS = [
   {
     id: 'default',
     labelKey: 'explorer.preset.default',

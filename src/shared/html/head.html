@@ -1,0 +1,13 @@
+<!-- Everything both pages put in <head>. The favicon is the whole logo inlined as a data URI, which
+     is the single largest string that used to be copied between the two entry files, and the
+     preconnects are for the CDN the header logo comes from.
+
+     params · title, titleAttrs (a data-i18n key where the page has one), description, script -->
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<link rel="preconnect" href="https://cdn.apps.geoglows.org"/>
+<link rel="preconnect" href="https://cdn.apps.geoglows.org" crossorigin/>
+<title {{titleAttrs}}>{{title}}</title>
+<meta name="description" content="{{description}}"/>
+<link href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230d1520'/%3E%3Cg fill='none' stroke='%234A90E2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M30 20L25 18.7L16.5 15.2' stroke-width='3.8'/%3E%3Cpath d='M16.5 15.2L11 9.5L7 6.5' stroke-width='2.6'/%3E%3Cpath d='M16.5 15.2L12 21.5L9.5 25.5' stroke-width='2.6'/%3E%3Cpath d='M11 9.5L4.5 9.5' stroke-width='1.7'/%3E%3Cpath d='M12 21.5L5.5 19.5' stroke-width='1.7'/%3E%3Cpath d='M25 18.7L22.8 12' stroke-width='1.7'/%3E%3Cpath d='M21.3 17L19 22.5' stroke-width='1.7'/%3E%3C/g%3E%3C/svg%3E" rel="icon"/>
+<script type="module" src="{{script}}"></script>

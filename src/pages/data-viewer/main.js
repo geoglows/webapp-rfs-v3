@@ -40,7 +40,7 @@ function newestForecastExpected() {
   return `${d.getUTCFullYear()}-${mm}-${dd}`;
 }
 
-let currentForecastDate = "2026-07-10" // newestForecastExpected();;
+let currentForecastDate = "2026-07-10" // todo newestForecastExpected();
 let mapLoaded = false;
 
 // The map and everything built on it. Assigned by boot() once initMap() has resolved — the map is
@@ -53,8 +53,8 @@ let flood = null;
 let chartsDock = null;
 let panelControls = null;
 
-// Which selection the camera belongs to, so a move waiting on the panel can tell it has been
-// overtaken by a later one.
+// Counter monitors which selection/animation the camera belongs to.
+// A move waiting on the panel can tell it has been overtaken by a later command.
 let cameraSeq = 0;
 
 /**
@@ -63,11 +63,11 @@ let cameraSeq = 0;
  * In that order, and never at once. The dock opening is what changes the size of the map, and a
  * camera animation running while that happens misses — MapLibre aims an ease at a screen point it
  * decided on before the map was resized. So the layout goes first and the camera last, with nothing
- * left afterwards to move the reach out from under it. The wait costs nothing that is worth having:
+ * left afterward to move the reach out from under it. The wait costs nothing that is worth having:
  * the charts' downloads are already in flight from the line above, behind the spinner, and the panel
  * transition is the only thing being waited on.
  *
- * `move` is how this reach was arrived at — travelled to deliberately, or clicked on the map.
+ * `move` is how this reach was arrived at — traveled to deliberately, or clicked on the map.
  */
 async function showRiver(river, {location = river, target = river, move = travelToRiver} = {}) {
   const seq = ++cameraSeq;
@@ -250,10 +250,6 @@ async function boot() {
   // Not a prefetch: the names are fetched when the search box is first opened, and this only keeps
   // whatever copy the device has from going stale under a session left open past the 5th.
   watchRiverNames();
-
-  // Sign-in pulls the profile's preferences and saved rivers and pushes this device's; from then on
-  // every local edit is mirrored. Started after every subscriber above is wired, so a pulled
-  // preference reaches the map, the charts and the checkboxes.
   startUserSync();
 }
 

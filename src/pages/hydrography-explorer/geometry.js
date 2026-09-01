@@ -4,7 +4,6 @@ import {fmt} from '../../shared/dom.js';
 import {t, tf, tn} from '../../shared/i18n/i18n.js';
 
 let running = false;
-export const isBusy = () => running;
 
 // Two files, two halves each, seven phases per half. Every label is a key rather than a string:
 // the whole block is read out into the export's progress list, which is as much a part of the UI
@@ -43,11 +42,8 @@ const exportPlan = () => ({
   }))),
 });
 
-/**
- * A progress line, as the worker described it: a list of pieces, each either an `{key, vars}` the
- * dictionary turns into words or a plain string that is only numbers. See the note in geomWorker.js
- * — a worker cannot read the dictionary, so it says what it means and this says it in a language.
- */
+/** A progress line as the worker described it: pieces that are either `{key, vars}` for the
+ * dictionary or a plain string of numbers. See the note in geomWorker.js. */
 const detailText = detail => (Array.isArray(detail)
   ? detail.map(piece => (typeof piece === 'string' ? piece : tf(piece.key, piece.vars)))
     .filter(Boolean).join(' · ')

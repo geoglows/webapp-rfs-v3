@@ -359,7 +359,7 @@ class Streams {
       this.cube = null;
       return;
     }
-    this.loadData();
+    void this.loadData();
   }
 
   /** Set the forecast-initialization date and (re)load the active styleset for it. */

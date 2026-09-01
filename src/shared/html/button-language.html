@@ -1,0 +1,12 @@
+<!-- see initLanguagePicker() in src/shared/settings/settings.js — it reads LANGUAGES off these
+     buttons, so this markup is what decides which languages the app offers. -->
+<div class="anchor">
+  <button id="btn-language" class="btn icon" data-icon-name="language" data-i18n-title="lang.title"
+          data-i18n-aria-label="lang.aria" title="Language" aria-label="Change language"
+          aria-haspopup="true" aria-expanded="false"></button>
+  <div id="lang-menu" class="card menu hidden" role="menu">
+    <button class="opt" role="menuitemradio" data-lang="en">English</button>
+    <button class="opt" role="menuitemradio" data-lang="es">Español</button>
+    <button class="opt" role="menuitemradio" data-lang="fr">Français</button>
+  </div>
+</div>
