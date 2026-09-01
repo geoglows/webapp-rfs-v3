@@ -1,0 +1,142 @@
+/* ── Reset · page frame · type ────────────────────────────────────────────
+   Everything settled before any component exists. */
+
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+/* !important because the classes that lay a thing out set display themselves — .btn.icon is a flex
+   box, .dock a flex column — and would otherwise outrank both of these. The only !important here. */
+.hidden, [hidden] {
+    display: none !important;
+}
+
+/* Both pages are exactly the viewport and never scroll: a fixed control column plus the map
+   filling the rest, each stretched to full height by the flex box rather than by a height of its
+   own. The column is #panel; its rules are in components.css. */
+body {
+    height: 100vh;
+    overflow: hidden;
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+}
+
+#map {
+    flex: 1 1 auto;
+    min-width: 0;
+    position: relative;
+}
+
+/* ── Layout primitives · these three plus --gap lay out nearly everything ── */
+.row {
+    display: flex;
+    align-items: center;
+    gap: var(--gap);
+}
+
+.col {
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap);
+}
+
+.wrap {
+    flex-wrap: wrap;
+}
+
+.between {
+    justify-content: space-between;
+}
+
+.end {
+    justify-content: flex-end;
+}
+
+.grow {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+/* A wrapped row of buttons shares its width out evenly — the flood actions, the settings footer. */
+.wrap > .btn {
+    flex: 1 1 auto;
+}
+
+/* A field sharing its line with its own submit (river ID search, name-this-river). */
+.row > input:not([type="checkbox"]) {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+/* ── Type ──
+   The app title, one small mono eyebrow for every heading below it, then the title of a modal or
+   dock. `.eyebrow` exists for the places needing the look on something that is not an h2 or h4. */
+h1 {
+    font-family: var(--mono);
+    font-size: var(--fs-xl);
+    font-weight: 700;
+    letter-spacing: 1px;
+    line-height: 1.25;
+    color: var(--accent);
+}
+
+h2, h4, .eyebrow {
+    font-family: var(--mono);
+    font-size: var(--fs-sm);
+    font-weight: 600;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: .8px;
+}
+
+section h2 {
+    text-align: center;
+}
+
+h3 {
+    flex: 0 0 auto;
+    font-family: var(--mono);
+    font-size: var(--fs-lg);
+    font-weight: 700;
+    color: var(--accent);
+}
+
+.hint {
+    font-size: var(--fs-md);
+    color: var(--text-dim);
+    line-height: 1.5;
+    margin-top: 7px;
+}
+
+/* a hint that is a rejection rather than an aside — see say() in ui/riverSearch.js */
+.hint.error {
+    color: var(--danger);
+    font-weight: 600;
+}
+
+/* A line rewritten as something proceeds: download progress, a search result, a depth readout. Its
+   height is held so the box around it does not resize as the text comes and goes. */
+.status {
+    margin: 0;
+    min-height: 1.2em;
+    font-variant-numeric: tabular-nums;
+}
+
+/* The scrolling control column — see #panel in components.css. */
+#scroll {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+}
+
+/* One global honouring of the setting, rather than the three separate copies the two stylesheets
+   had between them. */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: .001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .001ms !important;
+    }
+}

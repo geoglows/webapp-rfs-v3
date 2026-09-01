@@ -1,0 +1,594 @@
+/* ── The app's own styles ─────────────────────────────────────────────────
+   What tokens.css, base.css and components.css do not already cover: the prose and tables the docks
+   render, the flood-mapping controls, the player, the charts, the docks, and the layout the column
+   rearranges into while a dock is open. */
+
+.warning {
+    font-size: 14px;
+    line-height: 1.5;
+    color: #1a1206;
+    background: var(--warn);
+    border-radius: 6px;
+    padding: 9px 11px;
+    font-weight: 600;
+}
+
+.modal-body p {
+    font-size: 14px;
+    color: var(--text-dim);
+    line-height: 1.5;
+    margin-bottom: 6px;
+}
+
+.modal-body a {
+    color: var(--accent);
+    text-decoration: none;
+}
+
+.modal-body a:hover {
+    text-decoration: underline;
+}
+
+/* The prose modals — About and how-to-use. Plain elements only, so this is what they get. The reset
+   zeroes list padding, which would put the markers under the text. */
+.prose ul, .prose ol {
+    margin: 0 0 8px;
+    padding-left: 20px;
+}
+
+.prose li {
+    font-size: 14px;
+    color: var(--text-dim);
+    line-height: 1.5;
+    margin-bottom: 2px;
+}
+
+.prose strong, .prose em {
+    color: var(--text);
+    font-style: normal;
+    font-weight: 600;
+}
+
+/* ── Tables · river attributes, the two river lists ── */
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14.5px;
+}
+
+/* Tabular figures throughout: every column that carries numbers — ids, values, coordinates — is
+   read down the column, and proportional digits make those columns ragged. */
+.table td {
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+    word-break: break-word;
+    font-variant-numeric: tabular-nums;
+}
+
+.table tr:last-child td {
+    border-bottom: none;
+}
+
+.table thead td {
+    color: var(--text-dim);
+    font-weight: 700;
+}
+
+/* the river lists carry icon buttons, taller than a line of text: centre every cell on the row */
+.table.rivers td {
+    vertical-align: middle;
+}
+
+/* a row's actions: icon buttons side by side, never wrapped onto a second line */
+.table td.a {
+    width: 1%;
+    white-space: nowrap;
+}
+
+.table td.a .btn {
+    display: inline-flex;
+    vertical-align: middle;
+}
+
+/* the name of the thing in the row: an attribute, a river ID */
+.table td.k {
+    width: 1%;
+    color: var(--text-dim);
+    font-family: var(--mono);
+    font-size: 13.5px;
+    white-space: nowrap;
+}
+
+.table td.v {
+    color: var(--text);
+}
+
+/* Coordinates: right-aligned and never wrapped — a broken "-89.2522" reads as two numbers. The
+   actions column is sized the same way. */
+.table td.n, .table td.a {
+    width: 1%;
+    text-align: right;
+    white-space: nowrap;
+}
+
+.table td.a .btn + .btn {
+    margin-left: 6px;
+}
+
+/* a sortable column header: the header text itself is the control, styled as text rather than a
+   button so the head still reads as a head; the active one is the column the rows follow */
+.table thead .sort {
+    all: unset;
+    cursor: pointer;
+    font: inherit;
+    color: inherit;
+    white-space: nowrap;
+}
+
+.table thead .sort:hover, .table thead .sort.active {
+    color: var(--text);
+}
+
+/* ── Left panel · sections and the flood controls ── */
+#panel section {
+    padding: 13px 18px;
+    border-bottom: 1px solid var(--border);
+}
+
+#panel section:last-child {
+    border-bottom: none;
+}
+
+/* One rhythm for everything a section stacks, the flood controls included, so turning flood mapping
+   on extends the same stack. Owned by the container rather than by each block type, or the gap
+   between two blocks depends on which two they are. The depth legend opts out below. */
+#panel section > * + *, #flood-controls > * + * {
+    margin-top: 12px;
+}
+
+/* Off means gone, not dimmed: the sliders, legend and readout have nothing to act on until flood
+   mapping is running, and a greyed-out copy of them is just noise in a narrow panel. */
+#flood-controls.mode-off {
+    display: none;
+}
+
+/* The bar and the readout under it are pulled in tight against the legend's caption: the three are
+   one object, and spacing them like three separate ones reads as three separate ones. Both need an
+   id to tie with the rhythm rule above, and to sit after it. */
+#legend-depth {
+    height: 10px;
+    border-radius: 5px;
+    margin-top: 5px;
+    border: 1px solid var(--border);
+}
+
+#readout {
+    margin-top: 5px;
+}
+
+/* The return-period legend, in the map's bottom-left corner. The overlays are positioned against
+   the viewport rather than the map, so this has to step past the column — hence --panel-w, which is
+   what actually sets the column's width (components.css) rather than a literal repeated here. */
+#legend-overlay {
+    bottom: 14px;
+    left: calc(var(--panel-w) + 14px);
+    max-width: 220px;
+}
+
+#legend-overlay h2 {
+    margin-bottom: 8px;
+}
+
+/* The forecast animation player. One layout at two sizes: over the map along the bottom, and again
+   inside the flood controls (.compact) driving the forecast-timeseries flood maps. */
+.player {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.player.compact {
+    gap: 10px;
+}
+
+.player .col {
+    --gap: 6px;
+}
+
+.player .time, .player .step {
+    font-family: var(--mono);
+}
+
+.player .time {
+    font-size: 15px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.player .step {
+    font-size: 13px;
+    color: var(--text-dim);
+    flex: 0 0 auto;
+}
+
+.player .speed {
+    flex: 0 0 auto;
+    align-items: center;
+    --gap: 3px;
+}
+
+.player .speed label {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: .6px;
+}
+
+.player .speed select {
+    font-family: var(--mono);
+    font-size: 14px;
+    padding: 5px 6px;
+}
+
+.player.compact .btn.round {
+    --size: 32px;
+    font-size: 13px;
+}
+
+.player.compact .time {
+    font-size: 12.5px;
+}
+
+.player.compact .step, .player.compact .speed select {
+    font-size: 12px;
+}
+
+/* centred over the map, and translucent until there is an animation to drive */
+#player {
+    left: calc(var(--panel-w) + (100vw - var(--panel-w)) / 2);
+    transform: translateX(-50%);
+    bottom: 22px;
+    width: min(720px, calc(100vw - 420px));
+    min-width: 360px;
+    padding: 13px 18px;
+    opacity: .35;
+    pointer-events: none;
+    transition: opacity .3s;
+}
+
+#player.ready {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+#progress-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent), #22d3ee);
+    width: 0;
+    border-radius: var(--r-lg) 0 0 0;
+    transition: width .2s;
+}
+
+/* ── Settings · the downloadable dataset list ── */
+/* ── Charts · the dock's own states, and what the charts library's markup expects ── */
+.tabs {
+    flex: 0 0 auto;
+    padding: 10px 16px 2px;
+    --gap: 6px;
+}
+
+/* shown by every tab when there is no reach to describe */
+.charts-empty {
+    padding: 28px 8px;
+    text-align: center;
+}
+
+/* the headline; the line under it is a .hint and keeps that size and colour */
+.charts-empty p:not(.hint) {
+    font-size: 15px;
+    color: var(--text);
+}
+
+.charts-empty p.hint {
+    max-width: 42ch;
+    margin: 0 auto;
+}
+
+.ts-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 18px;
+    min-height: min(60vh, 420px);
+    font-size: 16px;
+    color: var(--text-dim);
+    padding: 24px 2px;
+}
+
+.ts-error {
+    font-size: 14.5px;
+    color: var(--danger);
+    padding: 8px 2px;
+}
+
+.spinner {
+    display: inline-block;
+    width: 15px;
+    height: 15px;
+    flex: 0 0 auto;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+}
+
+.ts-loading .spinner {
+    width: 72px;
+    height: 72px;
+    border-width: 6px;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Emitted by the plotting library (riverforecastsystem), so these names are its call, not ours. */
+/* Emitted by the plotting library (riverforecastsystem), so these names are its call, not ours. */
+.plot-block {
+    margin-bottom: 20px;
+}
+
+.plot-block:last-child {
+    margin-bottom: 0;
+}
+
+.chart-canvas {
+    position: relative;
+    height: 420px;
+    width: 100%;
+    padding: 6px 22px;
+}
+
+.chart-tools {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 2px 0 8px;
+}
+
+.chart-btn {
+    padding: 5px 10px;
+    font-size: 12.5px;
+    font-weight: 400;
+    color: var(--text-dim);
+}
+
+.chart-hint {
+    margin-left: auto;
+    align-self: center;
+    font-size: 11.5px;
+    color: var(--text-dim);
+}
+
+/* ── Docks · charts · notable rivers · saved rivers
+   The docks live inside the left panel. When one opens the panel grows to half the viewport and the
+   dock grows in *beneath* the hydrology controls, which stay pinned so the forecast can be retuned
+   while reading the charts. Only one shows at a time: `dock-open` on <body> drives the layout and
+   `<name>-open` picks which — see docks/dock.js, which also calls map.resize(). ── */
+.dock {
+    display: none;
+    flex: 1 1 auto;
+    min-height: 0;
+    flex-direction: column;
+}
+
+body.charts-open #charts-dock,
+body.bookmarks-open #bookmarks-dock,
+body.saved-open #saved-dock,
+body.help-open #help-dock {
+    display: flex;
+}
+
+/* a dock's head sits flush against the panel edge, rather than floating like a modal's */
+.dock .modal-head {
+    border-radius: 0;
+}
+
+/* The one part of the head that can be any length, so it is the one that gives: it takes the
+   leftover width and truncates, rather than pushing the ✕ off the panel edge. Empty for a reach
+   with no name, and the flex gap would still indent the heart — hence :empty. */
+.dock-river-name {
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 14px;
+    color: var(--text);
+}
+
+.dock-river-name:empty {
+    display: none;
+}
+
+body.dock-open #panel {
+    flex-basis: 50%;
+}
+
+/* wide layout: the header spreads out into a row (logo · title · actions) */
+body.dock-open #panel header {
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px 16px;
+}
+
+/* and its actions move to the far end, in reverse order (help · theme · language · settings) */
+body.dock-open #panel header .row {
+    margin-left: auto;
+    flex-direction: row-reverse;
+}
+
+/* …which puts the sign-in at the far right, where its menu should hang off the right again */
+body.dock-open #auth-action .geoglows-auth-action-menu {
+    left: auto;
+    right: 0;
+}
+
+/* pin the hydrology controls to their natural height; the dock takes the rest */
+body.dock-open #scroll {
+    flex: 0 0 auto;
+    overflow: visible;
+}
+
+/* the flood and legend sections step aside for the dock */
+body.dock-open #scroll > section:not(#hydrology-section) {
+    display: none;
+}
+
+/* …except for the help dock, whose text points at those controls (data-spotlight): the forecast and
+   flood sections stay, at their natural height (the wide layout condenses each onto a row or two),
+   and the dock flexes to take whatever is left beneath them. Only those two: everything else steps
+   aside as it does under any other dock, because the help text is the thing being read here and a
+   column of sections above it leaves nothing to read it in. */
+body.help-open #scroll {
+    flex: 0 0 auto;
+    overflow: visible;
+}
+
+/* ── Help dock · one boxed section per topic, ruled off from the next. The whole section is a hover
+   target (it carries the data-spotlight for the control it is about), so it tints while the pointer
+   is anywhere inside it — including the space between its passages. ── */
+.help-section {
+    padding: 4px 12px 10px;
+    margin: 0 -12px;
+    border-top: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    transition: background-color .15s ease;
+}
+
+.help-section:first-child {
+    border-top: none;
+}
+
+.help-section:hover {
+    background: color-mix(in srgb, var(--spot) 9%, transparent);
+}
+
+.help-section h4 {
+    margin-top: 8px;
+}
+
+/* a topic within a section — bold, and spaced like a heading, but not ruled off as one */
+.help-section .subhead {
+    font-weight: 700;
+    color: var(--text);
+    margin-top: 10px;
+}
+
+/* ── Spotlight · the control a hovered help passage is about (docks/help.js). An outline rather than
+   a border so nothing shifts, haloed by layered box-shadows of growing blur and pulsed to pull the
+   eye. ── */
+/* Hot, high-contrast shades that stand out against both the blue-grey panel and the map, neither of
+   which has any warm colour in it. The pulse runs between a bright yellow and a light orange. */
+:root {
+    --spot: #fde047;      /* the halo's brighter shade: light yellow */
+    --spot-dim: #fb923c;  /* …and the one it pulses to: light orange */
+}
+
+@keyframes spotlight-pulse {
+    0%, 100% { box-shadow: 0 0 0 3px var(--spot), 0 0 18px 6px var(--spot-dim); }
+    50% { box-shadow: 0 0 0 5px var(--spot), 0 0 26px 10px var(--spot-dim); }
+}
+
+.spotlight {
+    /* no position here on purpose: the map overlays (#map-controls, #player) are absolutely placed
+       and must stay so; z-index only lifts the halo above neighbours on things already positioned */
+    z-index: 5;
+    outline: 4px solid var(--spot);
+    outline-offset: 4px;
+    border-radius: var(--r-lg);
+    animation: spotlight-pulse 1.6s ease-in-out infinite;
+}
+
+/* the map fills its box, so its glow has to sit inside the edge to be seen at all */
+#map.spotlight {
+    outline-offset: -4px;
+    animation-name: spotlight-pulse-inset;
+}
+
+/* wide layout: lay the hydrology controls out in a row so they use the extra width and free up
+   vertical space for the dock below. The flex gap is the rhythm here, so the stacked layout's
+   margins come off — leaving both would space the row by the sum of the two. */
+body.dock-open #hydrology-section {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 12px;
+}
+
+body.dock-open #hydrology-section > * + * {
+    margin-top: 0;
+}
+
+body.dock-open #hydrology-section h2 {
+    flex-basis: 100%;
+}
+
+body.dock-open #hydrology-section .field {
+    flex: 1 1 220px;
+}
+
+/* The flood section (on screen only under the help dock) follows the same rhythm. The selector
+   matches the specificity of the `body.dock-open #scroll > section:not(...)` rule that hides the
+   other sections and sits after it, so this one wins. */
+body.help-open #scroll > section#flood-section {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 12px;
+}
+
+body.help-open #flood-section > * + * {
+    margin-top: 0;
+}
+
+body.help-open #flood-section h2,
+body.help-open #flood-section #flood-controls {
+    flex-basis: 100%;
+}
+
+/* the mode / clear / save button row keeps its natural width and joins the picker's row — in the
+   stacked layout it fills its own row instead */
+body.help-open #flood-section > .row,
+body.help-open #flood-section > .row .btn {
+    flex: 0 0 auto;
+}
+
+body.help-open #flood-section .field {
+    flex: 1 1 220px;
+}
+
+/* keep the map overlays clear of the widened panel */
+body.dock-open #legend-overlay {
+    left: calc(50% + 14px);
+}
+
+body.dock-open #player {
+    left: 75%;
+    width: min(640px, calc(50vw - 48px));
+    min-width: 0;
+}
+
+/* ── Search ── */

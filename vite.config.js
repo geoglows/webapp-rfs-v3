@@ -5,8 +5,6 @@ import {createRequire} from "node:module";
 import {basename, dirname, extname, join, normalize, sep} from "node:path";
 import {fileURLToPath} from "node:url";
 
-const entry = (p) => fileURLToPath(new URL(p, import.meta.url));
-
 // ./data is a symlink to wherever the v3 artifacts actually live. Serving it from the Vite server
 // is the point: PMTiles, the metadata parquets and the zarr chunks are all read by byte range — so
 // one server does the app and the data, with no second process and no CORS. The artifacts are
@@ -133,149 +131,6 @@ const serveData = () => {
   };
 };
 
-/**
- * Serve /hydrography/ as /hydrography/index.html on the dev and preview servers.
- *
- * A multi-page build emits the second entry at dist/hydrography/index.html, and the deployed URL
- * for it is a directory URL — so without this, the sub-page is reachable in production (where
- * CloudFront resolves the directory index) but 404s locally, which is exactly backwards for
- * catching problems. Lifted from apps.geoglows/vite.config.js, which solves the same thing for its
- * own /profile/, /terms/ and /licenses/ pages.
- */
-const cleanUrls = () => {
-  const rewrite = (dir) => (req, res, next) => {
-    const [pathname, search] = req.url.split("?");
-    const page = `${pathname.replace(/\/$/, "")}/index.html`;
-    if (!pathname.includes(".") && existsSync(entry(`./${dir}${page}`))) {
-      req.url = search ? `${page}?${search}` : page;
-    }
-    next();
-  };
-  return {
-    name: "clean-urls",
-    configureServer: (server) => void server.middlewares.use(rewrite(".")),
-    configurePreviewServer: (server) => void server.middlewares.use(rewrite("dist"))
-  };
-};
-
-/**
- * `<!-- @include -->`: one copy of the HTML both entry pages share.
- *
- * Two pages meant two hand-maintained copies of the same head, the same header, the same language
- * menu, the same search modal and the same settings modal — and they had already drifted (a logo
- * hard-coded on one page and read from the environment on the other, two different English
- * fallbacks under one i18n key). Consolidating the apps was supposed to end that, so the shared
- * markup now lives once in src/shared/html/ and is inlined into both pages.
- *
- *   <!-- @include button-theme.html -->                          a whole partial, verbatim
- *   <!-- @include head.html title="RFS" script="/src/x.js" -->   with parameters
- *   <!-- @include settings-modal.html class="wide" -->           with a slot: everything up to
- *     <label>…</label>                                           the matching @endinclude is the
- *   <!-- @endinclude settings-modal.html -->                     partial's {{children}}
- *
- * Inside a partial, `{{name}}` is the parameter of that name and `{{children}}` is the slot; an
- * unpassed parameter is empty. Partials may include other partials, and a slot may contain them
- * too. Everything is resolved before Vite sees the page, so the two entries stay ordinary HTML
- * files: `%VITE_*%` substitution, `<script src>` rewriting and asset hashing all still apply to
- * what came out of a partial, because this runs as a `pre` hook and Vite's own passes come after.
- *
- * Chosen over a template engine because a dependency would have to earn 60 lines, and over
- * server-side JS templating because these pages are static: nothing here needs to survive to
- * runtime, and the built HTML should read exactly like the hand-written HTML it replaces.
- */
-const PARTIALS = `${here}src/shared/html/`;
-
-// `^[ \t]*` is optional rather than required so an include can sit mid-line; when it does match it
-// is the indentation the expansion is re-indented to, which is what keeps the built page readable.
-const DIRECTIVE = /(^[ \t]*)?<!--\s*@(include|endinclude)\s+([\w.\-/]+)((?:\s+[\w-]+="[^"]*")*)\s*-->/gm;
-const PARAM = /([ \t]*)\{\{\s*([\w-]+)\s*\}\}/g;
-
-// Re-indent a block to sit at `indent`, having first stripped whatever indentation it arrived with.
-// Cosmetic — HTML does not care — but a page whose source is unreadable is a page nobody edits.
-const reindent = (text, indent) => {
-  const lines = text.replace(/^[ \t]*\n/, "").replace(/\s+$/, "").split("\n");
-  const written = lines.filter((l) => l.trim());
-  const common = written.length ? Math.min(...written.map((l) => l.match(/^[ \t]*/)[0].length)) : 0;
-  // The first line is already sitting after the directive's own indentation, and a blank line is
-  // left blank rather than being padded out to a line of trailing spaces.
-  return lines
-    .map((l, i) => (!l.trim() ? "" : i === 0 ? l.slice(common) : indent + l.slice(common)))
-    .join("\n");
-};
-
-// A partial opens with a comment saying what it is and which parameters it takes. That is a note to
-// whoever edits the partial, not to whoever reads the page, so it is dropped on the way in;
-// comments written *inside* the markup are about the markup and are kept.
-const readPartial = (file) => readFileSync(file, "utf8").replace(/^\s*<!--[^]*?-->\n/, "");
-
-const expandHtml = (text, params, chain) => {
-  const filled = text.replace(PARAM, (_, indent, key) => {
-    const value = params[key];
-    return value ? indent + reindent(value, indent) : "";
-  });
-
-  const tokens = [...filled.matchAll(DIRECTIVE)].map((m) => ({
-    kind: m[2],
-    name: m[3],
-    attrs: m[4] ?? "",
-    indent: m[1] ?? "",
-    start: m.index,
-    end: m.index + m[0].length
-  }));
-
-  // Pair the block includes. An @endinclude closes the nearest *unclosed* @include naming the same
-  // partial, so a self-closing include of a partial used with a slot elsewhere on the page is not
-  // mistaken for the opening half of that block; every include left unpaired is self-closing.
-  const closes = new Map();
-  const open = [];
-  for (const token of tokens) {
-    if (token.kind === "include") {
-      open.push(token);
-      continue;
-    }
-    const at = open.findLastIndex((o) => o.name === token.name);
-    if (at < 0) throw new Error(`@endinclude ${token.name} with no matching @include (in ${chain.at(-1)})`);
-    closes.set(open[at], token);
-    open.length = at;
-  }
-
-  let out = "";
-  let cursor = 0;
-  for (const token of tokens) {
-    if (token.start < cursor) continue; // already swallowed as some earlier include's children
-    const close = closes.get(token);
-    const file = `${PARTIALS}${token.name}`;
-    if (chain.includes(file)) throw new Error(`@include ${token.name} includes itself: ${chain.join(" -> ")}`);
-    if (!existsSync(file)) throw new Error(`@include ${token.name}: no such partial (from ${chain.at(-1)})`);
-
-    const args = Object.fromEntries([...token.attrs.matchAll(/([\w-]+)="([^"]*)"/g)].map((a) => [a[1], a[2]]));
-    if (close) args.children = filled.slice(token.end, close.start);
-
-    out += filled.slice(cursor, token.start) + token.indent +
-      reindent(expandHtml(readPartial(file), args, [...chain, file]), token.indent);
-    cursor = (close ?? token).end;
-  }
-  return out + filled.slice(cursor);
-};
-
-const htmlPartials = () => ({
-  name: "html-partials",
-  // Ahead of Vite's own HTML work: the env substitution and the script/link scanning both have to
-  // see the finished page, not the directives.
-  transformIndexHtml: {
-    order: "pre",
-    handler: (html, ctx) => expandHtml(html, {}, [ctx.filename])
-  },
-  // A partial is not in any module graph, so Vite's own .html handling sends a full-reload keyed to
-  // the partial's own path — which matches no open page, and nothing happens. Reload whatever is
-  // open instead.
-  hotUpdate({file}) {
-    if (this.environment.name !== "client" || !file.startsWith(PARTIALS)) return;
-    this.environment.hot.send({type: "full-reload", path: "*"});
-    return [];
-  }
-});
-
 // The moment this bundle was made, printed at the bottom of the Settings modal. A deployment is a
 // static site with no version anywhere in it, so a bug report can otherwise only say "the site" —
 // the stamp says which build. It is a module rather than a `define` because a define is not
@@ -392,7 +247,7 @@ const shareBlosc = ({worker = false} = {}) => {
 // The portal builds every app with `vite build --base="$BASE/"` (see apps.geoglows
 // scripts/build-local.sh), so `base` is left at the default here and supplied on the command line.
 export default defineConfig({
-  plugins: [serveData(), stampBuildDate(), cleanUrls(), htmlPartials(), shareBlosc()],
+  plugins: [serveData(), stampBuildDate(), shareBlosc()],
   resolve: {
     dedupe: ["chart.js", "chartjs-adapter-date-fns", "chartjs-chart-matrix", "chartjs-plugin-zoom", "date-fns", "numcodecs"]
   },
@@ -409,17 +264,12 @@ export default defineConfig({
   worker: {format: "es", plugins: () => [shareBlosc({worker: true})]},
   build: {
     target: ["es2020", "safari14"],
-    // hyparquet + its compressors ride in the hydrography page's geometry worker, and are only
+    // hyparquet + its compressors ride in the hydrography geometry worker, and are only
     // pulled when someone asks for a download.
     chunkSizeWarningLimit: 1500,
-    // Two pages, one base, one asset directory — which is the point: maplibre and the riverId
-    // lookup worker are emitted once and shared, where two separate apps shipped a copy each.
-    // `rolldownOptions`, not `rollupOptions`: Vite 8 is rolldown-backed and deprecates the latter.
+    // One page, so the default index.html entry is the whole build. `rolldownOptions`, not
+    // `rollupOptions`: Vite 8 is rolldown-backed and deprecates the latter.
     rolldownOptions: {
-      input: {
-        "data-viewer": entry("./index.html"),
-        "hydrography-explorer": entry("./hydrography/index.html")
-      },
       output: {
         codeSplitting: {
           groups: [{name: "maplibre", test: /node_modules[/\\]maplibre-gl[/\\]/}]

@@ -1,23 +1,60 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <!-- @include head.html title="%VITE_APP_TITLE%" description="%VITE_APP_DESCRIPTION%" script="/src/pages/data-viewer/main.js" -->
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <link rel="preconnect" href="https://cdn.apps.geoglows.org" crossorigin/>
+  <title>%VITE_APP_TITLE%</title>
+  <meta name="description" content="%VITE_APP_DESCRIPTION%"/>
+  <link href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230d1520'/%3E%3Cg fill='none' stroke='%234A90E2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M30 20L25 18.7L16.5 15.2' stroke-width='3.8'/%3E%3Cpath d='M16.5 15.2L11 9.5L7 6.5' stroke-width='2.6'/%3E%3Cpath d='M16.5 15.2L12 21.5L9.5 25.5' stroke-width='2.6'/%3E%3Cpath d='M11 9.5L4.5 9.5' stroke-width='1.7'/%3E%3Cpath d='M12 21.5L5.5 19.5' stroke-width='1.7'/%3E%3Cpath d='M25 18.7L22.8 12' stroke-width='1.7'/%3E%3Cpath d='M21.3 17L19 22.5' stroke-width='1.7'/%3E%3C/g%3E%3C/svg%3E" rel="icon"/>
+  <script type="module" src="/src/main.js"></script>
 </head>
 <body>
 
+<div id="too-small">
+  <div>
+    <h2 data-i18n="smallScreen.heading">This app needs a larger screen</h2>
+    <p data-i18n="smallScreen.body">This website is not intended for phones and tablets. Please return on a laptop or desktop computer.</p>
+  </div>
+</div>
+
 <div id="panel">
-  <!-- @include header.html title="%VITE_APP_TITLE%" -->
-    <div id="auth-action"></div>
-    <!-- @include button-settings.html -->
-    <!-- @include button-language.html -->
-    <!-- @include button-theme.html -->
-    <button id="btn-help" class="btn icon" data-icon-name="question-mark-circle" data-i18n-title="help.label" data-i18n-aria-label="help.aria"
-            title="Help and about" aria-label="Help and about this site"></button>
-  <!-- @endinclude header.html -->
+  <header>
+    <div class="brand">
+      <a href="%VITE_LOGO_HREF%" data-i18n-title="common.portal" title="GEOGLOWS apps">
+        <img src="%VITE_LOGO_SRC%" alt="%VITE_LOGO_ALT%" width="%VITE_LOGO_WIDTH%" height="%VITE_LOGO_HEIGHT%"/>
+      </a>
+    </div>
+    <h1>%VITE_APP_TITLE%</h1>
+    <div class="row">
+      <div id="auth-action"></div>
+      <!-- In the header rather than beside the forecast tools: finding a river is how you start,
+           whichever toolchains this deployment ships. -->
+      <button id="btn-search-river" class="btn icon" data-icon-name="magnifying-glass-solid"
+              data-i18n-title="search.label" data-i18n-aria-label="search.aria"
+              title="Find a river by name or ID" aria-label="Find a river by name or ID"></button>
+      <button id="btn-settings" class="btn icon" data-icon-name="cog-6-tooth" data-i18n-title="settings.label" title="Settings"></button>
+      <!-- see initLanguagePicker() in src/settings/settings.js — it reads LANGUAGES off these
+           buttons, so this markup is what decides which languages the app offers. -->
+      <div class="anchor">
+        <button id="btn-language" class="btn icon" data-icon-name="language" data-i18n-title="lang.title"
+                data-i18n-aria-label="lang.aria" title="Language" aria-label="Change language"
+                aria-haspopup="true" aria-expanded="false"></button>
+        <div id="lang-menu" class="card menu hidden" role="menu">
+          <button class="opt" role="menuitemradio" data-lang="en">English</button>
+          <button class="opt" role="menuitemradio" data-lang="es">Español</button>
+          <button class="opt" role="menuitemradio" data-lang="fr">Français</button>
+        </div>
+      </div>
+      <button id="btn-theme" class="btn icon" data-i18n-title="theme.toggle" title="Toggle light / dark theme"></button>
+      <button id="btn-help" class="btn icon" data-icon-name="question-mark-circle" data-i18n-title="help.label" data-i18n-aria-label="help.aria"
+              title="Help and about" aria-label="Help and about this site"></button>
+    </div>
+  </header>
   <main>
     <div id="scroll">
-      <section id="hydrology-section">
-        <h2 data-i18n="hydro.heading">Streams Exploration</h2>
+      <section id="hydrology-section" data-tool="forecast">
+        <h2 data-i18n="hydro.heading">Forecast Visualizers</h2>
         <div class="field">
           <label for="forecast-date" data-i18n="hydro.forecastDate">Forecast Initialization Date</label>
           <input id="forecast-date" type="date"/>
@@ -39,12 +76,11 @@
           <button id="btn-saved" class="btn icon" data-icon-name="heart-solid" data-i18n-title="hydro.saved.title" data-i18n-aria-label="hydro.saved.aria"
                   title="My saved rivers" aria-label="Browse my saved rivers"></button>
           <button id="btn-legend" class="btn icon" data-i18n-title="stream.showLegend" title="Show forecast legend"></button>
-          <button id="btn-search-river" class="btn icon" data-icon-name="magnifying-glass-solid" data-i18n-title="hydro.searchRiver" title="Search River ID"></button>
           <button id="btn-clear-river" class="btn icon" data-icon-name="backspace" data-i18n-title="hydro.clearRiver" title="Clear the selected river" disabled></button>
           <button id="btn-toggle-slider" class="btn icon" data-icon-name="clock-solid" data-i18n-title="stream.hideSlider" title="Hide timeseries slider"></button>
         </div>
       </section>
-      <section id="flood-section">
+      <section id="flood-section" data-tool="flood">
         <h2 data-i18n="flood.heading">Flood Mapping</h2>
         <div class="row wrap">
           <button id="btn-flood-mode" class="btn toggle" data-i18n="flood.enable">FIM Mode: Off</button>
@@ -98,8 +134,142 @@
           <div id="readout" class="hint status" data-i18n="legend.readout">click a flooded pixel for depth</div>
         </div>
       </section>
+
+      <!-- HYDROGRAPHY EXPLORER · four answers to "what did that click select", the actions that act
+           on whichever is on, and the attributes of the reach the click landed on under them. -->
+      <section id="explorer-section" data-tool="hydrography">
+        <h2 data-i18n="explorer.heading.selection">Hydrography Explorer</h2>
+        <div id="selection-actions">
+          <button class="btn primary" disabled id="btn-geoparquet"
+                  data-i18n="explorer.action.download" data-i18n-title="explorer.action.download.about"
+                  title="Download GeoParquet">
+            Download
+          </button>
+          <button class="btn" disabled id="btn-copy"
+                  data-i18n="explorer.action.copy" data-i18n-title="explorer.action.copy.about"
+                  title="Copy the outlet riverIds the current method is holding, one per line.">
+            Copy
+          </button>
+          <button class="btn" disabled id="btn-explorer-clear"
+                  data-i18n="explorer.action.clear" data-i18n-title="explorer.action.clear.about"
+                  title="Empty whatever the current method is holding.">Clear
+          </button>
+        </div>
+
+        <div id="selector-rows">
+          <div class="selector-head eyebrow" id="river-select-head" data-i18n-title="explorer.mode.river.about"
+               title="One click selects just the reach it lands on. Press R.">
+            <button class="btn sm mode" id="river-select-mode" tabindex="-1">On</button>
+            <span class="title" data-i18n="explorer.mode.river">River Select</span>
+            <span class="clarify" data-i18n="explorer.mode.river.clarify">(1 River)</span>
+            <span id="river-select-count" data-i18n-title="explorer.count.reach"
+                  title="The reach you clicked"></span>
+          </div>
+
+          <div class="selector-head eyebrow" id="watershed-head" data-i18n-title="explorer.mode.watershed.about"
+               title="One click selects every reach that drains to the reach it lands on. Press W.">
+            <button class="btn sm mode" id="watershed-mode" tabindex="-1">Off</button>
+            <span class="title" data-i18n="explorer.mode.watershed">Watershed Select</span>
+            <span class="clarify" data-i18n="explorer.mode.watershed.clarify">(1 River + Upstreams)</span>
+            <span id="watershed-count" data-i18n-title="explorer.count.streams"
+                  title="Streams in the current selection"></span>
+          </div>
+
+          <div class="selector-head eyebrow" id="picks-head" data-i18n-title="explorer.mode.multi.about"
+               title="Collect a watershed outlet on every click, instead of selecting one at a time. Shift-click a river to collect one without leaving the method you are in, or press M.">
+            <button class="btn sm mode" id="picks-mode" tabindex="-1">Off</button>
+            <span class="title" data-i18n="explorer.mode.multi">Multi Select</span>
+            <span class="clarify" data-i18n="explorer.mode.multi.clarify">(Multiple Watersheds)</span>
+            <span id="picks-count" data-i18n-title="explorer.count.picks"
+                  title="Watershed outlets collected">0</span>
+          </div>
+
+          <div class="selector-head eyebrow" id="aoi-head" data-i18n-title="explorer.mode.aoi.about"
+               title="Cut an area of interest out of a watershed: click its outlet, then click each inlet to drop it and everything that drains into it. Press A.">
+            <button class="btn sm mode" id="aoi-mode" tabindex="-1">Off</button>
+            <span class="title" data-i18n="explorer.mode.aoi">AOI Subsetter</span>
+            <span class="clarify" data-i18n="explorer.mode.aoi.clarify">(Rivers between 2+ points)</span>
+            <span id="aoi-count" data-i18n-title="explorer.count.inlets"
+                  title="Inlets trimmed off the area of interest">0</span>
+          </div>
+        </div>
+
+        <!-- One readout under the four rows: only the chosen method's block is in the page. -->
+        <div id="selector-body">
+          <div id="river-select-body">
+            <div id="river-select-info"></div>
+          </div>
+          <div id="watershed-body">
+            <div id="selection-info"></div>
+          </div>
+          <div id="picks-body"></div>
+          <div id="aoi-body"></div>
+        </div>
+
+        <!-- The reach the last click landed on, field by field as the tiles carry it. Under the
+             selector options because it describes what they just selected. -->
+        <div id="river-card">
+          <h3>
+            <span class="title" data-i18n="explorer.heading.riverAttributes">River attributes</span>
+            <span id="river-card-name"></span>
+            <span id="river-card-id" data-i18n-title="explorer.riverCard.id"
+                  title="The riverId of the reach you clicked"></span>
+            <button class="btn sm" id="river-collapse" data-i18n-title="explorer.fold.collapse"
+                    title="Collapse this section"></button>
+          </h3>
+          <div id="river-body"></div>
+        </div>
+      </section>
+
+      <!-- STYLING OPTIONS · colouring by the river names table, and the rule editor that draws
+           everything else. Both draw the network under the Standard stream style; a forecast
+           styleset paints over them until it is switched back. -->
+      <section id="styling-section" data-tool="styling">
+        <h2 data-i18n="explorer.heading.styling">Styling Options</h2>
+
+        <div id="names-card">
+          <h3>
+            <button class="btn sm mode names" id="names-mode" data-i18n-title="explorer.names.about"
+                    title="Colour the network by the river names table: named reaches take a colour, everything no name covers goes grey. Press N.">
+              Off
+            </button>
+            <span class="title" data-i18n="explorer.heading.names">River names</span>
+            <span id="names-count" data-i18n-title="explorer.names.count"
+                  title="Named rivers in the table"></span>
+            <button class="btn sm" id="names-collapse" data-i18n-title="explorer.fold.collapse"
+                    title="Collapse this section"></button>
+          </h3>
+          <div id="names-body"></div>
+        </div>
+
+        <div id="style-card">
+          <h3>
+            <span class="title" data-i18n="explorer.heading.streamStyle">Stream styling</span>
+            <span id="style-zoom" data-i18n-title="explorer.style.zoom"
+                  title="Current map zoom — every stop below sits on a half-zoom step">z2.0</span>
+            <button class="btn sm" id="style-collapse" data-i18n-title="explorer.fold.collapse"
+                    title="Collapse this section"></button>
+          </h3>
+          <div id="style-body"></div>
+        </div>
+      </section>
     </div>
-    <div id="charts-dock" class="dock">
+
+    <div id="panel-foot" data-tool="hydrography">
+      <div id="progress">
+        <div id="progress-head">
+          <span id="progress-phase"></span>
+          <span id="progress-pct"></span>
+        </div>
+        <div class="progress-track">
+          <div id="progress-fill" class="progress-fill"></div>
+        </div>
+        <div id="progress-detail"></div>
+      </div>
+      <div id="stages"></div>
+    </div>
+
+    <div id="charts-dock" class="dock" data-tool="forecast">
       <div class="modal-head">
         <div class="row">
           <h3 id="charts-modal-title" data-i18n="charts.heading">Discharge charts</h3>
@@ -125,20 +295,23 @@
         <div id="charts-panel-details" role="tabpanel" aria-labelledby="charts-tab-details" hidden></div>
       </div>
     </div>
-    <div id="bookmarks-dock" class="dock">
+
+    <div id="bookmarks-dock" class="dock" data-tool="forecast">
       <div class="modal-head">
         <h3 data-i18n="bookmarks.heading">Notable Global Rivers Reference</h3>
         <button class="btn sm" id="bookmarks-close" data-i18n-aria-label="common.close" aria-label="Close">✕</button>
       </div>
       <div class="modal-body" id="bookmarks-body"></div>
     </div>
-    <div id="saved-dock" class="dock">
+
+    <div id="saved-dock" class="dock" data-tool="forecast">
       <div class="modal-head">
         <h3 data-i18n="saved.heading">My Saved Rivers (limit 100)</h3>
         <button class="btn sm" id="saved-close" data-i18n-aria-label="common.close" aria-label="Close">✕</button>
       </div>
       <div class="modal-body" id="saved-body"></div>
     </div>
+
     <div id="help-dock" class="dock">
       <div class="modal-head">
         <h3 data-i18n="help.heading">Help and about</h3>
@@ -180,6 +353,7 @@
           <ul>
             <li data-i18n-html="help.layers.streams" data-spotlight="#layer-btn"></li>
             <li data-i18n-html="help.layers.fim" data-spotlight="#layer-btn"></li>
+            <li data-i18n-html="help.layers.hydrography" data-spotlight="#layer-btn"></li>
             <li data-i18n-html="help.layers.riverfld" data-spotlight="#layer-btn"><a href="https://floods.ssec.wisc.edu/products/RIVER-FLDglobal-composite" target="_blank" rel="noopener" data-i18n="help.layers.riverfld.link"></a></li>
             <li data-i18n-html="help.layers.goes" data-spotlight="#layer-btn"><a href="https://www.arcgis.com/home/item.html?id=37a875ff3611496883b7ccca97f0f5f4" target="_blank" rel="noopener" data-i18n="help.layers.goes.link"></a></li>
             <li data-i18n-html="help.layers.viirs" data-spotlight="#layer-btn"><a href="https://www.arcgis.com/home/item.html?id=c873f4c13aa54b25b01270df9358dc64" target="_blank" rel="noopener" data-i18n="help.layers.viirs.link"></a></li>
@@ -187,7 +361,7 @@
               <a href="https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer" target="_blank" rel="noopener">USGS The National Map</a></li>
           </ul>
         </section>
-        <section class="help-section" data-spotlight="#hydrology-section">
+        <section class="help-section" data-spotlight="#hydrology-section" data-tool="forecast">
           <h4 data-i18n="help.hydro.h"></h4>
           <p data-i18n="help.hydro.intro" data-spotlight="#hydrology-section"></p>
           <ol>
@@ -213,7 +387,7 @@
             <li data-i18n-html="help.tools.legend" data-spotlight="#btn-legend, #legend-overlay"></li>
           </ul>
         </section>
-        <section class="help-section" data-spotlight="#btn-charts">
+        <section class="help-section" data-spotlight="#btn-charts" data-tool="forecast">
           <h4 data-i18n="help.charts.h"></h4>
           <p data-i18n="help.charts.open" data-spotlight="#map, #btn-charts"></p>
           <ol>
@@ -223,7 +397,7 @@
           </ol>
           <p data-i18n-html="help.charts.saved" data-spotlight="#btn-saved"></p>
         </section>
-        <section class="help-section" data-spotlight="#flood-section">
+        <section class="help-section" data-spotlight="#flood-section" data-tool="flood">
           <h4 data-i18n="help.flood.h"></h4>
           <p data-i18n="help.flood.mode" data-spotlight="#flood-section"></p>
           <ol>
@@ -243,6 +417,26 @@
           <p data-i18n-html="help.flood.readout" data-spotlight="#readout, #btn-save-geotiff, #btn-clear"></p>
           <p class="subhead" data-i18n="help.flood.model.h"></p>
           <p data-i18n-html="help.flood.model"></p>
+        </section>
+        <section class="help-section" data-tool="hydrography">
+          <h4 data-i18n="help.explorer.h"></h4>
+          <p data-i18n="help.explorer.intro"></p>
+          <ul>
+            <li data-i18n-html="help.explorer.river"></li>
+            <li data-i18n-html="help.explorer.watershed"></li>
+            <li data-i18n-html="help.explorer.multi"></li>
+            <li data-i18n-html="help.explorer.aoi"></li>
+          </ul>
+          <p data-i18n-html="help.explorer.actions"></p>
+          <p data-i18n-html="help.explorer.attributes"></p>
+        </section>
+        <section class="help-section" data-tool="styling">
+          <h4 data-i18n="help.styling.h"></h4>
+          <p data-i18n-html="help.styling.intro" data-spotlight="#stream-style"></p>
+          <ul>
+            <li data-i18n-html="help.styling.names"></li>
+            <li data-i18n-html="help.styling.rules"></li>
+          </ul>
         </section>
         <section class="help-section" data-spotlight="#btn-settings">
           <h4 data-i18n="help.settings.h"></h4>
@@ -275,18 +469,32 @@
 <div id="map"></div>
 
 <!-- MAP CONTROL OVERLAYS · all share .map-overlay and differ only in where they sit -->
-<!-- @include map-controls.html -->
+<div id="map-controls" class="col map-overlay">
   <div class="anchor">
     <button id="layer-btn" class="btn map" aria-haspopup="true" aria-expanded="false" data-i18n-title="layers.label" title="Map layers"></button>
     <div id="layer-menu" class="card menu hidden" role="menu"></div>
   </div>
-<!-- @endinclude map-controls.html -->
-<div id="legend-overlay" class="card map-overlay">
-  <h2 data-i18n="legend.returnPeriod">Forecast return period</h2>
-  <div id="legend-items"></div>
+  <div class="anchor">
+    <button id="basemap-btn" class="btn map" aria-haspopup="true" aria-expanded="false"
+            data-i18n-title="basemap.about" data-i18n-aria-label="basemap.label"
+            title="Basemap" aria-label="Basemap"></button>
+    <div id="basemap-menu" class="card menu hidden" role="menu"></div>
+  </div>
 </div>
-<!-- last of the overlays so it paints over the legend where the two meet on a narrow map -->
-<div id="player" class="card player map-overlay">
+
+<!-- put player after legend so they naturally stack correctly on narrower screens -->
+<div id="legend-overlay" class="card map-overlay">
+  <div id="forecast-legend" data-tool="forecast">
+    <h2 data-i18n="legend.returnPeriod">Forecast return period</h2>
+    <div id="legend-items"></div>
+  </div>
+  <div id="layer-legend-items"></div>
+  <div id="selection-legend" data-tool="hydrography">
+    <div class="legend-item"><span class="swatch upstream"></span><span data-i18n="explorer.legend.selected">Selected streams</span></div>
+    <div class="legend-item"><span class="swatch outlet"></span><span data-i18n="explorer.legend.endpoints">Selected inlet / outlet</span></div>
+  </div>
+</div>
+<div id="player" class="card player map-overlay" data-tool="forecast">
   <div id="progress-bar"></div>
   <button id="btn-play" class="btn primary round" data-i18n-title="player.play" title="Play / pause (space)">▶</button>
   <div class="col grow">
@@ -308,8 +516,42 @@
 </div>
 
 <!-- MODALS -->
-<!-- @include search-modal.html -->
-<div id="save-river-modal" class="backdrop hidden">
+<div id="search-modal" class="backdrop hidden">
+  <div class="card modal entry" role="dialog" aria-modal="true" aria-labelledby="search-modal-title">
+    <div class="modal-head">
+      <h3 id="search-modal-title" data-i18n="search.heading">Find a river</h3>
+      <button class="btn sm" data-close="search-modal" data-i18n-aria-label="common.close" aria-label="Close">✕</button>
+    </div>
+    <div class="modal-body">
+      <form id="search-name-form" class="field" autocomplete="off">
+        <label for="search-river-name" data-i18n="search.nameLabel">River name</label>
+        <div class="row">
+          <input id="search-river-name" type="text" role="combobox" aria-expanded="false"
+                 aria-controls="search-results" aria-autocomplete="list"
+                 data-i18n-placeholder="search.namePlaceholder" placeholder="e.g. Colorado"/>
+          <button type="submit" class="btn primary" data-i18n="search.submit">Search</button>
+          <button type="button" id="search-clear" class="btn" data-i18n="search.clear"
+                  data-i18n-title="search.clearHint" title="Remove the highlighted river from the map">Clear
+          </button>
+        </div>
+      </form>
+      <div id="search-results" class="search-results hidden" role="listbox"
+           data-i18n-aria-label="search.results" aria-label="Matching rivers"></div>
+      <div id="search-name-status" class="hint status" role="status" aria-live="polite"></div>
+
+      <form id="search-id-form" class="field search-second" autocomplete="off">
+        <label for="search-river-id" data-i18n="search.idLabel">River ID</label>
+        <div class="row">
+          <input id="search-river-id" type="text" inputmode="numeric"
+                 data-i18n-placeholder="search.idPlaceholder" placeholder="e.g. 760021611"/>
+          <button type="submit" class="btn primary" data-i18n="search.submit">Search</button>
+        </div>
+      </form>
+      <div id="search-id-status" class="hint status" role="status" aria-live="polite"></div>
+    </div>
+  </div>
+</div>
+<div id="save-river-modal" class="backdrop hidden" data-tool="forecast">
   <div class="card modal entry" role="dialog" aria-modal="true" aria-labelledby="save-river-title">
     <div class="modal-head">
       <h3 id="save-river-title" data-i18n="saveRiver.heading">Save river</h3>
@@ -328,15 +570,44 @@
     </div>
   </div>
 </div>
-<!-- @include settings-modal.html class="wide" -->
-  <label class="row">
-    <input type="checkbox" id="set-shaded-warning-levels"/>
-    <span data-i18n="settings.shadedWarningLevels">Shade warning levels on the forecast chart</span>
-  </label>
-  <label class="row">
-    <input type="checkbox" id="set-saved-highlight"/>
-    <span data-i18n="settings.savedHighlight">Outline my saved rivers on the map</span>
-  </label>
-<!-- @endinclude settings-modal.html -->
+<div id="settings-modal" class="backdrop hidden">
+  <div class="card modal wide" role="dialog" aria-modal="true" aria-labelledby="settings-modal-title">
+    <div class="modal-head">
+      <h3 id="settings-modal-title" data-i18n="settings.label">Settings</h3>
+      <button class="btn sm" data-close="settings-modal" data-i18n-aria-label="common.close" aria-label="Close">✕</button>
+    </div>
+    <div class="modal-body">
+      <h4 data-i18n="settings.display">Display</h4>
+      <label class="row">
+        <input type="checkbox" id="set-legend"/>
+        <span data-i18n="settings.mapLegend">Show the map legend</span>
+      </label>
+      <label class="row" data-tool="forecast">
+        <input type="checkbox" id="set-shaded-warning-levels"/>
+        <span data-i18n="settings.shadedWarningLevels">Shade warning levels on the forecast chart</span>
+      </label>
+      <label class="row" data-tool="forecast">
+        <input type="checkbox" id="set-saved-highlight"/>
+        <span data-i18n="settings.savedHighlight">Outline my saved rivers on the map</span>
+      </label>
+      <h4 data-i18n="settings.data">Downloaded Data</h4>
+      <p class="hint" data-i18n="settings.data.hint">
+        This site keeps local copies of some datasets for better performance. These can be redownloaded at any time and are safe to delete.
+      </p>
+      <!-- rows built by createDataSettings() in src/ui/dataSettings.js, from the registry in
+           src/data/datasets.js -->
+      <div id="data-list" class="col"></div>
+      <div class="col data-foot">
+        <div id="data-foot-status" class="hint status"></div>
+        <div class="row wrap">
+          <button id="btn-download-all" class="btn" data-i18n="settings.data.downloadAll">Download everything</button>
+          <button id="btn-delete-all" class="btn" data-i18n="settings.data.deleteAll">Delete everything</button>
+        </div>
+      </div>
+      <!-- stamped at build time by stampBuildDate() in vite.config.js; filled in initSettings() -->
+      <p class="hint build-stamp"><span data-i18n="settings.build">Build</span> <span id="build-date"></span></p>
+    </div>
+  </div>
+</div>
 </body>
 </html>

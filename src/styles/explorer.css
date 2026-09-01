@@ -1,0 +1,1076 @@
+/* ── The hydrography toolchains' own styles ────────────────────────────────
+   What only the Hydrography Explorer and Styling Options sections have: the four selection methods
+   and their readouts, the picks and AOI lists, the river attribute table, the staged export block,
+   and the styling rule editor.
+
+   Loaded after app.css, so the few rules that override it sit here. */
+
+/* Both sections carry their own rhythm — every block below sets the margin it wants — so they opt
+   out of the even stack `#panel section > * + *` gives the forecast and flood sections. */
+#explorer-section > * + *,
+#styling-section > * + * {
+    margin-top: 0
+}
+
+/* The export is the thing the app is for, and the only button that does any work, so it takes the
+   accent and the width of the row; Clear is the plain one beside it. */
+#btn-geoparquet {
+    flex: 1 1 auto
+}
+
+#btn-explorer-clear {
+    flex: 0 0 auto
+}
+
+#selection-info {
+    margin-bottom: 11px;
+    font-size: 13px;
+    color: var(--text-dim);
+    font-family: var(--mono);
+    line-height: 1.7;
+    display: none
+}
+
+#selection-info .count {
+    color: var(--upstream);
+    font-weight: 600;
+    font-size: 18px
+}
+
+#selection-info .outlet {
+    color: var(--selected-text);
+    font-weight: 600
+}
+
+#selection-info .group {
+    color: var(--group);
+    font-weight: 600
+}
+
+#selection-info .k {
+    color: var(--text-faint)
+}
+
+/* What the AOI's inlets took off — the same red the inlets themselves are drawn in. */
+#selection-info .trimmed {
+    color: var(--selected-text);
+    font-weight: 600
+}
+
+/* ── the download progress block ───────────────────────────────────────────
+   Phase and percentage on one line, the bar under it, bytes/rate/eta under that. Hidden entirely
+   when nothing is running, so the panel is not carrying a dead 0% bar. */
+#progress {
+    display: none;
+    padding: 10px 20px 12px;
+    border-top: 1px solid var(--border);
+    flex-shrink: 0
+}
+
+#progress-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 10px;
+    font-family: var(--mono);
+    font-size: 11px;
+    margin-bottom: 6px
+}
+
+#progress-phase {
+    color: var(--text);
+    font-weight: 600;
+    letter-spacing: .3px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap
+}
+
+#progress-pct {
+    color: var(--accent);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0
+}
+
+#progress-detail {
+    margin-top: 6px;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--text-faint);
+    line-height: 1.5;
+    font-variant-numeric: tabular-nums
+}
+
+#progress.done #progress-pct {
+    color: var(--success)
+}
+
+/* ── the staged export block ───────────────────────────────────────────────
+   Two bars — bytes off the wire, work done on them — with each one's phases listed under it. The
+   whole plan is on screen from the start, so you can see which step is slow and what is still to
+   come. The indeterminate stripe is the shared `.indeterminate .progress-fill`, carried by both
+   `#progress` and `.stage-line`, for a synchronous call where a percentage would be invented. */
+#stages {
+    display: none;
+    padding: 10px 20px 12px;
+    border-top: 1px solid var(--border);
+    font-family: var(--mono)
+}
+
+.stage-group {
+    margin-bottom: 10px
+}
+
+.stage-group:last-child {
+    margin-bottom: 0
+}
+
+.stage-group-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 10px;
+    color: var(--text);
+    margin-bottom: 4px
+}
+
+.stage-group-pct {
+    color: var(--accent);
+    font-variant-numeric: tabular-nums
+}
+
+.stage-group.done .stage-group-pct {
+    color: var(--success)
+}
+
+.stage-bar {
+    height: 5px;
+}/* One phase. The 2px rule under each line is that phase's own progress. The name column is
+   max-content — a clipped phase name cannot be identified — and the detail takes what is left and
+   ellipsises, with the full text on the row's title. */
+.stage-line {
+    display: grid;
+    grid-template-columns:12px max-content minmax(0, 1fr);
+    align-items: baseline;
+    column-gap: 6px;
+    font-size: 10.5px;
+    line-height: 1.6;
+    padding-top: 4px;
+    color: var(--text-faint)
+}
+
+.stage-mark {
+    text-align: center;
+    font-size: 9px
+}
+
+.stage-name {
+    white-space: nowrap
+}
+
+.stage-detail {
+    font-size: 9.5px;
+    color: var(--text-faint);
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap
+}
+
+/* The running phase is the one with numbers worth reading — bytes, rate, time left — so it gets a
+   line of its own for them. Only one phase is active at a time, so this costs one row, not seven. */
+.stage-line.active .stage-detail {
+    grid-column: 2/4;
+    text-align: left;
+    white-space: normal;
+    color: var(--text-dim);
+    line-height: 1.45
+}
+
+.stage-line .stage-bar {
+    height: 5px;
+}
+
+.stage-line.pending .stage-bar, .stage-line.skipped .stage-bar {
+    height: 5px;
+}
+
+.stage-line.active {
+    color: var(--text)
+}
+
+.stage-line.active .stage-mark {
+    color: var(--accent)
+}
+
+.stage-line.done {
+    color: var(--text-dim)
+}
+
+.stage-line.done .stage-mark {
+    color: var(--success)
+}
+
+.stage-line.skipped {
+    opacity: .45
+}
+
+.stage-line.failed {
+    color: var(--danger-text)
+}
+
+.stage-line.failed .stage-mark, .stage-line.failed .stage-detail {
+    color: var(--danger-text)
+}
+
+/* The layer legend and the selection colours, under the forecast scale. Same stack as
+   #legend-items above them, and each block is only there while it has something to say. */
+#layer-legend-items, #selection-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 7px
+}
+
+#layer-legend-items:not(:empty), #selection-legend {
+    margin-top: 9px
+}
+
+/* The layer picker's rows name a colour as well as a layer: the swatch goes to the right edge so
+   they line up down the menu however long the labels are. */
+#layer-menu .opt .swatch {
+    margin-left: auto
+}
+
+.modal-head h3 {
+    font-size: 16px;
+    font-weight: 700
+}
+
+/* Each heading is the break between two runs of settings;the first has nothing above it to be separated from. */ /* The box keeps its size when the sentence beside it wraps. */
+.modal-body input[type=checkbox] {
+    flex: 0 0 auto
+}
+
+/* ── Search · the Find a river dialog ────────────────────────────────────── */
+
+/* The name box's input should take the room the two buttons beside it leave. */
+#search-river-name, #search-river-id {
+    flex: 1 1 auto;
+    min-width: 0
+}
+
+/* ── the selection actions ─────────────────────────────────────────────────
+   They act on the current selection whichever method made it, so they belong to the block as a
+   whole rather than to any one row of it. */
+#selection-actions {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+    margin-bottom: 10px
+}
+
+/* One line, equal shares. min-width overrides a flex item's automatic minimum, which is what would
+   otherwise refuse to shrink a button below the width of its own label. */
+#selection-actions .btn {
+    flex: 1 1 0;
+    min-width: 0;
+    padding-left: 6px;
+    padding-right: 6px
+}
+
+/* ── the selection methods ────────────────────────────────────────────────
+   Four answers to the same question, not four features that stack — so one control, not four
+   panels: no rules between the rows, nothing to fold, and the row reading On is what a click means.
+   Whatever the chosen method shows sits under all four rows, so switching never moves the list. */
+#explorer-section {
+    display: block
+}
+
+/* Pulled out to the card's padding, so a row's hover and its lit edge run the full width of the
+   column rather than stopping short of it. */
+#selector-rows {
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    margin: 0 -18px 10px
+}
+
+/* The whole row is the switch — the On/Off pill in it is the state, not the only target. */
+/* The eyebrow (base.css) carries the mono, the caps and the colour; this is the row it sits in. */
+.selector-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 18px;
+    cursor: pointer;
+    font-size: 12px
+}
+
+.selector-head:hover {
+    background: var(--surface2)
+}
+
+/* The name, then what it gets you. The clarification takes the slack, so every count lines up on
+   the right edge however long the names are. */
+.selector-head .clarify {
+    flex: 1;
+    color: var(--text-faint);
+    font-size: 10px;
+    font-weight: 500;
+    text-transform: none;
+    letter-spacing: 0
+}
+
+/* The chosen row, edged in the colour the method paints the map with. */
+#panel.river-select-on #river-select-head {
+    color: var(--text);
+    background: var(--surface2);
+    box-shadow: inset 3px 0 0 var(--selected)
+}
+
+#panel.watershed-on #watershed-head {
+    color: var(--text);
+    background: var(--surface2);
+    box-shadow: inset 3px 0 0 var(--upstream)
+}
+
+#panel.picks-on #picks-head {
+    color: var(--text);
+    background: var(--surface2);
+    box-shadow: inset 3px 0 0 var(--selected)
+}
+
+#panel.aoi-on #aoi-head {
+    color: var(--text);
+    background: var(--surface2);
+    box-shadow: inset 3px 0 0 var(--selected-text)
+}
+
+/* The counts each keep the colour their method's readout counts in. */
+#river-select-count, #aoi-count, #picks-count {
+    color: var(--selected-text);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0;
+    text-transform: none;
+    font-size: 13px;
+    font-weight: 700
+}
+
+#watershed-count {
+    color: var(--upstream);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0;
+    text-transform: none;
+    font-size: 13px;
+    font-weight: 700
+}
+
+/* The one readout under the four rows. Only the chosen method's block is in the page; the two ids
+   deep are so these beat the layout each body sets for itself further down. */
+#selector-body {
+    display: flex;
+    flex-direction: column
+}
+
+#panel #river-select-body,
+#panel #watershed-body,
+#panel #picks-body,
+#panel #aoi-body {
+    display: none
+}
+
+#panel.river-select-on #river-select-body,
+#panel.watershed-on #watershed-body {
+    display: block;
+    margin-top: 8px
+}
+
+#panel.picks-on #picks-body,
+#panel.aoi-on #aoi-body {
+    display: flex;
+    margin-top: 8px
+}
+
+#river-select-info {
+    display: none;
+    font-size: 11px;
+    line-height: 1.6
+}
+
+/* ── the river names section ───────────────────────────────────────────────
+   The same On/Off control the selection methods wear, but edged in a name colour rather than the
+   selection orange: it changes what the map is coloured by, not what a click on it does. */
+/* ── styling options ──────────────────────────────────────────────────────
+   The names table's colours and the rule editor, under one heading: you arrive looking for "how
+   this is drawn" rather than for either by name. */
+#styling-section {
+    display: block
+}
+
+/* A subsection of it: no rule, no padding of its own, and a quieter heading than the one over
+   both, so the two read as parts of the block rather than as two blocks. */
+#names-card {
+    margin-bottom: 10px
+}
+
+#river-card h3, #names-card h3, #style-card h3 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    flex-shrink: 0;
+    color: var(--text-faint);
+}
+
+#river-card h3 .title, #names-card h3 .title, #style-card h3 .title {
+    flex: 1
+}
+
+#names-count {
+    color: var(--text-dim);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0;
+    text-transform: none;
+    font-size: 13px;
+    font-weight: 700
+}
+
+/* The three name colours sit in one swatch group, because what they mean together is "named" —
+   no one of them stands for anything on its own. */
+#names-body .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 5px;
+    font-size: 11px
+}
+
+#names-body .legend-item .swatch:last-of-type {
+    margin-right: 4px
+}
+
+#names-body .legend-item > span:last-child {
+    margin-left: 2px;
+    color: var(--text-dim)
+}
+
+.names-hint {
+    color: var(--text-faint);
+    font-size: 10px;
+    line-height: 1.5;
+    margin-top: 6px
+}
+
+#panel.names-collapsed #names-body {
+    display: none
+}
+
+#panel.names-collapsed #names-card {
+    margin-bottom: 8px
+}
+
+/* ── the styling panel ─────────────────────────────────────────────────────
+   Takes whatever height the switches above and the export block below leave, and scrolls inside
+   itself, so a dozen rules never push the layer list or the run report off screen. Deliberately
+   denser than the rest of the app — every row that fits is a row you do not scroll to. Zoom controls
+   are always selects: the half-step grid is enforced by having nothing else to pick from. */
+#style-card {
+    display: flex;
+    flex-direction: column
+}
+
+#style-zoom {
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0;
+    text-transform: none
+}
+
+/* ── the AOI subsetter ─────────────────────────────────────────────────────
+   The same folding card as multi-select below it. A shorter list — an outlet and its inlets — so it
+   is laid out with the pick rows rather than with a set of its own. */
+#aoi-body {
+    display: flex;
+    flex-direction: column;
+    font-size: 11px;
+    line-height: 1.5
+}
+
+/* The outlet the inlets are cut out of, over the list of them. */
+.aoi-head {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    padding: 4px 2px;
+    border-top: 1px solid var(--border-soft)
+}
+
+.aoi-k {
+    color: var(--text-faint);
+    font-family: var(--mono);
+    font-size: 9.5px
+}
+
+.aoi-outlet {
+    color: var(--selected-text);
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600
+}
+
+/* An inlet row borrows the pick row's shape; only the colour of the id differs, because an inlet
+   is a cut and a pick is a collection. */
+#aoi-body .pick-id {
+    color: var(--selected-text)
+}
+
+#aoi-body .pick-n {
+    color: var(--selected-text)
+}
+
+#picks-body {
+    display: flex;
+    flex-direction: column;
+    font-size: 11px;
+    line-height: 1.5
+}
+
+.picks-empty {
+    color: var(--text-faint);
+    font-size: 10px;
+    padding: 4px 2px
+}
+
+/* However long the collection gets: the column scrolls, the list does not. */
+.picks-list {
+    display: flex;
+    flex-direction: column
+}
+
+.pick-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 2px;
+    border-top: 1px solid var(--border-soft)
+}
+
+.pick-n {
+    color: var(--text-faint);
+    font-family: var(--mono);
+    font-size: 9.5px;
+    min-width: 18px;
+    text-align: right;
+    flex: 0 0 auto
+}
+
+.pick-main {
+    flex: 1;
+    min-width: 0
+}
+
+.pick-id {
+    display: block;
+    color: var(--selected-text);
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600
+}
+
+.pick-meta {
+    display: block;
+    color: var(--text-faint);
+    font-size: 9.5px
+}/* ── the clicked reach ─────────────────────────────────────────────────────
+   An eyebrow that folds the body away, like the styling section below it. Always on the page, empty
+   until a river is clicked, and never more than a third of the column. */
+#river-card {
+    display: flex;
+    flex-direction: column;
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border-soft)
+}
+
+/* The river's name, beside the id. Cased as written rather than upper like the heading around it:
+   it is a proper noun out of the names table, and "RIO CUNENE" is not what the table says. */
+#river-card-name {
+    color: var(--text);
+    font-weight: 600;
+    letter-spacing: 0;
+    text-transform: none;
+    max-width: 14em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap
+}
+
+#river-card-name.unnamed {
+    color: var(--muted);
+    font-weight: 400;
+    font-style: italic
+}
+
+/* The riverId beside the heading, so a folded card still says which reach it is holding. */
+#river-card-id {
+    color: var(--selected-text);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0;
+    text-transform: none
+}
+
+#river-body {
+    font-size: 11px;
+    line-height: 1.5
+}
+
+#panel.river-collapsed #river-body {
+    display: none
+}
+
+#panel.river-collapsed #river-card {
+    flex: 0 0 auto
+}
+
+/* Label left, value right, hairline between — the reading order is "what is it, what is it here". */
+.river-row {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    padding: 3px 2px;
+    border-top: 1px solid var(--border-soft)
+}
+
+.river-k {
+    flex: 1;
+    min-width: 0;
+    color: var(--text-dim)
+}
+
+.river-v {
+    flex: 0 0 auto;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 10.5px;
+    font-weight: 600;
+    text-align: right;
+    overflow-wrap: anywhere
+}
+
+#river-body .hint {
+    color: var(--text-faint);
+    font-size: 10px
+}
+
+#style-body {
+    font-size: 11px;
+    line-height: 1.5
+}
+
+#panel.style-collapsed #style-body {
+    display: none
+}
+
+/* Folded away, the section is its heading row and nothing else. */
+#panel.style-collapsed #style-card {
+    padding-bottom: 0
+}
+
+/* The export run reports from under the scrolling body — a sibling of #scroll inside <main>, so it
+   holds the bottom of the column whether or not the sections above it fill one, and does not
+   scroll away while an export is running. */
+#panel-foot {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column
+}
+
+#style-body select, #style-body input[type=text], #style-body input[type=number] {
+    border-radius: 4px;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    padding: 3px 4px;
+    min-width: 0
+}
+
+#style-body select:focus, #style-body input:focus {
+    outline: none;
+    border-color: var(--accent)
+}
+
+#style-body input[type=color] {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    width: 34px;
+    height: 22px;
+    padding: 1px;
+    cursor: pointer;
+    flex: 0 0 auto
+}
+
+#style-body input[type=checkbox] {
+    width: 13px;
+    height: 13px;
+    accent-color: var(--accent);
+    cursor: pointer;
+    flex: 0 0 auto
+}
+
+#style-body .hint {
+    color: var(--text-faint);
+    font-size: 10px;
+    text-transform: none;
+    letter-spacing: 0
+}
+
+/* The editor's own buttons — .mini, .seg, and the footer's actions. They are not .btn, which is
+   sized for the controls above the fold, but they are cut from the same tokens. */
+#style-body button {
+    flex: 0 0 auto;
+    font-family: var(--mono);
+    cursor: pointer;
+    transition: .12s;
+    text-transform: none;
+    letter-spacing: 0
+}
+
+.mini.x {
+    color: var(--text-dim);
+    padding: 2px 5px
+}
+
+.mini.x:hover {
+    color: var(--danger-text);
+    border-color: var(--danger-text)
+}
+
+.mini.add {
+    align-self: flex-start;
+    color: var(--accent);
+    border-style: dashed
+}
+
+.style-toolbar {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border)
+}
+
+.style-toolbar .row {
+    display: flex;
+    align-items: center;
+    gap: 6px
+}
+
+.style-toolbar .row.check {
+    cursor: pointer;
+    color: var(--text-dim);
+    font-size: 10px
+}
+
+.style-toolbar select.preset {
+    flex: 1
+}
+
+/* The attribute menu — the tiles' own field list, with what each one ranges over. Open by default,
+   because it is the thing to read first, but capped and scrolled on its own so it cannot push the
+   rules it exists to create off the bottom of the panel. */
+.attr-menu {
+    margin: 8px 0;
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    background: var(--bg)
+}
+
+.attr-menu[open] {
+    max-height: 232px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent
+}
+
+.attr-menu > summary {
+    cursor: pointer;
+    padding: 6px 8px;
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: .6px;
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    z-index: 1
+}
+
+.attr-group {
+    padding: 6px 8px 2px;
+    font-size: 9.5px;
+    color: var(--text-faint)
+}
+
+.attr {
+    padding: 4px 8px 6px;
+    border-top: 1px solid var(--border-soft)
+}
+
+.attr-top {
+    display: flex;
+    align-items: center;
+    gap: 5px
+}
+
+.attr-label {
+    flex: 1;
+    color: var(--text);
+    font-weight: 600;
+    font-size: 11px
+}
+
+.attr-meta {
+    color: var(--text-dim);
+    font-family: var(--mono);
+    font-size: 9.5px;
+    margin-top: 1px
+}
+
+.attr-note {
+    color: var(--text-faint);
+    font-size: 9.5px;
+    margin-top: 1px;
+    line-height: 1.4
+}
+
+.style-section {
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border)
+}
+
+/* Title and hint share a line while both fit;a long title takes the line and drops the hint under it, right-aligned, rather than squeezing both into a ragged two-line block. */ .style-section h3 {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    flex-wrap: wrap;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+}
+
+.style-section h3 .hint {
+    margin-left: auto
+}
+
+/* nowrap so a long title claims the whole line and pushes the hint under it, instead of wrapping
+   inside itself and leaving the hint stranded beside a ragged two-line block. */
+.style-section h3 > :first-child {
+    flex: 1;
+    color: var(--text);
+    white-space: nowrap
+}
+
+.style-section h3 .rule-count {
+    text-transform: none;
+    letter-spacing: 0;
+    font-weight: 400;
+    color: var(--text-faint)
+}
+
+.conds {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 4px
+}
+
+/* Add-condition on the left, the AND/OR choice on the right — the choice only exists, and only
+   appears, once there are two conditions for it to combine. */
+.conds-foot {
+    display: flex;
+    align-items: center;
+    gap: 5px
+}
+
+.conds-foot .mini.add {
+    margin-right: auto
+}
+
+.conds-foot .stops-label {
+    margin-left: 4px
+}
+
+.cond {
+    display: flex;
+    align-items: center;
+    gap: 4px
+}
+
+.cond-attr {
+    flex: 1 1 40%
+}
+
+.cond-op {
+    flex: 0 0 auto;
+    max-width: 74px
+}
+
+.cond-val {
+    flex: 1 1 30%;
+    width: 100%
+}
+
+.rule {
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    background: var(--bg);
+    padding: 6px 7px;
+    margin-bottom: 6px
+}
+
+.rule.off {
+    opacity: .5
+}
+
+.rule-head {
+    display: flex;
+    align-items: center;
+    gap: 5px
+}
+
+.rule-swatch {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    flex: 0 0 auto;
+    border: 1px solid var(--swatch-ring)
+}
+
+.rule-name {
+    flex: 1;
+    background: transparent !important;
+    border-color: transparent !important;
+    color: var(--text) !important;
+    font-weight: 600;
+    font-size: 11px !important;
+    padding: 2px 3px !important
+}
+
+.rule-name:hover {
+    border-color: var(--border) !important
+}
+
+.rule-summary {
+    display: flex;
+    gap: 6px;
+    align-items: baseline;
+    color: var(--text-dim);
+    font-size: 10px;
+    font-family: var(--mono);
+    margin: 3px 0 0 20px
+}
+
+.rule-summary span:first-child {
+    flex: 1;
+    word-break: break-word
+}
+
+.rule-count {
+    color: var(--text-faint);
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums
+}
+
+.warn {
+    margin: 4px 0 0 20px;
+    color: var(--warn-text);
+    font-size: 9.5px;
+    line-height: 1.4
+}
+
+.rule-when {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 6px
+}
+
+.block-style {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin-top: 6px;
+    padding-top: 6px;
+    border-top: 1px dashed var(--border-soft)
+}
+
+.stops {
+    display: flex;
+    flex-direction: column;
+    gap: 3px
+}
+
+.stops-head {
+    display: flex;
+    align-items: center;
+    gap: 6px
+}
+
+.stops-label {
+    font-size: 9.5px;
+    color: var(--text-faint);
+    flex: 0 0 auto
+}
+
+.stops-count {
+    flex: 1;
+    color: var(--text-faint);
+    font-size: 9.5px
+}
+
+.stop {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding-left: 10px
+}
+
+.stop-zoom {
+    flex: 0 0 auto;
+    width: 62px;
+    font-variant-numeric: tabular-nums
+}
+
+.stop-val {
+    flex: 1
+}
+
+.zrange {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-wrap: wrap
+}
+
+.zsel {
+    flex: 0 0 auto;
+    width: 62px
+}
+
+.zsep {
+    color: var(--text-faint);
+    font-size: 10px
+}
+
+.style-footer {
+    display: flex;
+    gap: 6px;
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border)
+}
+
