@@ -8,7 +8,7 @@
  * attaches and costs nothing but its own layers. `onChange` fires as each lands, which is how the
  * layer picker stops reporting them as unpublished.
  *
- * They are loaded whatever toolchains the build ships: they are map reference, not a tool. The
+ * They are map reference, not a tool. The
  * catchment colouring is the one part that belongs to the hydrography explorer, and it arrives
  * through setCatchmentSelection() rather than being read from here.
  */

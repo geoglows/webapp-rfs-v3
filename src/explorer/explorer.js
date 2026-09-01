@@ -1,19 +1,17 @@
 /**
- * The hydrography toolchains: the four selection methods with the river attributes under them, and
+ * The hydrography explorer: the four selection methods with the river attributes under them, and
  * the styling section that draws the network by the names table and by rules over its attributes.
  *
- * Loaded by src/main.js once there is a map, and only for the toolchains this build
- * ships — the two halves are independent, so a deployment can take the selection tools without the
- * style editor or the other way round.
+ * Loaded by src/main.js once there is a map.
  *
  * The styling half draws the network only while the stream style is Standard. A forecast styleset
  * is the network coloured by the forecast, which is a different answer to the same question, so it
  * takes the base layer back until it is switched off again — see setStyleset().
  */
 import {PMTiles} from 'pmtiles';
-import {$, el, fmt} from '../dom.js';
+import {$, el, fmt, num} from '../dom.js';
 import {URLS} from './config.js';
-import {upstreamRange} from './data.js';
+import {upstreamRange} from '../data/runs.js';
 import {
   applyHighlight, applyInlets, applyPicks, applyStreamStyle, attachExplorerLayers, clearHighlight,
   clearStreamStyle, currentSelection, fitRiverBounds, flyToPick, map, setSelectionHighlightVisible,
@@ -39,10 +37,6 @@ import {watch as watchRiverNames} from '../data/riverNames.js';
 import {askConfirm} from '../ui/confirm.js';
 import {t, tf, tn} from '../i18n/i18n.js';
 
-/** Which halves this build asked for; set by initExplorer(). */
-let selectionOn = false;
-let stylingOn = false;
-
 /** The current selection, whichever method made it. */
 let sel = null;
 /** The whole watershed record of the reach last clicked, whatever the method made of it. */
@@ -54,15 +48,15 @@ let namesError = null;
 let stylePanel = null;
 /** Whether the style spec is what is drawing the network — see the note at the top. */
 let styleActive = false;
-/** Repaints the network the way the forecast toolchain wants it, when the spec stops drawing it. */
+/** Repaints the network the way the forecast tools want it, when the spec stops drawing it. */
 let repaintForecast = () => {};
-/** Asks the forecast toolchain for the styleset that leaves the network to the style spec. */
+/** Asks the forecast tools for the styleset that leaves the network to the style spec. */
 let wantStyleEditor = () => {};
+/** Drops whatever the rest of the app holds about the selected river — its charts, its highlight. */
+let clearElsewhere = () => {};
 
 
 // ── selection ────────────────────────────────────────────────────────────────
-const num = v => (Number.isFinite(Number(v)) ? Number(v) : null);
-
 /**
  * The reach a click landed on, as the numbers a subset is cut from: its own riverIndex and the
  * contiguous run everything upstream occupies. A watershed selection and an AOI outlet are the same
@@ -98,7 +92,7 @@ function setSelection(rec, spans) {
   // Which group publishes this reach is not on the tiles, so the readout asks for the table the
   // first time it wants one and repaints when it lands. Once per session, and it is the same table
   // the export needs — see groups.js.
-  if (selectionOn && groupOf(sel.riverIndex) == null) {
+  if (groupOf(sel.riverIndex) == null) {
     void loadGroups().then(() => sel && renderSelectionInfo()).catch(() => {});
   }
   selectionChanged();
@@ -136,8 +130,8 @@ function selectOutlet(at) {
  * and the camera frames the published extent. An ID is one reach and goes through selectOutlet like
  * a click, so it means whatever the method that is on says it means.
  *
- * `camera` is false when the forecast toolchain is on the page: it opens the charts for the reach
- * and then moves the camera itself, and two things easing at once is one of them missing.
+ * `camera` is false when the caller opens the charts for the reach and then moves the camera
+ * itself, and two things easing at once is one of them missing.
  *
  * Deliberately touches neither the AOI nor the collection: a search should not place an inlet or add
  * to the picks as a side effect.
@@ -263,7 +257,7 @@ function paintActions() {
 
 function setBusy(on) {
   busy = on;
-  if (selectionOn) paintActions();
+  paintActions();
 }
 
 /** Whatever the method that is on has to hand, one outlet riverId per line. */
@@ -279,24 +273,30 @@ async function copyIds() {
   }
 }
 
-/** One Clear for all four methods: it empties what the one you are in is holding. */
+/**
+ * One Clear for the whole app: it empties what the method you are in is holding, and the river the
+ * charts are open on with it.
+ */
 async function clearCurrent() {
-  if (mode !== 'multi') return clearSelection();
-  const n = picks.count();
-  if (!n) return;
-  const ok = await askConfirm({
-    title: t('explorer.confirm.clearPicks.title'),
-    message: tn('explorer.confirm.clearPicks', n),
-    confirmKey: 'explorer.action.clear',
-  });
-  if (ok) picks.clear();
+  if (mode === 'multi') {
+    const n = picks.count();
+    if (!n) return;
+    const ok = await askConfirm({
+      title: t('explorer.confirm.clearPicks.title'),
+      message: tn('explorer.confirm.clearPicks', n),
+      confirmKey: 'explorer.action.clear',
+    });
+    if (!ok) return;
+    picks.clear();
+  }
+  clearSelection();
+  clearElsewhere();
 }
 
 function clearSelection() {
   sel = null;
   lastRec = null;
   clearHighlight(applyStyle);
-  if (!selectionOn) return selectionChanged();
   $('selection-info').style.display = 'none';
   $('watershed-count').textContent = '';
   $('reach-info').style.display = 'none';
@@ -312,8 +312,7 @@ function clearSelection() {
 
 // ── styling ──────────────────────────────────────────────────────────────────
 /**
- * Draw the network from the style spec. A no-op unless the styling toolchain is on the page *and*
- * the stream style is Standard — a forecast styleset owns the base layer while it is chosen.
+ * Draw the network from the style spec. A no-op unless the stream style is Standard — a forecast styleset owns the base layer while it is chosen.
  */
 function applyStyle() {
   if (!styleActive || !stylePanel || !map) return;
@@ -361,12 +360,12 @@ function refreshCounts() {
 }
 
 /**
- * The forecast toolchain has changed which styleset draws the network. Standard is the one that
+ * The forecast tools have changed which styleset draws the network. Standard is the one that
  * leaves it to the style spec; every other one paints the base layer from the forecast, so the
  * rules come off and the base layer is handed back.
  */
 function setStyleset(styleset) {
-  const wanted = stylingOn && styleset === 'standard';
+  const wanted = styleset === 'standard';
   if (wanted === styleActive) return;
   styleActive = wanted;
   if (wanted) return applyStyle();
@@ -556,7 +555,7 @@ function paintPicks() {
 
 // ── map interactions ─────────────────────────────────────────────────────────
 /**
- * A click on the map, before the forecast toolchain sees it.
+ * A click on the map, before the forecast tools see it.
  *
  * Returns true when the explorer has taken it: the four methods that are answering a question about
  * the network — a reach, a watershed, an area of interest, a collection — are not asking for a
@@ -636,14 +635,10 @@ function initSelectionTools() {
   picks.onChange(paintPicks);
 
   // The whole row is the switch, not just the box in it, because the rows are one control: you are
-  // picking which of them a click on the map belongs to. A toolchain this build left out took its
-  // row off the page with it, and the method goes with the row.
+  // picking which of them a click on the map belongs to.
   for (const [name, {card}] of Object.entries(MODES)) {
-    const head = $(`${card}-head`);
-    if (!head) delete MODES[name];
-    else head.addEventListener('click', () => void setMode(name));
+    $(`${card}-head`).addEventListener('click', () => void setMode(name));
   }
-  if (!(mode in MODES)) mode = 'river';
 
   // The other way in, for a session spent on the map rather than in the panel. The key of the method
   // already on drops back to the river selector, so M stays the toggle it has always been.
@@ -713,27 +708,26 @@ function initStylingTools() {
 }
 
 /**
- * Wire whichever halves this build ships onto the map that already exists.
+ * Wire the explorer onto the map that already exists.
  *
- * `styleset` is what the forecast toolchain opens on, so the style spec knows from the start
+ * `styleset` is what the forecast tools open on, so the style spec knows from the start
  * whether the network is its to draw; `onRepaintNetwork` is what hands the base layer back when it
  * stops being.
  */
-export function initExplorer({tools, styleset = 'standard', onRepaintNetwork = () => {},
-                              onStyleEditor = () => {}} = {}) {
-  selectionOn = !!tools?.hydrography;
-  stylingOn = !!tools?.styling;
+export function initExplorer({styleset = 'standard', onRepaintNetwork = () => {},
+                              onStyleEditor = () => {}, onClear = () => {}} = {}) {
   repaintForecast = onRepaintNetwork;
   wantStyleEditor = onStyleEditor;
+  clearElsewhere = onClear;
 
   attachExplorerLayers();
-  if (selectionOn) initSelectionTools();
-  if (stylingOn) initStylingTools();
-  styleActive = stylingOn && styleset === 'standard';
+  initSelectionTools();
+  initStylingTools();
+  styleActive = styleset === 'standard';
   applyStyle();
   // The collection outlives the page, so whatever was restored is painted as soon as there is a
   // map to paint it on.
-  if (selectionOn) applyPicks(picks.all());
+  applyPicks(picks.all());
 
   return {
     onMapClick,
@@ -742,18 +736,14 @@ export function initExplorer({tools, styleset = 'standard', onRepaintNetwork = (
     clearSelection,
     /** Everything walking [data-i18n] cannot reach, after the dictionary has been swapped. */
     repaint() {
-      if (selectionOn) {
-        paintModes();
-        if (sel) renderSelectionInfo();
-        showRiverAttributes(lastProps);
-        paintPicks();
-        paintAoi();
-      }
-      if (stylingOn) {
-        paintNames();
-        paintNamesMode();
-        stylePanel?.repaint();
-      }
+      paintModes();
+      if (sel) renderSelectionInfo();
+      showRiverAttributes(lastProps);
+      paintPicks();
+      paintAoi();
+      paintNames();
+      paintNamesMode();
+      stylePanel?.repaint();
     },
   };
 }

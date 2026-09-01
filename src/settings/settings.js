@@ -12,20 +12,6 @@ const OFF = new Set(["false", "0", "no", "off"]);
 const envToBool = value => ON.has(value) ? true : !OFF.has(value);
 const envNumber = (value, fallback) => (value != null && value !== "" && Number.isFinite(Number(value)) ? Number(value) : fallback);
 
-/**
- * Which toolchains this build ships. Each one is a section of the control column and the code
- * behind it: an off toolchain has its markup removed before anything is wired and its modules are
- * never imported, so it costs a deployment that does not want it nothing but the env line.
- *
- * Unset reads as on — a deployment that has never heard of a toolchain gets the whole app.
- */
-const TOOLS = {
-  forecast: envToBool(import.meta.env.VITE_TOOL_FORECAST),
-  flood: envToBool(import.meta.env.VITE_TOOL_FLOOD),
-  hydrography: envToBool(import.meta.env.VITE_TOOL_HYDROGRAPHY),
-  styling: envToBool(import.meta.env.VITE_TOOL_STYLING)
-};
-
 // Where the map opens: the deployment's configured view, or the whole world.
 const MAP_CENTER = [envNumber(import.meta.env.VITE_MAP_CENTER_LON, 0), envNumber(import.meta.env.VITE_MAP_CENTER_LAT, 20)];
 const MAP_ZOOM = envNumber(import.meta.env.VITE_MAP_ZOOM, 1.5);
@@ -272,6 +258,5 @@ export {
   FLOOD_MAX_SEGMENTS,
   FLOOD_MIN_MAP_ZOOM,
   onSetting,
-  SAVED_RIVERS,
-  TOOLS
+  SAVED_RIVERS
 };

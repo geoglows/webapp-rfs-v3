@@ -15,13 +15,13 @@ import {wireMenu} from "../ui/menu.js";
 import {el} from "../dom.js";
 
 /**
- * Which layers draw the network. Just `streams` until the styling toolchain loads, which compiles
+ * Which layers draw the network. Just `streams` until the styling section loads, which compiles
  * the network into a base layer plus one per rule and rebuilds them on every edit — so this is a
  * function, not a list: the ids are only knowable when asked.
  */
 let streamLayerIds = () => ["streams"];
 
-/** Called by the styling toolchain once it owns the network's layers. */
+/** Called by the styling section once it owns the network's layers. */
 const registerStreamLayers = (fn) => {
   streamLayerIds = fn;
 };
@@ -33,7 +33,7 @@ const LAYERS = [
   // No legend row for the network: what its colour means is the forecast scale above the legend,
   // or the styling section, and a swatch saying "streams" beside either only takes up the corner.
   {layerId: "streams", labelKey: "layers.streams", on: true, swatch: "stream", legend: false, layers: () => streamLayerIds()},
-  {layerId: "flood", labelKey: "layers.floodExtents", on: true, tool: "flood"},
+  {layerId: "flood", labelKey: "layers.floodExtents", on: true},
   {
     layerId: "catchments",
     optional: true,
@@ -92,9 +92,6 @@ const LAYERS = [
   }
 ];
 
-/** What this build actually offers — a toolchain switched off takes its layers with it. */
-let entries = LAYERS;
-
 const layerVisible = Object.fromEntries(LAYERS.map((o) => [o.layerId, o.on]));
 
 // Everything else that draws the stream network and is not owned by this module: the inspect
@@ -131,7 +128,7 @@ function setStreamsVisible(map, visible) {
 /**
  * Push the current stream visibility onto the layers this module owns. Also the call that gives
  * newly-added stream layers the state they were born too late to receive — which the styling
- * toolchain leans on, since every edit tears the rule layers down and builds them again visible.
+ * section leans on, since every edit tears the rule layers down and builds them again visible.
  */
 function applyStreamsVisibility(map) {
   applyLayerVisibility(map, "streams");
@@ -151,7 +148,7 @@ function onStreamsVisibility(fn) {
 // at their default visibility.
 function addRasterLayer(map) {
   const beforeId = map.getLayer("streams") ? "streams" : undefined;
-  for (const ov of [...entries].reverse()) {
+  for (const ov of [...LAYERS].reverse()) {
     if (!ov.raster) continue;
     if (!map.getSource(ov.layerId)) map.addSource(ov.layerId, ov.raster);
     if (!map.getLayer(ov.layerId)) {
@@ -178,7 +175,7 @@ const isPresent = (map, entry) => !entry.optional || idsOf(entry).some((id) => !
  * archive lands, and after every restyle of the network.
  */
 function syncLayerPicker(map) {
-  for (const entry of entries) {
+  for (const entry of LAYERS) {
     if (!entry.opt) continue;
     const present = isPresent(map, entry);
     const on = present && layerVisible[entry.layerId];
@@ -194,11 +191,6 @@ function syncLayerPicker(map) {
   }
 }
 
-/** Drop the entries whose toolchain this build left out, before the menu is built. */
-function limitLayersToTools(isOn) {
-  entries = LAYERS.filter((o) => !o.tool || isOn(o.tool));
-}
-
 // Layer picker: independent on/off toggles (many overlays can be visible at once).
 function initLayerPicker(map) {
   const btn = document.getElementById("layer-btn");
@@ -208,7 +200,7 @@ function initLayerPicker(map) {
   btn.replaceChildren(calciteIcon("layers"));
   menu.replaceChildren();
   wireMenu(btn, menu);
-  for (const layer of entries) {
+  for (const layer of LAYERS) {
     const opt = el("button", {
       class: "opt",
       role: "menuitemcheckbox",
@@ -255,7 +247,6 @@ export {
   applyStreamsVisibility,
   initLayerPicker,
   layerVisible,
-  limitLayersToTools,
   onStreamsVisibility,
   registerStreamLayers,
   setStreamsVisible,

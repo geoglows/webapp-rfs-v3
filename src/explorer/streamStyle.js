@@ -1,4 +1,5 @@
 import {MAX_ZOOM, MIN_ZOOM, ZOOM_STEP} from './config.js';
+import {spansFilter} from '../map/streamFilters.js';
 import {t, tf} from '../i18n/i18n.js';
 
 export const SOURCE = 'streams';
@@ -193,22 +194,12 @@ export const defaultSpec = () => ({
 export const cloneSpec = spec => JSON.parse(JSON.stringify(spec));
 
 // ── compile ──────────────────────────────────────────────────────────────────
-const spanExpr = ({lo, hi}) => [
-  'all',
-  ['has', 'riverIndex'],
-  ['>=', ['get', 'riverIndex'], lo],
-  ['<=', ['get', 'riverIndex'], hi],
-];
-
 /** Every reach a selection holds: a watershed passes its one run as `{lo, hi}`, an AOI passes what
- * its inlets left as `spans`. One run compiles to the same expression it always did. */
-export const inRangeExpr = sel => {
-  const spans = sel.spans ?? [{lo: sel.lo, hi: sel.hi}];
-  // A selection with no runs left holds no reaches. aoi.js will not build one — it refuses to make
-  // the outlet its own inlet — but the empty list must not read as "everything" if one ever arrives.
-  if (!spans.length) return ['==', ['get', 'riverIndex'], -1];
-  return spans.length === 1 ? spanExpr(spans[0]) : ['any', ...spans.map(spanExpr)];
-};
+ * its inlets left as `spans`. One run compiles to the same expression it always did; a selection
+ * with no runs left holds no reaches — aoi.js will not build one (it refuses to make the outlet its
+ * own inlet), but an empty list must not read as "everything" if one ever arrives, and
+ * spansFilter's empty case says exactly that. */
+export const inRangeExpr = sel => spansFilter('riverIndex', sel.spans ?? [{lo: sel.lo, hi: sel.hi}]);
 
 /**
  * `names` swaps every rule's colour for one expression over riverIndex — the River Names mode. It

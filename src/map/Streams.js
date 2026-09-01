@@ -1,20 +1,12 @@
 import {urls} from "riverforecastsystem/v3";
+import {inFilter, noMatch, spanFilter, streamLine, whenStyleReady, zoomInterp} from "./streamFilters.js";
 import {SAVED_RIVERS} from "../settings/settings.js";
 
 // The inspect and saved-river highlights address reaches by riverId — the charts dock and the saved
-// list are keyed on it. flood/selection.js has helpers of the same shape keyed on riverIndex;
-// they are not interchangeable, so these are kept apart.
-const NO_MATCH = ["in", ["get", "riverId"], ["literal", []]];
-const inFilter = (ids) => ids.length ? ["in", ["get", "riverId"], ["literal", ids]] : NO_MATCH;
-
-// A named river is a contiguous run of riverIndex — every reach upstream of its mouth — so it is
-// selected as a range rather than as a list of ids. That is the whole reason the names table can
-// name a river at all: it publishes two bounds instead of the hundreds of thousands of ids between
-// them. There is no riverIndex equivalent of NO_MATCH here because an empty range says it already.
-const NO_SPAN = ["==", ["get", "riverIndex"], -1];
-const spanFilter = (span) => span
-  ? ["all", [">=", ["get", "riverIndex"], span.lo], ["<=", ["get", "riverIndex"], span.hi]]
-  : NO_SPAN;
+// list are keyed on it. A named river is a contiguous run of riverIndex — every reach upstream of
+// its mouth — selected as a range rather than a list of ids, which is the whole reason the names
+// table can name a river at all: two bounds instead of the hundreds of thousands of ids between
+// them. Both filter shapes come from streamFilters.js, keyed by what each highlight matches on.
 
 const RET_COLORS = ["#3182bd", "#fee08b", "#fdae61", "#f46d43", "#d73027", "#a50026", "#7a0177"];
 // Uniform stream color for the "Standard" styleset (matches the normal-flow return-period blue).
@@ -75,9 +67,6 @@ class Streams {
   appliedStep = -1;
   applyScheduled = false;
   // player DOM
-  // The player's controls. Absent when the forecast toolchain is left out of the build, which is
-  // what `hasPlayer` below stands for: the network is still drawn and still styled, there is just
-  // nothing animating it.
   sliderEl = document.getElementById("slider");
   timeEl = document.getElementById("time-label");
   stepEl = document.getElementById("step-label");
@@ -85,14 +74,12 @@ class Streams {
   progEl = document.getElementById("progress-bar");
   speedEl = document.getElementById("speed");
 
-  hasPlayer = !!document.getElementById("btn-play");
-
   constructor(map, {styleset = "max-flow"} = {}) {
     this.map = map;
     // The styleset the network opens on, set before the layer is built rather than switched into
     // afterwards: setStyleset() reloads the data, and at boot there is nothing to reload from yet.
     this.styleset = styleset;
-    if (this.hasPlayer) this.wirePlayer();
+    this.wirePlayer();
   }
 
   /** Add the animated global streams source + line layer on top of the loaded basemap. */
@@ -137,26 +124,17 @@ class Streams {
    */
   addSavedHighlightLayer() {
     if (this.map.getLayer("saved-highlight")) return;
-    this.map.addLayer({
+    // The layer is always built, shown or not: the Settings toggle flips it many times over a
+    // session, and hiding a layer is far cheaper than adding and removing one. Its starting
+    // state is whatever the setting already resolved to — see setSavedHighlightVisible().
+    this.map.addLayer(streamLine({
       id: "saved-highlight",
-      type: "line",
-      source: "streams",
-      "source-layer": "streams",
-      filter: NO_MATCH,
-      // The layer is always built, shown or not: the Settings toggle flips it many times over a
-      // session, and hiding a layer is far cheaper than adding and removing one. Its starting
-      // state is whatever the setting already resolved to — see setSavedHighlightVisible().
-      layout: {
-        "line-cap": "round",
-        "line-join": "round",
-        visibility: this.savedHighlightVisible ? "visible" : "none"
-      },
-      paint: {
-        "line-color": SAVED_COLOR,
-        "line-width": this.savedWidthExpr(this.animatedWidth()),
-        "line-opacity": 1
-      }
-    }, "streams");
+      color: SAVED_COLOR,
+      width: this.savedWidthExpr(this.animatedWidth()),
+      opacity: 1,
+      filter: noMatch("riverId"),
+      visibility: this.savedHighlightVisible ? "visible" : "none"
+    }), "streams");
     this.setSavedRivers(this.savedIds);
   }
 
@@ -183,11 +161,8 @@ class Streams {
   setSavedRivers(ids) {
     this.savedIds = ids ?? [];
     if (!this.map.getLayer("saved-highlight")) return;
-    if (!this.map.isStyleLoaded()) {
-      this.map.once("idle", () => this.setSavedRivers(this.savedIds));
-      return;
-    }
-    this.map.setFilter("saved-highlight", inFilter(this.savedIds));
+    whenStyleReady(this.map, () =>
+      this.map.setFilter("saved-highlight", inFilter("riverId", this.savedIds)));
   }
 
   /**
@@ -202,27 +177,15 @@ class Streams {
    */
   addNamedHighlightLayer() {
     if (this.map.getLayer("named-highlight")) return;
-    this.map.addLayer({
+    this.map.addLayer(streamLine({
       id: "named-highlight",
-      type: "line",
-      source: "streams",
-      "source-layer": "streams",
-      filter: NO_SPAN,
-      layout: {"line-cap": "round", "line-join": "round"},
-      paint: {
-        "line-color": NAMED_COLOR,
-        // The streams ramp's own zoom scale, so the casing keeps its proportion to the network at
-        // every zoom, but with a flat width in place of the strahlerOrder step.
-        "line-width": [
-          "interpolate", ["linear"], ["zoom"],
-          3, 0.25 * NAMED_WIDTH,
-          7, 0.5 * NAMED_WIDTH,
-          12, NAMED_WIDTH,
-          16, 2.2 * NAMED_WIDTH
-        ],
-        "line-opacity": 0.9
-      }
-    }, "streams");
+      color: NAMED_COLOR,
+      // The streams ramp's own zoom scale, so the casing keeps its proportion to the network at
+      // every zoom, but with a flat width in place of the strahlerOrder step.
+      width: zoomInterp([3, 0.25 * NAMED_WIDTH, 7, 0.5 * NAMED_WIDTH, 12, NAMED_WIDTH, 16, 2.2 * NAMED_WIDTH]),
+      opacity: 0.9,
+      filter: spanFilter("riverIndex", null)
+    }), "streams");
     this.setNamedRiver(this.namedSpan);
   }
 
@@ -230,11 +193,8 @@ class Streams {
   setNamedRiver(span) {
     this.namedSpan = span ?? null;
     if (!this.map.getLayer("named-highlight")) return;
-    if (!this.map.isStyleLoaded()) {
-      this.map.once("idle", () => this.setNamedRiver(this.namedSpan));
-      return;
-    }
-    this.map.setFilter("named-highlight", spanFilter(this.namedSpan));
+    whenStyleReady(this.map, () =>
+      this.map.setFilter("named-highlight", spanFilter("riverIndex", this.namedSpan)));
   }
 
   /**
@@ -244,25 +204,19 @@ class Streams {
    */
   addInspectHighlightLayer() {
     if (this.map.getLayer("inspect-highlight")) return;
-    this.map.addLayer({
+    this.map.addLayer(streamLine({
       id: "inspect-highlight",
-      type: "line",
-      source: "streams",
-      "source-layer": "streams",
-      filter: NO_MATCH,
-      layout: {"line-cap": "round", "line-join": "round"},
-      paint: {
-        "line-color": "#33FF57",
-        "line-width": ["interpolate", ["linear"], ["zoom"], 3, 3, 8, 5, 13, 9, 16, 14],
-        "line-opacity": 0.95
-      }
-    });
+      color: "#33FF57",
+      width: zoomInterp([3, 3, 8, 5, 13, 9, 16, 14]),
+      opacity: 0.95,
+      filter: noMatch("riverId")
+    }));
   }
 
   /** Pass null to clear the highlight. */
   setInspectHighlight(riverId) {
     if (!this.map.getLayer("inspect-highlight")) return;
-    this.map.setFilter("inspect-highlight", riverId == null ? NO_MATCH : inFilter([riverId]));
+    this.map.setFilter("inspect-highlight", inFilter("riverId", riverId == null ? [] : [riverId]));
   }
 
   /** Return-period line-color expression driven by each reach's `ret` feature-state. */
@@ -440,11 +394,9 @@ class Streams {
       }
       this.cube = cube;
       this.buildLegend();
-      if (this.hasPlayer) {
-        this.sliderEl.max = String(Math.max(0, this.T - 1));
-        this.sliderEl.disabled = this.T <= 1;
-        if (this.T > 1) document.getElementById("player")?.classList.add("ready");
-      }
+      this.sliderEl.max = String(Math.max(0, this.T - 1));
+      this.sliderEl.disabled = this.T <= 1;
+      if (this.T > 1) document.getElementById("player")?.classList.add("ready");
       this.setStep(0, false);
       this.applyAll();
       this.scheduleApply();
@@ -529,7 +481,6 @@ class Streams {
   }
 
   renderLabels() {
-    if (!this.hasPlayer) return;
     const ts = this.meta?.timestamps?.[this.step];
     this.timeEl.textContent = ts ? this.fmtStamp(ts) : "—";
     this.stepEl.textContent = this.T > 1 ? `${this.step + 1}/${this.T}` : "";
@@ -544,16 +495,16 @@ class Streams {
   }
 
   play() {
-    if (this.playing || !this.cube || !this.hasPlayer || this.styleset !== "timeseries") return;
+    if (this.playing || !this.cube || this.styleset !== "timeseries") return;
     this.playing = true;
-    if (this.hasPlayer) this.playBtn.textContent = "❚❚";
+    this.playBtn.textContent = "❚❚";
     if (this.timer) clearInterval(this.timer);
     this.timer = setInterval(() => this.setStep(this.step + 1), 1e3 / this.fps);
   }
 
   pause() {
     this.playing = false;
-    if (this.hasPlayer) this.playBtn.textContent = "▶";
+    this.playBtn.textContent = "▶";
     if (this.timer) {
       clearInterval(this.timer);
       this.timer = null;

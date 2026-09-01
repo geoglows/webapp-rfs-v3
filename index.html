@@ -47,21 +47,14 @@
         </div>
       </div>
       <button id="btn-theme" class="btn icon" data-i18n-title="theme.toggle" title="Toggle light / dark theme"></button>
-      <!-- In the header rather than beside the forecast tools: finding a river is how you start,
-           whichever toolchains this deployment ships. -->
-      <button id="btn-search-river" class="btn icon" data-icon-name="magnifying-glass-solid"
-              data-i18n-title="search.label" data-i18n-aria-label="search.aria"
-              title="Find a river by name or ID" aria-label="Find a river by name or ID"></button>
-      <button id="btn-styling" class="btn icon" data-tool="styling" data-icon-name="paint-brush"
-              data-i18n-title="explorer.heading.styling" data-i18n-aria-label="explorer.styling.aria"
-              title="Styling Options" aria-label="Open the styling options"></button>
+      <button id="btn-charts" class="btn icon" data-icon-name="chart-bar-solid" data-i18n-title="hydro.charts" title="View discharge charts"></button>
       <button id="btn-help" class="btn icon" data-icon-name="question-mark-circle" data-i18n-title="help.label" data-i18n-aria-label="help.aria"
               title="Help and about" aria-label="Help and about this site"></button>
     </div>
   </header>
   <main>
     <div id="scroll">
-      <section id="hydrology-section" data-tool="forecast">
+      <section id="hydrology-section">
         <h2 data-i18n="hydro.heading">Streamflow Visualization</h2>
         <div class="field">
           <label for="forecast-date" data-i18n="hydro.forecastDate">Forecast Initialization Date</label>
@@ -69,27 +62,21 @@
         </div>
         <div class="field">
           <label for="stream-style" data-i18n="stream.style">Stream style</label>
-          <select id="stream-style">
-            <option value="standard" data-i18n="stream.style.standard">Standard</option>
-            <option value="max-flow" selected data-i18n="stream.style.max-flow">Forecasted Max Flows</option>
-            <option value="timeseries" data-i18n="stream.style.timeseries">15 Day Forecast Timeseries</option>
-            <option value="time-to-peak" data-i18n="stream.style.time-to-peak">Time to Peak</option>
-            <option value="below-q95" data-i18n="stream.style.below-q95">Below Q95 flow</option>
-          </select>
-        </div>
-        <div class="row" id="hydro-actions">
-          <button id="btn-charts" class="btn icon" data-icon-name="chart-bar-solid" data-i18n-title="hydro.charts" title="View discharge charts"></button>
-          <button id="btn-bookmarks" class="btn icon" data-icon-name="bookmark-solid" data-i18n-title="hydro.bookmarks.title" data-i18n-aria-label="hydro.bookmarks.aria"
-                  title="Notable global rivers" aria-label="Browse notable global rivers"></button>
-          <button id="btn-saved" class="btn icon" data-icon-name="heart-solid" data-i18n-title="hydro.saved.title" data-i18n-aria-label="hydro.saved.aria"
-                  title="My saved rivers" aria-label="Browse my saved rivers"></button>
-          <button id="btn-legend" class="btn icon" data-i18n-title="stream.showLegend" title="Show forecast legend"></button>
-          <button id="btn-clear-river" class="btn icon" data-icon-name="backspace" data-i18n-title="hydro.clearRiver" title="Clear the selected river" disabled></button>
-          <button id="btn-toggle-slider" class="btn icon" data-icon-name="clock-solid" data-i18n-title="stream.hideSlider" title="Hide timeseries slider"></button>
+          <div class="row" id="stream-style-row">
+            <select id="stream-style">
+              <option value="standard" data-i18n="stream.style.standard">Standard</option>
+              <option value="max-flow" selected data-i18n="stream.style.max-flow">Forecasted Max Flows</option>
+              <option value="timeseries" data-i18n="stream.style.timeseries">15 Day Forecast Timeseries</option>
+              <option value="time-to-peak" data-i18n="stream.style.time-to-peak">Time to Peak</option>
+              <option value="below-q95" data-i18n="stream.style.below-q95">Below Q95 flow</option>
+            </select>
+            <button id="btn-legend" class="btn icon" data-i18n-title="stream.showLegend" title="Show forecast legend"></button>
+            <button id="btn-toggle-slider" class="btn icon" data-icon-name="clock-solid" data-i18n-title="stream.hideSlider" title="Hide timeseries slider"></button>
+          </div>
         </div>
       </section>
-      <hr data-tool="flood"/>
-      <section id="flood-section" data-tool="flood">
+      <hr id="flood-rule"/>
+      <section id="flood-section">
         <h2 data-i18n="flood.heading">Flood Mapping</h2>
         <div class="row wrap">
           <button id="btn-flood-mode" class="btn toggle" data-i18n="flood.enable">FIM Mode: Off</button>
@@ -146,17 +133,42 @@
 
       <!-- HYDROGRAPHY EXPLORER · four answers to "what did that click select", the actions that act
            on whichever is on, and the attributes of the reach the click landed on under them. -->
-      <hr data-tool="hydrography"/>
-      <section id="explorer-section" data-tool="hydrography">
+      <hr/>
+      <section id="explorer-section">
         <h2 data-i18n="explorer.heading.selection">Hydrography Explorer</h2>
 
+        <div class="row" id="explorer-actions">
+          <button id="btn-search-river" class="btn icon" data-icon-name="magnifying-glass-solid"
+                  data-i18n-title="search.label" data-i18n-aria-label="search.aria"
+                  title="Find a river by name or ID" aria-label="Find a river by name or ID"></button>
+          <button id="btn-styling" class="btn icon" data-icon-name="paint-brush"
+                  data-i18n-title="explorer.heading.styling" data-i18n-aria-label="explorer.styling.aria"
+                  title="Styling Options" aria-label="Open the styling options"></button>
+          <button id="btn-bookmarks" class="btn icon" data-icon-name="bookmark-solid"
+                  data-i18n-title="hydro.bookmarks.title" data-i18n-aria-label="hydro.bookmarks.aria"
+                  title="Notable global rivers" aria-label="Browse notable global rivers"></button>
+          <button id="btn-saved" class="btn icon" data-icon-name="heart-solid"
+                  data-i18n-title="hydro.saved.title" data-i18n-aria-label="hydro.saved.aria"
+                  title="My saved rivers" aria-label="Browse my saved rivers"></button>
+          <span class="sep" aria-hidden="true"></span>
+          <button class="btn icon" disabled id="btn-explorer-clear" data-icon-name="trash"
+                  data-i18n-title="explorer.action.clear.about" data-i18n-aria-label="explorer.action.clear"
+                  title="Empty whatever the current method is holding." aria-label="Clear"></button>
+          <button class="btn icon" disabled id="btn-copy" data-icon-name="clipboard-document"
+                  data-i18n-title="explorer.action.copy.about" data-i18n-aria-label="explorer.action.copy"
+                  title="Copy the outlet riverIds the current method is holding, one per line." aria-label="Copy"></button>
+          <button class="btn icon" disabled id="btn-geoparquet" data-icon-name="arrow-down-tray"
+                  data-i18n-title="explorer.action.download.about" data-i18n-aria-label="explorer.action.download"
+                  title="Download GeoParquet" aria-label="Download"></button>
+        </div>
+
         <div id="selector-rows">
-          <div class="selector-head eyebrow" id="browse-head" data-tool="forecast"
+          <div class="selector-head eyebrow" id="browse-head"
                data-i18n-title="explorer.mode.browse.about"
                title="One click selects the reach it lands on and opens its charts. Press D.">
             <button class="btn sm mode" id="browse-mode" tabindex="-1"></button>
             <span class="title" data-i18n="explorer.mode.browse">Data Browser</span>
-            <span class="clarify" data-i18n="explorer.mode.browse.clarify">(1 River + Open Charts)</span>
+            <span class="clarify" data-i18n="explorer.mode.browse.clarify">(1 River & Open Charts)</span>
             <span id="browse-count" data-i18n-title="explorer.count.reach"
                   title="The reach you clicked"></span>
           </div>
@@ -174,7 +186,7 @@
                title="One click selects every reach that drains to the reach it lands on. Press W.">
             <button class="btn sm mode" id="watershed-mode" tabindex="-1"></button>
             <span class="title" data-i18n="explorer.mode.watershed">Watershed Select</span>
-            <span class="clarify" data-i18n="explorer.mode.watershed.clarify">(1 River + Upstreams)</span>
+            <span class="clarify" data-i18n="explorer.mode.watershed.clarify">(1 River & Upstreams)</span>
             <span id="watershed-count" data-i18n-title="explorer.count.streams"
                   title="Streams in the current selection"></span>
           </div>
@@ -198,23 +210,6 @@
           </div>
         </div>
 
-        <div id="selection-actions">
-          <button class="btn primary" disabled id="btn-geoparquet"
-                  data-i18n="explorer.action.download" data-i18n-title="explorer.action.download.about"
-                  title="Download GeoParquet">
-            Download
-          </button>
-          <button class="btn" disabled id="btn-copy"
-                  data-i18n="explorer.action.copy" data-i18n-title="explorer.action.copy.about"
-                  title="Copy the outlet riverIds the current method is holding, one per line.">
-            Copy
-          </button>
-          <button class="btn" disabled id="btn-explorer-clear"
-                  data-i18n="explorer.action.clear" data-i18n-title="explorer.action.clear.about"
-                  title="Empty whatever the current method is holding.">Clear
-          </button>
-        </div>
-
         <!-- One readout under the five rows: only the chosen method's block is in the page, and the
              two that select a single reach share one. -->
         <div id="selector-body">
@@ -234,7 +229,7 @@
       </section>
     </div>
 
-    <div id="panel-foot" data-tool="hydrography">
+    <div id="panel-foot">
       <div id="progress">
         <div id="progress-head">
           <span id="progress-phase"></span>
@@ -248,7 +243,7 @@
       <div id="stages"></div>
     </div>
 
-    <div id="charts-dock" class="dock" data-tool="forecast">
+    <div id="charts-dock" class="dock">
       <div class="modal-head">
         <div class="row">
           <h3 id="charts-modal-title" data-i18n="charts.heading">Discharge charts</h3>
@@ -275,7 +270,7 @@
       </div>
     </div>
 
-    <div id="bookmarks-dock" class="dock" data-tool="forecast">
+    <div id="bookmarks-dock" class="dock">
       <div class="modal-head">
         <h3 data-i18n="bookmarks.heading">Notable Global Rivers Reference</h3>
         <button class="btn sm" id="bookmarks-close" data-i18n-aria-label="common.close" aria-label="Close">✕</button>
@@ -283,7 +278,7 @@
       <div class="modal-body" id="bookmarks-body"></div>
     </div>
 
-    <div id="saved-dock" class="dock" data-tool="forecast">
+    <div id="saved-dock" class="dock">
       <div class="modal-head">
         <h3 data-i18n="saved.heading">My Saved Rivers (limit 100)</h3>
         <button class="btn sm" id="saved-close" data-i18n-aria-label="common.close" aria-label="Close">✕</button>
@@ -296,7 +291,7 @@
          styleset paints over them until it is switched back. Docked rather than stacked in the
          column: the rule editor wants more width than the column has, and nothing above it needs
          to stay on screen while a style is being tuned. -->
-    <div id="styling-dock" class="dock" data-tool="styling">
+    <div id="styling-dock" class="dock">
       <div class="modal-head">
         <h3 data-i18n="explorer.heading.styling">Styling Options</h3>
         <button class="btn sm" id="styling-close" data-i18n-aria-label="common.close" aria-label="Close">✕</button>
@@ -346,7 +341,7 @@
             <li data-i18n-html="help.app.lang" data-spotlight="#btn-language"></li>
             <li data-i18n-html="help.app.theme" data-spotlight="#btn-theme"></li>
             <li data-i18n-html="help.app.search" data-spotlight="#btn-search-river"></li>
-            <li data-i18n-html="help.app.styling" data-spotlight="#btn-styling" data-tool="styling"></li>
+            <li data-i18n-html="help.app.styling" data-spotlight="#btn-styling"></li>
             <li data-i18n-html="help.app.help" data-spotlight="#btn-help"></li>
           </ul>
         </section>
@@ -370,7 +365,7 @@
               <a href="https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer" target="_blank" rel="noopener">USGS The National Map</a></li>
           </ul>
         </section>
-        <section class="help-section" data-spotlight="#hydrology-section" data-tool="forecast">
+        <section class="help-section" data-spotlight="#hydrology-section">
           <h4 data-i18n="help.hydro.h"></h4>
           <p data-i18n="help.hydro.intro" data-spotlight="#hydrology-section"></p>
           <ol>
@@ -384,19 +379,19 @@
             <li data-i18n-html="help.hydro.style.timeToPeak" data-spotlight="#stream-style"></li>
             <li data-i18n-html="help.hydro.style.belowQ95" data-spotlight="#stream-style"></li>
           </ul>
-          <p class="subhead" data-i18n="help.tools.h" data-spotlight="#hydro-actions"></p>
-          <p data-i18n-html="help.tools.intro" data-spotlight="#hydro-actions"></p>
+          <p class="subhead" data-i18n="help.tools.h" data-spotlight="#explorer-actions, #stream-style-row"></p>
+          <p data-i18n-html="help.tools.intro" data-spotlight="#explorer-actions, #stream-style-row"></p>
           <ul>
             <li data-i18n-html="help.tools.charts" data-spotlight="#btn-charts"></li>
             <li data-i18n-html="help.tools.notable" data-spotlight="#btn-bookmarks"></li>
             <li data-i18n-html="help.tools.saved" data-spotlight="#btn-saved"></li>
             <li data-i18n-html="help.tools.search" data-spotlight="#btn-search-river"></li>
-            <li data-i18n-html="help.tools.clear" data-spotlight="#btn-clear-river"></li>
+            <li data-i18n-html="help.tools.clear" data-spotlight="#btn-explorer-clear"></li>
             <li data-i18n-html="help.tools.slider" data-spotlight="#btn-toggle-slider, #player"></li>
             <li data-i18n-html="help.tools.legend" data-spotlight="#btn-legend, #legend-overlay"></li>
           </ul>
         </section>
-        <section class="help-section" data-spotlight="#btn-charts" data-tool="forecast">
+        <section class="help-section" data-spotlight="#btn-charts">
           <h4 data-i18n="help.charts.h"></h4>
           <p data-i18n="help.charts.open" data-spotlight="#map, #btn-charts"></p>
           <ol>
@@ -406,7 +401,7 @@
           </ol>
           <p data-i18n-html="help.charts.saved" data-spotlight="#btn-saved"></p>
         </section>
-        <section class="help-section" data-spotlight="#flood-section" data-tool="flood">
+        <section class="help-section" data-spotlight="#flood-section">
           <h4 data-i18n="help.flood.h"></h4>
           <p data-i18n="help.flood.mode" data-spotlight="#flood-section"></p>
           <ol>
@@ -427,11 +422,11 @@
           <p class="subhead" data-i18n="help.flood.model.h"></p>
           <p data-i18n-html="help.flood.model"></p>
         </section>
-        <section class="help-section" data-tool="hydrography">
+        <section class="help-section">
           <h4 data-i18n="help.explorer.h"></h4>
           <p data-i18n="help.explorer.intro"></p>
           <ul>
-            <li data-i18n-html="help.explorer.browse" data-tool="forecast"></li>
+            <li data-i18n-html="help.explorer.browse"></li>
             <li data-i18n-html="help.explorer.river"></li>
             <li data-i18n-html="help.explorer.watershed"></li>
             <li data-i18n-html="help.explorer.multi"></li>
@@ -440,7 +435,7 @@
           <p data-i18n-html="help.explorer.actions"></p>
           <p data-i18n-html="help.explorer.attributes"></p>
         </section>
-        <section class="help-section" data-tool="styling" data-spotlight="#btn-styling">
+        <section class="help-section" data-spotlight="#btn-styling">
           <h4 data-i18n="help.styling.h"></h4>
           <p data-i18n-html="help.styling.intro" data-spotlight="#stream-style"></p>
           <ul>
@@ -494,13 +489,13 @@
 
 <!-- put player after legend so they naturally stack correctly on narrower screens -->
 <div id="legend-overlay" class="card map-overlay">
-  <div id="forecast-legend" data-tool="forecast">
+  <div id="forecast-legend">
     <h2 data-i18n="legend.returnPeriod">Forecast return period</h2>
     <div id="legend-items"></div>
   </div>
   <div id="layer-legend-items"></div>
 </div>
-<div id="player" class="card player map-overlay" data-tool="forecast">
+<div id="player" class="card player map-overlay">
   <div id="progress-bar"></div>
   <button id="btn-play" class="btn primary round" data-i18n-title="player.play" title="Play / pause (space)">▶</button>
   <div class="col grow">
@@ -557,7 +552,7 @@
     </div>
   </div>
 </div>
-<div id="save-river-modal" class="backdrop hidden" data-tool="forecast">
+<div id="save-river-modal" class="backdrop hidden">
   <div class="card modal entry" role="dialog" aria-modal="true" aria-labelledby="save-river-title">
     <div class="modal-head">
       <h3 id="save-river-title" data-i18n="saveRiver.heading">Save river</h3>
@@ -584,11 +579,11 @@
     </div>
     <div class="modal-body">
       <h4 data-i18n="settings.display">Display</h4>
-      <label class="row" data-tool="forecast">
+      <label class="row">
         <input type="checkbox" id="set-shaded-warning-levels"/>
         <span data-i18n="settings.shadedWarningLevels">Shade warning levels on the forecast chart</span>
       </label>
-      <label class="row" data-tool="forecast">
+      <label class="row">
         <input type="checkbox" id="set-saved-highlight"/>
         <span data-i18n="settings.savedHighlight">Outline my saved rivers on the map</span>
       </label>

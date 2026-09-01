@@ -5,15 +5,12 @@ import "./styles/app.css";
 import "./styles/explorer.css";
 import "./account/auth.js";  // must be first: registers the auth listener before anything else runs
 import "./settings/rfsConfig.js"
-import {initLanguagePicker, initSettings, initThemeToggle, onSetting, TOOLS} from "./settings/settings.js";
+import {initLanguagePicker, initSettings, initThemeToggle, onSetting} from "./settings/settings.js";
 import {startUserSync} from "./account/userSync.js";
 
 import {initMap} from "./map/map";
 import {initBasemapPicker} from "./map/basemaps.js";
-import {
-  addRasterLayer, applyStreamsVisibility, initLayerPicker, limitLayersToTools, streamLayers,
-  syncLayerPicker
-} from "./map/layers";
+import {addRasterLayer, applyStreamsVisibility, initLayerPicker, streamLayers, syncLayerPicker} from "./map/layers";
 import {attachReferences, hoverRegions} from "./map/references.js";
 import {Streams} from "./map/Streams.js";
 import {focusRiver, frameRiverExtent, nearestFeature, snapToFeature, travelToRiver} from "./map/framing";
@@ -28,27 +25,11 @@ import {createDataSettings} from "./ui/dataSettings";
 import {createRiverSearch} from "./ui/riverSearch";
 import {wireModals} from "./ui/modals.js";
 import {$, whenIdle} from "./dom.js";
-
-
-// ═══════════════════════════════════════════════════════════════════════════
-// Toolchains · which sets of tools this build ships
-// ═══════════════════════════════════════════════════════════════════════════
-/**
- * Take the toolchains this deployment left out off the page, before anything is wired.
- *
- * Removed rather than hidden: every feature below finds its controls by id, and an id that is
- * still in the document but belongs to a tool nobody asked for is exactly the sort of thing that
- * gets wired by accident. What is left is a page with no trace of the tools it does not have.
- *
- * Each toolchain's code is behind a dynamic import in boot(), so it is a chunk of its own that a
- * build without that tool never fetches.
- */
-function dropDisabledTools() {
-  for (const node of document.querySelectorAll("[data-tool]")) {
-    if (!TOOLS[node.dataset.tool]) node.remove();
-  }
-  limitLayersToTools((name) => TOOLS[name]);
-}
+import {initExplorer} from "./explorer/explorer.js";
+import {createFloodController} from "./flood/floodController";
+import {createChartsDock} from "./docks/charts.js";
+import {createBookmarksDock, createSavedRiversDock} from "./docks/bookmarks.js";
+import {createPanelControls} from "./ui/panelControls.js";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Shared state · read by more than one feature, so it lives here
@@ -62,9 +43,8 @@ function newestForecastExpected() {
 }
 
 let currentForecastDate = "2026-07-10" // todo newestForecastExpected();
-// Which styleset the network opens on. Standard is the one that leaves the network to the styling
-// section, so a build without the forecast tools starts there.
-let currentStyleset = TOOLS.forecast ? "max-flow" : "standard";
+// Which styleset the network opens on.
+let currentStyleset = "max-flow";
 let mapLoaded = false;
 
 // The map and everything built on it. Assigned by boot() once initMap() has resolved — the map is
@@ -76,7 +56,7 @@ let streams = null;
 let flood = null;
 let chartsDock = null;
 let panelControls = null;
-// The hydrography toolchains, when this build has either of them — see src/explorer/explorer.js.
+// The hydrography explorer — see src/explorer/explorer.js.
 let explorer = null;
 
 // Counter monitors which selection/animation the camera belongs to.
@@ -96,8 +76,6 @@ let cameraSeq = 0;
  * `move` is how this reach was arrived at — traveled to deliberately, or clicked on the map.
  */
 async function showRiver(river, {location = river, target = river, move = travelToRiver} = {}) {
-  // Without the forecast tools there are no charts to open, so the camera is the whole of it.
-  if (!chartsDock) return void move(map, target);
   const seq = ++cameraSeq;
   await chartsDock.openForRiver(river, location);
   // Another reach was picked while the panel was widening — that one owns the camera now, and this
@@ -156,7 +134,6 @@ async function prefetchRiverIndex() {
 // ═══════════════════════════════════════════════════════════════════════════
 // Chrome · wired before the map, because none of it waits on one
 // ═══════════════════════════════════════════════════════════════════════════
-dropDisabledTools();
 hydrateIcons()
 // The caches moved to a database shared with the hydrography explorer; the one this app used alone
 // is dead weight on any device that ever searched by ID.
@@ -204,74 +181,61 @@ async function boot() {
   applyStreamsVisibility(map);
   addRasterLayer(map);
   syncLayerPicker(map);
-  // Reference geography, whatever tools this build ships: the catchments, the group boundaries and
-  // HydroBASINS are map reference, and each attaches if and when its archive answers. Every arrival
+  // Reference geography: the catchments, the group boundaries and HydroBASINS are map reference, and each attaches if and when its archive answers. Every arrival
   // re-reads the layer picker, so a layer stops reporting as unpublished the moment it is real.
   attachReferences({onChange: () => syncLayerPicker(map)});
 
-  // The hydrography toolchains, if either is in this build. Dynamically imported so a deployment
-  // without them does not ship the selection arithmetic or the style compiler at all.
-  if (TOOLS.hydrography || TOOLS.styling) {
-    const {initExplorer} = await import("./explorer/explorer.js");
-    explorer = initExplorer({
-      tools: TOOLS,
-      styleset: currentStyleset,
-      // What repaints the network when a forecast styleset takes it back off the style spec.
-      onRepaintNetwork: () => streams.applyPaint(),
-      // The style spec only draws the network under the Standard styleset, so opening the editor
-      // asks for it — otherwise every rule and preset in there is a no-op on a forecast-coloured
-      // network, with nothing on screen to say why.
-      onStyleEditor: () => panelControls?.chooseStyleset("standard")
-    });
-  }
+  explorer = initExplorer({
+    styleset: currentStyleset,
+    // What repaints the network when a forecast styleset takes it back off the style spec.
+    onRepaintNetwork: () => streams.applyPaint(),
+    // The style spec only draws the network under the Standard styleset, so opening the editor
+    // asks for it — otherwise every rule and preset in there is a no-op on a forecast-coloured
+    // network, with nothing on screen to say why.
+    onStyleEditor: () => panelControls?.chooseStyleset("standard"),
+    // The explorer's Clear is the app's: the charts and the named-river highlight go with it.
+    onClear: () => {
+      chartsDock.clearSelection();
+      streams.setNamedRiver(null);
+    }
+  });
 
-  if (TOOLS.flood) {
-    const {createFloodController} = await import("./flood/floodController");
-    flood = createFloodController({
-      map,
-      streams,
-      getForecastDate: () => currentForecastDate,
-      isMapLoaded: () => mapLoaded
-    });
-  }
+  flood = createFloodController({
+    map,
+    streams,
+    getForecastDate: () => currentForecastDate,
+    isMapLoaded: () => mapLoaded
+  });
 
-  if (TOOLS.forecast) {
-    const [{createChartsDock}, {createBookmarksDock, createSavedRiversDock}, {createPanelControls}] =
-      await Promise.all([
-        import("./docks/charts.js"),
-        import("./docks/bookmarks.js"),
-        import("./ui/panelControls.js")
-      ]);
-    chartsDock = createChartsDock({map, streams, getForecastDate: () => currentForecastDate});
-    // A saved river arrives whole: id, position on the zarr riverId axis, and outlet coordinate. The
-    // two lists are the same table over different rows — the app's defaults, and the user's own.
-    createBookmarksDock({map, onSelectRiver: goToRiver});
-    createSavedRiversDock({map, onSelectRiver: goToRiver});
+  chartsDock = createChartsDock({map, streams, getForecastDate: () => currentForecastDate});
+  // A saved river arrives whole: id, position on the zarr riverId axis, and outlet coordinate. The
+  // two lists are the same table over different rows — the app's defaults, and the user's own.
+  createBookmarksDock({map, onSelectRiver: goToRiver});
+  createSavedRiversDock({map, onSelectRiver: goToRiver});
 
-    // The pink outline on saved reaches. Set now for what was saved in an earlier session and again
-    // on every change; the map re-applies it as tiles arrive, so nothing here waits for the map.
-    streams.setSavedRivers(savedRiverIds());
-    onSavedRiversChange((saved) => streams.setSavedRivers(saved.map((e) => e.riverId)));
+  // The pink outline on saved reaches. Set now for what was saved in an earlier session and again
+  // on every change; the map re-applies it as tiles arrive, so nothing here waits for the map.
+  streams.setSavedRivers(savedRiverIds());
+  onSavedRiversChange((saved) => streams.setSavedRivers(saved.map((e) => e.riverId)));
 
-    panelControls = createPanelControls({
-      streams,
-      onStylesetChange: (styleset) => {
-        currentStyleset = styleset;
-        // Standard is the network as the styling section draws it; every other styleset paints it
-        // from the forecast and takes the base layer back. Told after streams, whose repaint is
-        // what the handing back lands on.
-        explorer?.setStyleset(styleset);
-      },
-      onForecastDateChange: (date) => {
-        currentForecastDate = date;
-        flood?.onForecastDateChange();
-      }
-    });
+  panelControls = createPanelControls({
+    streams,
+    onStylesetChange: (styleset) => {
+      currentStyleset = styleset;
+      // Standard is the network as the styling section draws it; every other styleset paints it
+      // from the forecast and takes the base layer back. Told after streams, whose repaint is
+      // what the handing back lands on.
+      explorer.setStyleset(styleset);
+    },
+    onForecastDateChange: (date) => {
+      currentForecastDate = date;
+      flood.onForecastDateChange();
+    }
+  });
 
-    onSetting("shadedWarningLevels", () => chartsDock.rerenderCharts());
-    // Fires before the layer is built, so Streams holds the answer and builds the layer with it.
-    onSetting("savedHighlight", (on) => streams.setSavedHighlightVisible(on));
-  }
+  onSetting("shadedWarningLevels", () => chartsDock.rerenderCharts());
+  // Fires before the layer is built, so Streams holds the answer and builds the layer with it.
+  onSetting("savedHighlight", (on) => streams.setSavedHighlightVisible(on));
 
   createHelpDock({map});
 
@@ -286,11 +250,11 @@ async function boot() {
     onFound: goToRiver,
     onClear: () => {
       streams.setNamedRiver(null);
-      explorer?.clearSelection();
+      explorer.clearSelection();
     }
   });
 
-  flood?.onMapLoad();
+  flood.onMapLoad();
   console.log("Basemap + streams loaded.");
   mapLoaded = true;
 
@@ -303,7 +267,7 @@ async function boot() {
     const feats = map.queryRenderedFeatures(box, {layers: streamLayers()});
     // Nearest to the pointer, not first in draw order — see nearestFeature.
     const hit = nearestFeature(feats.filter((f) => f.properties?.riverId != null), e.lngLat);
-    if (flood?.isMappingMode()) {
+    if (flood.isMappingMode()) {
       // In mapping mode the click is a reach selection, not a navigation — leave the view alone.
       // Flood mapping addresses reaches by riverIndex (the tile carries it), never by riverId.
       if (hit) {
@@ -316,7 +280,7 @@ async function boot() {
     // The explorer reads the click first. Four of its five methods are answering a question about
     // the network — a reach, a watershed, an area of interest, a collection — and say so by taking
     // the click; the Data Browser does not, so the reach goes on to open its charts.
-    if (explorer?.onMapClick(e, hit)) return;
+    if (explorer.onMapClick(e, hit)) return;
     if (!hit) return;
     // The reach itself rather than where the pointer landed, which at low zoom are nowhere near
     // each other — the query box above is ±10px, and that is a couple of hundred kilometres of
@@ -339,7 +303,7 @@ async function boot() {
   });
   map.on("mouseout", () => hoverRegions(null));
 
-  panelControls?.initForecastDatePicker({defaultDate: currentForecastDate});
+  panelControls.initForecastDatePicker({defaultDate: currentForecastDate});
   void streams.setDate(currentForecastDate);
   whenIdle(prefetchRiverIndex);
   // Not a prefetch: the names are fetched when the search box is first opened, and this only keeps

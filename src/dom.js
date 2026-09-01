@@ -37,6 +37,9 @@ export const mb = (bytes) => `${(bytes / 1e6).toFixed(1)} MB`;
 
 export const fmt = (n) => n.toLocaleString();
 
+/** The number in `v`, or null — the first read of anything numeric off tiles or storage. */
+export const num = (v) => (Number.isFinite(Number(v)) ? Number(v) : null);
+
 /**
  * Run `fn` once the browser has a moment, or after `timeout` regardless.
  *

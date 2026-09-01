@@ -4,6 +4,8 @@
  * survives a reload and the point of it is what comes out. Keyed by outlet riverId, so clicking the
  * same reach twice never doubles it.
  */
+import {num} from '../dom.js';
+
 const KEY = 'rfs-hydrography-picks';
 const MODE_KEY = 'rfs-hydrography-multiselect';
 
@@ -24,8 +26,6 @@ const store = {
     } catch { /* private mode — the list holds for this tab and is not remembered */ }
   },
 };
-
-const num = v => (Number.isFinite(Number(v)) ? Number(v) : null);
 
 /** Only records that can still describe a watershed are kept — a half-written one is dropped. */
 function clean(p) {

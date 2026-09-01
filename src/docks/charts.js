@@ -213,9 +213,6 @@ function createChartsDock({map, streams, getForecastDate}) {
     btn.dataset.i18nTitle = key;
     btn.title = t(key);
     btn.setAttribute("aria-label", t(key));
-    // Nothing to clear with no reach selected — the panel's button is the state readout for that.
-    const clear = $("btn-clear-river");
-    if (clear) clear.disabled = selectedRiverId == null && selectedRiverIndex == null;
   }
 
   /**
@@ -350,7 +347,6 @@ function createChartsDock({map, streams, getForecastDate}) {
   $("btn-charts").addEventListener("click", () => (isDockOpen("charts") ? close() : openForRiver()));
   $("charts-close").addEventListener("click", close);
   $("charts-save")?.addEventListener("click", () => void toggleSaved());
-  $("btn-clear-river")?.addEventListener("click", clearSelection);
   // Follows the list rather than the click, so removing this reach from the saved-rivers dock fills
   // the heart back in here too.
   onSavedRiversChange(renderHead);

@@ -688,13 +688,13 @@ input[aria-invalid="true"] {
 
 /* ── MapLibre's own chrome ──
    Themed here, or the app ships stock light controls over a dark UI. */
-.maplibregl-ctrl-group {
+.maplibregl-map .maplibregl-ctrl-group {
     background: var(--surface);
     border: 1px solid var(--border);
     box-shadow: 0 2px 10px rgba(var(--shadow-color), .4);
 }
 
-.maplibregl-ctrl-group button + button {
+.maplibregl-map .maplibregl-ctrl-group button + button {
     border-top-color: var(--border);
 }
 
@@ -708,23 +708,25 @@ input[aria-invalid="true"] {
     filter: var(--ctrl-icon-filter, invert(1) opacity(.75));
 }
 
-/* The compact attribution carries MapLibre's own `background-color:#fff` at (0,2,0), so it has to
-   be named here or the theme loses: the bar stays white, our dim link colour lands on it, and the
-   pair measures 2.6:1. Opaque like MapLibre's own compact style, because a translucent bar puts
-   11px type over whatever basemap happens to be under it. */
-.maplibregl-ctrl-attrib,
-.maplibregl-ctrl-attrib.maplibregl-compact,
-.maplibregl-ctrl-scale {
+/* The compact attribution carries MapLibre's own `background-color:#fff` at (0,2,0). Everything
+   here is scoped under .maplibregl-map to outrank it, because matching its specificity leaves the
+   winner to stylesheet order — and the dev server injects maplibre-gl.css (imported by map.js)
+   after this file, where the theme loses: the bar stays white, our dim link colour lands on it at
+   2.6:1, and in dark mode the inverted (i) icon is white on white. Opaque like MapLibre's own
+   compact style, because a translucent bar puts 11px type over whatever basemap is under it. */
+.maplibregl-map .maplibregl-ctrl-attrib,
+.maplibregl-map .maplibregl-ctrl-attrib.maplibregl-compact,
+.maplibregl-map .maplibregl-ctrl-scale {
     color: var(--text-dim);
     background: var(--surface);
     border-color: var(--border);
 }
 
-.maplibregl-ctrl-attrib-button {
+.maplibregl-map .maplibregl-ctrl-attrib-button {
     background-color: transparent;
 }
 
-.maplibregl-ctrl-attrib a {
+.maplibregl-map .maplibregl-ctrl-attrib a {
     color: var(--text-dim);
 }
 

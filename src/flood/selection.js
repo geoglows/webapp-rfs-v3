@@ -1,11 +1,12 @@
 import {corridorBetween} from "./corridor";
+import {upstreamRange} from "../data/runs.js";
+import {inFilter, noMatch, streamLine, whenStyleReady, zoomInterp} from "../map/streamFilters.js";
 import {FLOOD_MAX_SEGMENTS, FLOOD_MIN_MAP_ZOOM} from "../settings/settings.js";
 
 // Reaches are addressed by riverIndex everywhere in flood mapping — the streams tiles carry it as a
 // property, the flood stores key their river directories on it, and a corridor is worked out from
 // it — so the highlight filters match on that property, never on riverId.
-const NO_MATCH = ["in", ["get", "riverIndex"], ["literal", []]];
-const inFilter = (ids) => ids.length ? ["in", ["get", "riverIndex"], ["literal", ids]] : NO_MATCH;
+const KEY = "riverIndex";
 
 class Selection {
   /**
@@ -20,7 +21,7 @@ class Selection {
    * hasCoverage(riverIndex): whether the flood library holds a reach anywhere — the global bitset
    * from the flood root, which arrives async once the worker is ready, so call refresh() then.
    *
-   * Every reach here — clicked, corridor, coverage — is a riverIndex (see NO_MATCH above).
+   * Every reach here — clicked, corridor, coverage — is a riverIndex (see the note above).
    */
   constructor(map, onChange, hasCoverage = () => false) {
     this.map = map;
@@ -48,23 +49,14 @@ class Selection {
    * subset of it that's ready to flood, and what you actually clicked. */
   addHighlightLayers() {
     const line = (id, color, width, opacity, dash, minzoom) => {
-      this.map.addLayer({
-        id,
-        type: "line",
-        source: "streams",
-        "source-layer": "streams",
-        filter: NO_MATCH,
-        ...minzoom ? {minzoom} : {},
-        layout: {"line-cap": "round", "line-join": "round", visibility: "none"},
-        paint: {
-          "line-color": color,
-          // grow with zoom (matching the base streams' high-zoom widening) so a highlighted
-          // reach stays clearly visible on top when zoomed in
-          "line-width": ["interpolate", ["linear"], ["zoom"], 3, width * 0.6, 8, width, 13, width * 1.8, 16, width * 3.2],
-          "line-opacity": opacity,
-          ...dash ? {"line-dasharray": dash} : {}
-        }
-      });
+      this.map.addLayer(streamLine({
+        id, color, opacity, dash, minzoom,
+        filter: noMatch(KEY),
+        visibility: "none",
+        // grow with zoom (matching the base streams' high-zoom widening) so a highlighted
+        // reach stays clearly visible on top when zoomed in
+        width: zoomInterp([3, width * 0.6, 8, width, 13, width * 1.8, 16, width * 3.2])
+      }));
     };
     // Base `streams` lines are LIGHT BLUE — highlights MUST clash (dark/contrasting), never
     // light blue. Reaches with NO flood library = solid RED; corridor = amber; ready = green; the
@@ -94,12 +86,11 @@ class Selection {
   setCoverage(ids) {
     this.coverageIds = ids;
     if (!this.map.getLayer("flood-maps-unmappable")) return;
-    if (!this.map.isStyleLoaded()) {
-      this.map.once("idle", () => this.setCoverage(this.coverageIds));
-      return;
-    }
-    this.map.setFilter("flood-maps-unmappable", ids.length ? ["!", inFilter(ids)] : NO_MATCH);
-    this.logSelection([...this.corridor].filter((id) => this.hasCoverage(id)).length);
+    whenStyleReady(this.map, () => {
+      const cur = this.coverageIds;
+      this.map.setFilter("flood-maps-unmappable", cur.length ? ["!", inFilter(KEY, cur)] : noMatch(KEY));
+      this.logSelection([...this.corridor].filter((id) => this.hasCoverage(id)).length);
+    });
   }
 
   /**
@@ -120,8 +111,8 @@ class Selection {
     for (const f of feats) {
       const hi = Number(f.properties?.riverIndex);
       const up = Number(f.properties?.upstreamCount);
-      if (!Number.isInteger(hi) || !Number.isInteger(up) || runs.has(hi)) continue;
-      runs.set(hi, {lo: hi - up, hi});
+      if (!Number.isInteger(hi) || hi < 0 || !Number.isInteger(up) || up < 0 || runs.has(hi)) continue;
+      runs.set(hi, upstreamRange({riverIndex: hi, upstreamCount: up}));
     }
     return [...runs.values()];
   }
@@ -171,13 +162,11 @@ class Selection {
   }
 
   updateFilters(floodable) {
-    if (!this.map.isStyleLoaded()) {
-      this.map.once("idle", () => this.updateFilters(floodable));
-      return;
-    }
-    this.map.setFilter("sel-selected", inFilter([...this.corridor]));
-    this.map.setFilter("sel-floodable", inFilter(floodable));
-    this.map.setFilter("sel-clicked", inFilter([...this.clicked]));
+    whenStyleReady(this.map, () => {
+      this.map.setFilter("sel-selected", inFilter(KEY, [...this.corridor]));
+      this.map.setFilter("sel-floodable", inFilter(KEY, floodable));
+      this.map.setFilter("sel-clicked", inFilter(KEY, [...this.clicked]));
+    });
   }
 
   /** The one thing the panel still says: that a click was refused. Cleared by the next accepted one. */
@@ -205,7 +194,5 @@ class Selection {
 }
 
 export {
-  NO_MATCH,
-  Selection,
-  inFilter
+  Selection
 };

@@ -9,10 +9,9 @@ import {map} from '../map/map.js';
 import {setCatchmentSelection} from '../map/references.js';
 import {applyStreamsVisibility, syncLayerPicker} from '../map/layers.js';
 import {BASE_LAYER_ID, COLORS, inRangeExpr} from './streamStyle.js';
+import {inFilter, noMatch, streamLine, zoomInterp} from '../map/streamFilters.js';
 
 export {map};
-
-const SOURCE = 'streams';
 
 /** Rule layers are inserted under this one, so the selected outlet is never painted over. */
 const TOP_LAYER = 'outlet';
@@ -33,18 +32,10 @@ const INLET_LAYER = 'aoi-inlet';
  * may cover. Bottom to top — rule layers go under the first of them that exists. */
 const OVERLAYS = [SEL_UP_LAYER, PICK_UP_LAYER, PICK_LAYER, TOP_LAYER, INLET_LAYER];
 
-/** A filter that matches no reach — how a highlight layer is switched off. */
-const NOTHING = ['==', ['get', 'riverId'], -1];
-
-const line = (id, color, width, opacity) => ({
-  id, type: 'line', source: SOURCE, 'source-layer': SOURCE,
-  filter: NOTHING,
-  layout: {'line-cap': 'round', 'line-join': 'round'},
-  paint: {
-    'line-color': color,
-    'line-width': ['interpolate', ['linear'], ['zoom'], ...width],
-    ...(opacity == null ? {} : {'line-opacity': opacity}),
-  },
+const line = (id, color, width, opacity) => streamLine({
+  id, color, opacity,
+  width: zoomInterp(width),
+  filter: noMatch('riverId'),
 });
 
 /** The width ramp a whole watershed is washed in, selected or collected — the two look alike on
@@ -155,10 +146,10 @@ export const currentSelection = () => selection;
 export function applyHighlight(range, outlet, onStyle) {
   selection = range ? {...range, outlet} : null;
   if (map.getLayer(SEL_UP_LAYER)) {
-    map.setFilter(SEL_UP_LAYER, selection ? inRangeExpr(selection) : NOTHING);
+    map.setFilter(SEL_UP_LAYER, selection ? inRangeExpr(selection) : noMatch('riverIndex'));
   }
   if (map.getLayer(TOP_LAYER)) {
-    map.setFilter(TOP_LAYER, ['==', ['get', 'riverId'], outlet ?? -1]);
+    map.setFilter(TOP_LAYER, inFilter('riverId', outlet == null ? [] : [outlet]));
   }
   onStyle?.();
   setCatchmentSelection(selection);
@@ -171,9 +162,7 @@ export function clearHighlight(onStyle) {
 /** Draw the AOI's inlets — the reaches the selection stops above. Pass [] to draw none. */
 export function applyInlets(ids) {
   if (!map?.getLayer(INLET_LAYER)) return;
-  map.setFilter(INLET_LAYER, ids.length
-    ? ['in', ['get', 'riverId'], ['literal', ids]]
-    : NOTHING);
+  map.setFilter(INLET_LAYER, inFilter('riverId', ids));
 }
 
 // ── the multi-select collection ──────────────────────────────────────────────
@@ -185,12 +174,10 @@ let picked = [];
 export function applyPicks(list) {
   picked = list ?? [];
   if (!map?.getLayer(PICK_LAYER)) return;
-  map.setFilter(PICK_LAYER, picked.length
-    ? ['in', ['get', 'riverId'], ['literal', picked.map(p => p.outletId)]]
-    : NOTHING);
+  map.setFilter(PICK_LAYER, inFilter('riverId', picked.map(p => p.outletId)));
   map.setFilter(PICK_UP_LAYER, picked.length
     ? ['any', ...picked.map(inRangeExpr)]
-    : NOTHING);
+    : noMatch('riverIndex'));
 }
 
 /** Bring one pick into view without changing how far in the map is already zoomed. */

@@ -1,4 +1,4 @@
-/* ── The hydrography toolchains' own styles ────────────────────────────────
+/* ── The hydrography explorer's own styles ────────────────────────────────
    What only the Hydrography Explorer and Styling Options sections have: the four selection methods
    and their readouts, the picks and AOI lists, the river attribute table, the staged export block,
    and the styling rule editor.
@@ -11,14 +11,19 @@
     margin-top: 0
 }
 
-/* The export is the thing the app is for, and the only button that does any work, so it takes the
-   accent and the width of the row; Clear is the plain one beside it. */
-#btn-geoparquet {
-    flex: 1 1 auto
+/* The section's tools — find a river, style the network, the two river lists, and the clear, copy
+   and download actions — on one row above the selection methods. */
+#explorer-actions {
+    margin-bottom: 10px
 }
 
-#btn-explorer-clear {
-    flex: 0 0 auto
+/* A short rule between the tools that find and show rivers and the three that act on the
+   selection. */
+#explorer-actions .sep {
+    width: 1px;
+    height: 22px;
+    background: var(--border);
+    margin: 0 4px
 }
 
 #selection-info {
@@ -260,24 +265,6 @@
     min-width: 0
 }
 
-/* ── the selection actions ─────────────────────────────────────────────────
-   They act on the current selection whichever method made it, so they belong to the block as a
-   whole rather than to any one row of it. */
-#selection-actions {
-    display: flex;
-    gap: 6px;
-    flex-shrink: 0;
-    margin: 10px 0
-}
-
-/* One line, equal shares. min-width overrides a flex item's automatic minimum, which is what would
-   otherwise refuse to shrink a button below the width of its own label. */
-#selection-actions .btn {
-    flex: 1 1 0;
-    min-width: 0;
-    padding-left: 6px;
-    padding-right: 6px
-}
 
 /* ── the selection methods ────────────────────────────────────────────────
    Four answers to the same question, not four features that stack — so one control, not four
@@ -410,7 +397,7 @@
 
 /* ── styling options ──────────────────────────────────────────────────────
    The names table's switch and the rule editor, in one dock: you arrive looking for "how this is
-   drawn" rather than for either by name. Opened from #btn-styling in the header — see
+   drawn" rather than for either by name. Opened from #btn-styling in the explorer section — see
    initStylingTools() and the styling-dock block in app.css. */
 #names-card {
     margin-bottom: 10px

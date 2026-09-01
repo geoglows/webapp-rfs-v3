@@ -19,6 +19,7 @@ import xMark from "heroicons/24/outline/x-mark.svg?raw";
 import magnifyingGlass from "heroicons/24/outline/magnifying-glass.svg?raw";
 import paintBrush from "heroicons/24/outline/paint-brush.svg?raw";
 import check from "heroicons/24/outline/check.svg?raw";
+import clipboardDocument from "heroicons/24/outline/clipboard-document.svg?raw";
 
 const ICONS = {
   "information-circle": informationCircle,
@@ -40,7 +41,8 @@ const ICONS = {
   "x-mark": xMark,
   "magnifying-glass": magnifyingGlass,
   "paint-brush": paintBrush,
-  check
+  check,
+  "clipboard-document": clipboardDocument
 };
 
 function heroIcon(name) {

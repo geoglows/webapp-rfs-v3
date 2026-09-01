@@ -159,6 +159,19 @@
     margin-top: 12px;
 }
 
+/* The button rows the column stacks — the flood mode row, the explorer's tools — sit centred in it
+   rather than hugging the left edge. */
+#panel section > .row {
+    justify-content: center;
+}
+
+/* The stream style picker shares its line with the legend and slider buttons: the select takes
+   whatever width the two icons leave. */
+#stream-style-row > select {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
 /* Off means gone, not dimmed: the sliders, legend and readout have nothing to act on until flood
    mapping is running, and a greyed-out copy of them is just noise in a narrow panel. */
 #flood-controls.mode-off {
@@ -572,7 +585,7 @@ body.dock-open #hydrology-section .field {
 /* The flood section (on screen only under the help dock) follows the same rhythm. The selector
    matches the specificity of the `body.dock-open #scroll > section:not(...)` rule that hides the
    other sections and sits after it, so this one wins. */
-body.help-open #scroll > hr[data-tool="flood"] {
+body.help-open #scroll > hr#flood-rule {
     display: block;
 }
 
@@ -614,23 +627,32 @@ body.dock-open #player {
     min-width: 0;
 }
 
-/* ── Styling dock · the one dock with nothing above it. The names colouring and the rule editor are
-   judged against the map, not against the forecast controls, so the column gives the dock all of
-   its height — and only as much width as the editor's rows need, rather than the half viewport the
-   charts take. These follow the shared dock rules above and so override them. ── */
-body.styling-open #panel {
+/* ── The narrow docks · the ones with nothing above them. The styling editor's names colouring and
+   rules are judged against the map, not against the forecast controls, and the two river lists have
+   nothing to do with those controls either — so the column gives each dock all of its height, and
+   only as much width as its rows need, rather than the half viewport the charts take. These follow
+   the shared dock rules above and so override them. ── */
+body.styling-open #panel,
+body.bookmarks-open #panel,
+body.saved-open #panel {
     flex-basis: var(--panel-styling-w);
 }
 
-body.styling-open #scroll {
+body.styling-open #scroll,
+body.bookmarks-open #scroll,
+body.saved-open #scroll {
     display: none;
 }
 
-body.styling-open #legend-overlay {
+body.styling-open #legend-overlay,
+body.bookmarks-open #legend-overlay,
+body.saved-open #legend-overlay {
     left: calc(var(--panel-styling-w) + 14px);
 }
 
-body.styling-open #player {
+body.styling-open #player,
+body.bookmarks-open #player,
+body.saved-open #player {
     left: calc(var(--panel-styling-w) + (100vw - var(--panel-styling-w)) / 2);
     width: min(720px, calc(100vw - var(--panel-styling-w) - 120px));
 }
