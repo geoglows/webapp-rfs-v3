@@ -1,8 +1,7 @@
 /**
  * IndexedDB storage for the river names table, and the clock it expires on.
  *
- * TWIN FILE: webapp-rfs-hydrography/src/riverNamesDb.js. Both apps read this record out of the same
- * database, so the keys and SCHEMA_VERSION below are a contract between them, not a private detail.
+ * The keys and SCHEMA_VERSION below are a contract rather than a private detail — see db.js.
  *
  * Small enough — a few hundred rows — to be one record holding a plain array, so unlike the river
  * ID lookup there is nothing to gain from a typed-array layout and nothing expensive about reading

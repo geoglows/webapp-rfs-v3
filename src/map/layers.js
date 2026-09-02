@@ -1,10 +1,65 @@
+/**
+ * The one layer picker, over the map's top-right corner.
+ *
+ * Everything drawn over the basemap is switched from here: the stream network, the flood extents,
+ * the three hydrography reference archives (catchments, group boundaries, HydroBASINS) and the
+ * imagery overlays. Independent on/off switches, because any number of them can be drawn at once.
+ *
+ * Three things read the list — the menu row that switches a layer on, the legend row naming its
+ * color, and the sync that greys out both when the open dataset does not publish those tiles — so
+ * it lives here rather than in the markup.
+ */
 import {calciteIcon} from "../icons/calcite.js";
 import {t} from "../i18n/i18n";
-import {wireMenu} from "./menu";
+import {wireMenu} from "../ui/menu.js";
+import {el} from "../dom.js";
+
+/**
+ * Which layers draw the network. Just `streams` until the styling section loads, which compiles
+ * the network into a base layer plus one per rule and rebuilds them on every edit — so this is a
+ * function, not a list: the ids are only knowable when asked.
+ */
+let streamLayerIds = () => ["streams"];
+
+/** Called by the styling section once it owns the network's layers. */
+const registerStreamLayers = (fn) => {
+  streamLayerIds = fn;
+};
+
+/** Which layers a click or a hover has to query to find a reach. */
+const streamLayers = () => streamLayerIds();
 
 const LAYERS = [
-  {layerId: "streams", labelKey: "layers.streams", on: true},
+  // No legend row for the network: what its color means is the forecast scale above the legend,
+  // or the styling section, and a swatch saying "streams" beside either only takes up the corner.
+  {layerId: "streams", labelKey: "layers.streams", on: true, swatch: "stream", legend: false, layers: () => streamLayerIds()},
   {layerId: "flood", labelKey: "layers.floodExtents", on: true},
+  {
+    layerId: "catchments",
+    optional: true,
+    labelKey: "explorer.layers.catchments",
+    titleKey: "explorer.layers.catchments.about",
+    on: false,
+    swatch: "catchment",
+    layers: () => ["catchment-fill", "catchment-outlet", "catchment-line"]
+  },
+  {
+    layerId: "groups",
+    optional: true,
+    labelKey: "explorer.layers.groups",
+    on: false,
+    swatch: "poly",
+    layers: () => ["group-fill", "group-line"]
+  },
+  {
+    layerId: "basins",
+    optional: true,
+    labelKey: "explorer.layers.basins",
+    titleKey: "explorer.layers.basins.about",
+    on: false,
+    swatch: "poly basin",
+    layers: () => ["basin-fill", "basin-line"]
+  },
   {
     layerId: "riverfld",
     labelKey: "layers.riverfld",
@@ -44,9 +99,15 @@ const layerVisible = Object.fromEntries(LAYERS.map((o) => [o.layerId, o.on]));
 // own, so they subscribe below rather than being switched from here).
 const streamsWatchers = new Set();
 
+/** The maplibre layer ids one entry stands for. A raster entry is its own single layer. */
+const idsOf = (entry) => (entry.layers ? entry.layers() : [entry.layerId]);
+
 function applyLayerVisibility(map, layerId) {
-  if (!map.getLayer(layerId)) return;
-  map.setLayoutProperty(layerId, "visibility", layerVisible[layerId] ? "visible" : "none");
+  const entry = LAYERS.find((o) => o.layerId === layerId);
+  const visible = layerVisible[layerId] ? "visible" : "none";
+  for (const id of entry ? idsOf(entry) : [layerId]) {
+    if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", visible);
+  }
 }
 
 const streamsVisible = () => layerVisible.streams;
@@ -64,8 +125,11 @@ function setStreamsVisible(map, visible) {
   for (const fn of streamsWatchers) fn(visible);
 }
 
-/** Push the current stream visibility onto the layers this module owns. Also the call that gives
- * newly-added stream layers the state they were born too late to receive. */
+/**
+ * Push the current stream visibility onto the layers this module owns. Also the call that gives
+ * newly-added stream layers the state they were born too late to receive — which the styling
+ * section leans on, since every edit tears the rule layers down and builds them again visible.
+ */
 function applyStreamsVisibility(map) {
   applyLayerVisibility(map, "streams");
   if (map.getLayer("inspect-highlight")) {
@@ -98,41 +162,82 @@ function addRasterLayer(map) {
   }
 }
 
+/**
+ * Is this entry switchable? Only the reference archives can fail to be — each is a separate PMTiles
+ * file that a dataset may simply not publish, and its row says so rather than looking broken when
+ * clicking it does nothing. Everything else is built by the app and is either there or on its way,
+ * so a check would only grey the row out for the moment before its layer is added.
+ */
+const isPresent = (map, entry) => !entry.optional || idsOf(entry).some((id) => !!map.getLayer(id));
+
+/**
+ * Point the switches and the legend at what the map is actually drawing. Called as each reference
+ * archive lands, and after every restyle of the network.
+ */
+function syncLayerPicker(map) {
+  for (const entry of LAYERS) {
+    if (!entry.opt) continue;
+    const present = isPresent(map, entry);
+    const on = present && layerVisible[entry.layerId];
+    entry.opt.setAttribute("aria-checked", String(on));
+    entry.opt.disabled = !present;
+    // Not data-i18n-title: the row's tooltip is two sentences joined only when the layer is
+    // missing, so it is written here and rewritten by the language picker's repaint.
+    entry.opt.title = [
+      entry.titleKey ? t(entry.titleKey) : null,
+      present ? null : t("explorer.layers.missing")
+    ].filter(Boolean).join("\n\n");
+    entry.legendRow?.classList.toggle("hidden", !on);
+  }
+}
+
 // Layer picker: independent on/off toggles (many overlays can be visible at once).
 function initLayerPicker(map) {
   const btn = document.getElementById("layer-btn");
   const menu = document.getElementById("layer-menu");
+  const legend = document.getElementById("layer-legend-items");
   if (!btn || !menu) return;
   btn.replaceChildren(calciteIcon("layers"));
-  menu.innerHTML = "";
+  menu.replaceChildren();
   wireMenu(btn, menu);
-  LAYERS.forEach(layer => {
-    const opt = document.createElement("button");
-    opt.className = "opt";
-    opt.setAttribute("role", "menuitemcheckbox");
-    opt.setAttribute("aria-checked", String(layerVisible[layer.layerId]));
-    const check = document.createElement("span");
-    check.className = "check";
-    check.setAttribute("aria-hidden", "true");
-    const label = document.createElement("span");
-    label.setAttribute("data-i18n", layer.labelKey);
-    label.textContent = t(layer.labelKey);
-    opt.append(check, label);
+  for (const layer of LAYERS) {
+    const opt = el("button", {
+      class: "opt",
+      role: "menuitemcheckbox",
+      "aria-checked": String(layerVisible[layer.layerId])
+    }, [
+      el("span", {class: "check", "aria-hidden": "true"}),
+      el("span", {"data-i18n": layer.labelKey, text: t(layer.labelKey)}),
+      layer.swatch && el("span", {class: `swatch ${layer.swatch}`})
+    ]);
     // Streams route through setStreamsVisible so the highlights follow the base lines, and so the
     // flood panel's own Hide-streams button and this entry stay two views of one state.
-    if (layer.layerId === "streams") {
-      opt.addEventListener("click", () => setStreamsVisible(map, !layerVisible.streams));
-      onStreamsVisibility((on) => opt.setAttribute("aria-checked", String(on)));
-    } else {
-      opt.addEventListener("click", () => {
-        const next = !layerVisible[layer.layerId];
-        layerVisible[layer.layerId] = next;
+    opt.addEventListener("click", () => {
+      if (layer.layerId === "streams") setStreamsVisible(map, !layerVisible.streams);
+      else {
+        layerVisible[layer.layerId] = !layerVisible[layer.layerId];
         applyLayerVisibility(map, layer.layerId);
-        opt.setAttribute("aria-checked", String(next));
-      });
-    }
+      }
+      syncLayerPicker(map);
+    });
+    if (layer.layerId === "streams") onStreamsVisibility(() => syncLayerPicker(map));
     menu.appendChild(opt);
-  })
+    layer.opt = opt;
+
+    // The legend row for the same layer, hidden until the layer is on: a color is worth naming
+    // only while there is something on the map wearing it. Only the entries that have a swatch —
+    // the imagery overlays are their own legend.
+    if (layer.swatch && layer.legend !== false && legend) {
+      const row = el("div", {class: "legend-item hidden"}, [
+        el("span", {class: `swatch ${layer.swatch}`}),
+        el("span", {"data-i18n": layer.labelKey, text: t(layer.labelKey)})
+      ]);
+      if (layer.titleKey) row.setAttribute("data-i18n-title", layer.titleKey);
+      legend.appendChild(row);
+      layer.legendRow = row;
+    }
+  }
+  syncLayerPicker(map);
 }
 
 export {
@@ -143,6 +248,9 @@ export {
   initLayerPicker,
   layerVisible,
   onStreamsVisibility,
+  registerStreamLayers,
   setStreamsVisible,
-  streamsVisible
+  streamLayers,
+  streamsVisible,
+  syncLayerPicker
 };

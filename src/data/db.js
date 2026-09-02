@@ -1,17 +1,15 @@
 /**
- * The IndexedDB database the RFS v3 hydroviewer and the hydrography explorer both keep their caches
- * in: one connection helper, shared by every cached dataset and by both apps.
+ * The IndexedDB database this app keeps its caches in: one connection helper, shared by every
+ * cached dataset.
  *
- * Everything lives in one object store, keyed by dataset. The two apps ship from the same portal
- * origin, so `rfsV3` is not a naming convention between them — it is one physical database. A river
- * ID lookup built in either is read by the other, and the ~17 MB download happens once per device
- * rather than once per app.
+ * Everything lives in one object store, keyed by dataset. `rfsV3` is one physical database, so the
+ * river ID lookup is downloaded once per device however many features read it.
  *
- * That makes four things a contract rather than a private detail: the database and store names
- * here, and the record keys and SCHEMA_VERSION in riverIndexDb.js and riverNamesDb.js. This file is
- * copied between the two apps rather than adapted, and a diff between the copies should come back
- * empty. A mismatch is safe — every read checks the schema and the source it was written from — but
- * it is wasteful: each app would judge the other's record unusable and rebuild over it.
+ * The database and store names here, and the record keys and SCHEMA_VERSION in riverIndexDb.js and
+ * riverNamesDb.js, are a contract rather than a private detail: the hydrography explorer shipped
+ * from this same portal origin as an app of its own and wrote these exact records, so a device that
+ * used it already holds a cache this build should read rather than rebuild over. A mismatch is safe
+ * — every read checks the schema and the source it was written from — but it is wasteful.
  *
  * **The version is deliberately not pinned.** `indexedDB.open(name)` without one attaches to
  * whatever version the device already has and never fires `onupgradeneeded`, which is what makes
@@ -114,8 +112,8 @@ function runTransaction(mode, work) {
  * behind by a dataset this version no longer lists goes too — otherwise "delete everything" quietly
  * isn't, and that orphan is exactly what a later version would trip over.
  *
- * The database is shared with the explorer, so this clears what both apps hold. That is the honest
- * reading of the button: the bytes are on the device once, and deleting them frees them once.
+ * One database means one set of bytes, so this frees everything the device is holding. That is the
+ * honest reading of the button.
  */
 function clearAll() {
   return openDb().then((db) => new Promise((resolve, reject) => {
@@ -142,22 +140,4 @@ function clearAll() {
   }));
 }
 
-/**
- * The database the hydroviewer kept to itself before the two apps shared one: "rfs-v3", holding the
- * same two datasets under a store called "river-index". Nothing will ever read it again, and it is
- * the largest thing either app ever put on the device — around 55 MB on anyone who searched by ID —
- * so it is deleted rather than left stranded.
- *
- * Fire and forget, and once per load. A delete blocked by another tab still on the old build simply
- * happens when that tab closes; there is nothing for the caller to wait for or report either way.
- */
-function dropLegacyDatabase() {
-  try {
-    indexedDB.deleteDatabase("rfs-v3");
-  } catch {
-    // A browser that refuses to look at storage at all (private mode, blocked site data) has
-    // nothing stranded either.
-  }
-}
-
-export {STORE, clearAll, dropLegacyDatabase, openDb, runTransaction};
+export {STORE, clearAll, openDb, runTransaction};

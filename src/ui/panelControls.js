@@ -1,8 +1,8 @@
 import {t} from "../i18n/i18n";
 import {getSetting, setSetting} from "../settings/settings.js";
 import {calciteIcon} from "../icons/calcite.js";
+import {$} from "../dom.js";
 
-const $ = (id) => document.getElementById(id);
 
 /**
  * The left panel's own controls: forecast-date picker, stream styleset, the bottom player's
@@ -11,8 +11,10 @@ const $ = (id) => document.getElementById(id);
  *
  * onForecastDateChange(date) fires when the user picks a new initialization date — the caller is
  * responsible for propagating it (the stream animation and the flood forecast styles both read it).
+ * onStylesetChange(styleset) fires after the network has been repainted: Standard hands it to the
+ * styling section, and every other styleset takes it back.
  */
-function createPanelControls({streams, onForecastDateChange}) {
+function createPanelControls({streams, onForecastDateChange, onStylesetChange = () => {}}) {
   let currentStyleset = "max-flow";
   let sliderVisible = true;
 
@@ -53,19 +55,13 @@ function createPanelControls({streams, onForecastDateChange}) {
       sel.addEventListener("change", () => {
         currentStyleset = sel.value;
         streams.setStyleset(currentStyleset);
+        onStylesetChange(currentStyleset);
         updateSliderVisibility();
       });
     }
     $("btn-toggle-slider")?.addEventListener("click", () => {
       sliderVisible = !sliderVisible;
-      const legendBtn = $("btn-legend");
-    if (legendBtn) {
-      // Calcite's legend glyph, so it is filled in here rather than by hydrateIcons, which only
-      // walks the heroicon-backed [data-icon-name] buttons.
-      legendBtn.replaceChildren(calciteIcon("legend"));
-      legendBtn.addEventListener("click", () => setSetting("legend", !getSetting("legend")));
-    }
-    updateSliderVisibility();
+      updateSliderVisibility();
     });
     const legendBtn = $("btn-legend");
     if (legendBtn) {
@@ -91,8 +87,20 @@ function createPanelControls({streams, onForecastDateChange}) {
     });
   }
 
+  /**
+   * Move the picker as if it had been used. The change event carries the whole path with it —
+   * the network repaints, the styling section is told, and the player follows — so nothing here
+   * has to be repeated.
+   */
+  function chooseStyleset(styleset) {
+    const sel = $("stream-style");
+    if (!sel || sel.value === styleset) return;
+    sel.value = styleset;
+    sel.dispatchEvent(new Event("change"));
+  }
+
   initStreamStyleControls();
-  return {initForecastDatePicker, updateSliderVisibility, updateLegendButton};
+  return {initForecastDatePicker, updateSliderVisibility, updateLegendButton, chooseStyleset};
 }
 
 export {createPanelControls};

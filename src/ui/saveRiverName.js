@@ -1,15 +1,6 @@
 import {t} from "../i18n/i18n.js";
+import {$} from "../dom.js";
 
-const $ = (id) => document.getElementById(id);
-
-/**
- * The name a river is saved under, asked for in a modal rather than a `prompt()` — the browser
- * dialog can't be translated, styled, or dismissed with the rest of the app's Escape handling.
- *
- * Resolves to the typed name, or to null if the prompt was dismissed. Null means "don't save": the
- * heart is a two-step action, and backing out of the second step must not leave a river saved.
- * An empty string is a real answer — a saved river with no name, listed by its id.
- */
 let settle = null;
 let wired = false;
 

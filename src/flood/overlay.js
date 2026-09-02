@@ -1,4 +1,4 @@
-import {applyLayerVisibility} from "../layers";
+import {applyLayerVisibility} from "../map/layers";
 
 /**
  * The computed flood extent, drawn as a canvas source pinned to the corridor's geographic bounds.

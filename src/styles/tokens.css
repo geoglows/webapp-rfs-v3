@@ -1,0 +1,133 @@
+/* ── Tokens ───────────────────────────────────────────────────────────────
+   One palette for the whole app, so it sits in the GEOGLOWS portal as one product with the rest.
+
+   The first block is the dark theme, and doubles as the fallback for a document that has never had
+   data-theme set. The theme is the header's sun/moon button, remembered per device against one key.
+
+   Font size, radius and the panel width are scales: every value in either stylesheet is a step. */
+:root, :root[data-theme="dark"] {
+    /* Ground and surfaces */
+    --bg: #0a0e17;
+    --surface: #111827;
+    --surface2: #1e293b;
+    --border: #334155;
+    /* A hairline separating two parts of one block rather than two blocks — the rule inside a
+       style rule, the line between attributes in the field list. */
+    --border-soft: rgba(51, 65, 85, .6);
+    /* The line that divides the control column into sections. Thicker than a border and not a
+       border color: it is meant to be read as a separator at a glance, so each theme takes it to
+       its own extreme — near-white on the dark ground, black on the light one. */
+    --rule: #e2e8f0;
+    /* The mode switches' check and the box around it while it is on — a green picked to hold up
+       against the panel rather than to sit quietly on it. */
+    --check: #22c55e;
+
+    /* Type, in three ranks: body, then labels and units, then counts and ranges. All three are
+       white with only a little of the ground mixed back in — on a dark panel a grey text is lower
+       contrast, not hierarchy, the same way a grey is on the light theme's white. */
+    --text: #f8fafc;
+    --text-dim: #dde5ee;
+    --text-faint: #b6c2d3;
+
+    /* Accent */
+    --accent: #38bdf8;
+    /* The color the open-source library list is written in. */
+    --accent-dim: #0ea5e9;
+    --on-accent: #04121b;
+
+    /* Status */
+    --success: #10b981;
+    --danger: #ef4444;
+    --danger-text: #fca5a5;
+    /* The danger color at a wash, behind a rule the styling editor has flagged. */
+    --warn: #f59e0b;
+    --warn-text: #fcd34d;
+
+    /* Chrome incidentals */
+    --saved: #ff4fa3;
+    --swatch-ring: rgba(255, 255, 255, .15);
+    --shadow-color: 0, 0, 0;
+
+    /* The map's own colors — data, not chrome: a stream is the same blue in both themes, and the
+       legend swatch has to be the color the line actually is. --stream is overwritten at runtime by
+       the styling panel, which is why the legend follows a restyle. Only --selected-text is themed,
+       because it has to hold as 11px type rather than as a line on a map. */
+    --stream: #3B82F6;
+    --upstream: #F5A623;
+    --selected: #B45309;
+    --selected-text: #FBBF24;
+    --group: #F97316;
+    --basin: #14b8a6;
+    --catchment: #D55E00;
+
+    /* PUBLIC CONTRACT — do not rename. The riverforecastsystem package ships no CSS of its own and
+       reads these to theme the charts it renders. They look unused to a static scan. They are not. */
+    --rfs-chart-axis: var(--text-dim);
+    --rfs-chart-text: var(--text);
+    --rfs-chart-grid: rgba(148, 163, 184, .12);
+
+    /* Type scale */
+    --fs-2xs: 10px;
+    --fs-sm: 12px;
+    --fs-md: 13px;
+    --fs-base: 14px;
+    --fs-lg: 15px;
+    --fs-xl: 21px;
+
+    /* Radius scale */
+    --r-sm: 4px;
+    --r-md: 6px;
+    --r-lg: 8px;
+
+    /* Space, control sizing, layout */
+    --gap: 8px;
+    --size: 36px;
+    --icon: 20px;
+    /* The control column's width: a quarter of the window, floored at the
+       measure the styling editor's three-part rows need and capped so a wide screen gives the extra
+       room to the map. Read by #panel and by the forecast legend, which has to step past it. */
+    --panel-w: clamp(360px, 25%, 480px);
+    /* …and the width the styling dock widens it to: enough for the rule editor's rows to breathe,
+       well short of the half-viewport the charts take, since the map is what a style is judged on. */
+    --panel-styling-w: clamp(460px, 34%, 620px);
+
+    --mono: "JetBrains Mono", ui-monospace, monospace;
+    font-family: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+}
+
+/* Light theme — set by the header's sun/moon button. */
+:root[data-theme="light"] {
+    --bg: #eef2f7;
+    --surface: #ffffff;
+    --surface2: #f1f5f9;
+    --border: #cbd5e1;
+    --border-soft: rgba(148, 163, 184, .55);
+    --rule: #000000;
+    --check: #15803d;
+
+    /* Black for both of the top two ranks: on a light ground a "dimmed" grey is lower contrast, not
+       hierarchy. The third stays grey — it carries counts and units, where the drop is real. */
+    --text: #000000;
+    --text-dim: #000000;
+    --text-faint: #64748b;
+
+    --accent: #0284c7;
+    --accent-dim: #0369a1;
+    --on-accent: #ffffff;
+
+    --success: #059669;
+    --danger: #dc2626;
+    --danger-text: #b91c1c;
+    --warn: #f59e0b;
+    --warn-text: #b45309;
+
+    --saved: #db2777;
+    --swatch-ring: rgba(15, 23, 42, .2);
+    --shadow-color: 100, 116, 139;
+
+    --selected-text: #B45309;
+
+    --rfs-chart-axis: var(--text);
+    --rfs-chart-text: var(--text);
+    --rfs-chart-grid: rgba(15, 23, 42, .14);
+}

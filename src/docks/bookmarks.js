@@ -1,7 +1,7 @@
 import {t} from "../i18n/i18n.js";
 import {heroIcon} from "../icons/icons.js";
 import {travelToRiver} from "../map/framing.js";
-import {listSavedRivers, onSavedRiversChange, removeSavedRiver} from "../data/savedRivers.js";
+import {listSavedRivers, onSavedRiversChange, removeSavedRiver} from "../account/savedRivers.js";
 import {closeDock, isDockOpen, openDock} from "./dock.js";
 
 // todo the defaults should be a json fetched async only on first load.

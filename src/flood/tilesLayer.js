@@ -1,5 +1,5 @@
 import {urls} from "riverforecastsystem/v3";
-import {MIN_FLOOD_MAPS_ZOOM} from "../../settings/settings.js";
+import {FLOOD_MIN_MAP_ZOOM} from "../settings/settings.js";
 
 /**
  * The FLDPLN data-tile footprints, and the viewport → coverage bridge built on them.
@@ -76,7 +76,7 @@ class FloodMapsTilesLayer {
   sync() {
     const map = this.map;
     if (!this.active || !this.isReady() || !map.getLayer("flood-maps-tiles-hit")) return;
-    if (map.getZoom() < MIN_FLOOD_MAPS_ZOOM) return;
+    if (map.getZoom() < FLOOD_MIN_MAP_ZOOM) return;
     const names = [...new Set(
       map.queryRenderedFeatures({layers: ["flood-maps-tiles-hit"]}).map((f) => f.properties.name)
     )].sort();

@@ -1,20 +1,12 @@
 import {urls} from "riverforecastsystem/v3";
+import {inFilter, noMatch, spanFilter, streamLine, whenStyleReady, zoomInterp} from "./streamFilters.js";
 import {SAVED_RIVERS} from "../settings/settings.js";
 
 // The inspect and saved-river highlights address reaches by riverId — the charts dock and the saved
-// list are keyed on it. flood-maps/selection.js has helpers of the same shape keyed on riverIndex;
-// they are not interchangeable, so these are kept apart.
-const NO_MATCH = ["in", ["get", "riverId"], ["literal", []]];
-const inFilter = (ids) => ids.length ? ["in", ["get", "riverId"], ["literal", ids]] : NO_MATCH;
-
-// A named river is a contiguous run of riverIndex — every reach upstream of its mouth — so it is
-// selected as a range rather than as a list of ids. That is the whole reason the names table can
-// name a river at all: it publishes two bounds instead of the hundreds of thousands of ids between
-// them. There is no riverIndex equivalent of NO_MATCH here because an empty range says it already.
-const NO_SPAN = ["==", ["get", "riverIndex"], -1];
-const spanFilter = (span) => span
-  ? ["all", [">=", ["get", "riverIndex"], span.lo], ["<=", ["get", "riverIndex"], span.hi]]
-  : NO_SPAN;
+// list are keyed on it. A named river is a contiguous run of riverIndex — every reach upstream of
+// its mouth — selected as a range rather than a list of ids, which is the whole reason the names
+// table can name a river at all: two bounds instead of the hundreds of thousands of ids between
+// them. Both filter shapes come from streamFilters.js, keyed by what each highlight matches on.
 
 const RET_COLORS = ["#3182bd", "#fee08b", "#fdae61", "#f46d43", "#d73027", "#a50026", "#7a0177"];
 // Uniform stream color for the "Standard" styleset (matches the normal-flow return-period blue).
@@ -25,7 +17,7 @@ const WIDTH_BASE = 4;
 const WIDTH_MAX = 10;
 const WIDTH_UNIFORM = 5;
 // The saved-river outline, all three of them configurable per deployment (VITE_SAVED_RIVERS_* — see
-// SAVED_RIVERS in settings/settings.js). The colour falls back to the stylesheet's dark-theme
+// SAVED_RIVERS in settings/settings.js). The color falls back to the stylesheet's dark-theme
 // --saved so an unconfigured deployment looks exactly as it did before there was a setting.
 const SAVED_COLOR = SAVED_RIVERS.color || "#ff4fa3";
 const SAVED_BORDER = SAVED_RIVERS.borderWidth;
@@ -38,6 +30,9 @@ const NAMED_COLOR = "#ff5f1f";
 // river is this", one thing, and a casing that thinned along it would read as the river petering
 // out instead of as one continuous river.
 const NAMED_WIDTH = WIDTH_MAX + 4;
+// The network's own fade at low zoom. Named because applyPaint() has to be able to put it back
+// after the styling section has drawn the layer with an opacity of its own.
+const BASE_OPACITY = ["interpolate", ["linear"], ["zoom"], 3, 0.65, 9, 0.95];
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 const fetchOk = async url => {
@@ -79,14 +74,17 @@ class Streams {
   progEl = document.getElementById("progress-bar");
   speedEl = document.getElementById("speed");
 
-  constructor(map) {
+  constructor(map, {styleset = "max-flow"} = {}) {
     this.map = map;
+    // The styleset the network opens on, set before the layer is built rather than switched into
+    // afterwards: setStyleset() reloads the data, and at boot there is nothing to reload from yet.
+    this.styleset = styleset;
     this.wirePlayer();
   }
 
   /** Add the animated global streams source + line layer on top of the loaded basemap. */
   addStreamsLayer() {
-    this.map.addSource("geoglows", {
+    this.map.addSource("streams", {
       type: "vector",
       url: `pmtiles://${urls.streamsPmtiles()}`,
       promoteId: {streams: "riverId"},
@@ -95,10 +93,10 @@ class Streams {
     this.map.addLayer({
       id: "streams",
       type: "line",
-      source: "geoglows",
+      source: "streams",
       "source-layer": "streams",
       layout: {"line-cap": "round", "line-join": "round"},
-      paint: {"line-opacity": ["interpolate", ["linear"], ["zoom"], 3, 0.65, 9, 0.95]}
+      paint: {"line-opacity": BASE_OPACITY}
     });
     // Color and width belong to whichever styleset is active, including the one the app opens on —
     // applyPaint is the only thing that knows how to pick them.
@@ -107,7 +105,7 @@ class Streams {
     // fire when the last tile's own event closes out the source, which tile arrival order
     // doesn't guarantee. scheduleApply dedupes to one pass per frame, so per-tile is cheap.
     this.map.on("sourcedata", (e) => {
-      if (this.cube && e.sourceId === "geoglows" && e.tile) this.scheduleApply();
+      if (this.cube && e.sourceId === "streams" && e.tile) this.scheduleApply();
     });
     this.addSavedHighlightLayer();
     this.addNamedHighlightLayer();
@@ -119,33 +117,24 @@ class Streams {
    *
    * Added *beneath* `streams` and drawn wider than it, so the streams line covers the middle and
    * what is left showing is a border down both sides. Above it instead would hide the reach's own
-   * colour, which is the forecast — the thing the map is for.
+   * color, which is the forecast — the thing the map is for.
    *
    * A declarative filter on riverId, like the other highlights: the saved set is set once and the
    * outline paints itself onto tiles as they arrive, with nothing to re-run on pan or zoom.
    */
   addSavedHighlightLayer() {
     if (this.map.getLayer("saved-highlight")) return;
-    this.map.addLayer({
+    // The layer is always built, shown or not: the Settings toggle flips it many times over a
+    // session, and hiding a layer is far cheaper than adding and removing one. Its starting
+    // state is whatever the setting already resolved to — see setSavedHighlightVisible().
+    this.map.addLayer(streamLine({
       id: "saved-highlight",
-      type: "line",
-      source: "geoglows",
-      "source-layer": "streams",
-      filter: NO_MATCH,
-      // The layer is always built, shown or not: the Settings toggle flips it many times over a
-      // session, and hiding a layer is far cheaper than adding and removing one. Its starting
-      // state is whatever the setting already resolved to — see setSavedHighlightVisible().
-      layout: {
-        "line-cap": "round",
-        "line-join": "round",
-        visibility: this.savedHighlightVisible ? "visible" : "none"
-      },
-      paint: {
-        "line-color": SAVED_COLOR,
-        "line-width": this.savedWidthExpr(this.animatedWidth()),
-        "line-opacity": 1
-      }
-    }, "streams");
+      color: SAVED_COLOR,
+      width: this.savedWidthExpr(this.animatedWidth()),
+      opacity: 1,
+      filter: noMatch("riverId"),
+      visibility: this.savedHighlightVisible ? "visible" : "none"
+    }), "streams");
     this.setSavedRivers(this.savedIds);
   }
 
@@ -172,18 +161,15 @@ class Streams {
   setSavedRivers(ids) {
     this.savedIds = ids ?? [];
     if (!this.map.getLayer("saved-highlight")) return;
-    if (!this.map.isStyleLoaded()) {
-      this.map.once("idle", () => this.setSavedRivers(this.savedIds));
-      return;
-    }
-    this.map.setFilter("saved-highlight", inFilter(this.savedIds));
+    whenStyleReady(this.map, () =>
+      this.map.setFilter("saved-highlight", inFilter("riverId", this.savedIds)));
   }
 
   /**
    * The neon orange casing under the whole of a river found by name.
    *
    * Beneath `streams` and wider than it, like the saved-river outline: the streams line covers the
-   * middle, so what shows is a border down both sides and the reach keeps its own forecast colour.
+   * middle, so what shows is a border down both sides and the reach keeps its own forecast color.
    * Above it instead would paint over the forecast for the length of the Amazon.
    *
    * One filter over a riverIndex range does the whole river — 233,398 reaches for the Amazon — and
@@ -191,27 +177,15 @@ class Streams {
    */
   addNamedHighlightLayer() {
     if (this.map.getLayer("named-highlight")) return;
-    this.map.addLayer({
+    this.map.addLayer(streamLine({
       id: "named-highlight",
-      type: "line",
-      source: "geoglows",
-      "source-layer": "streams",
-      filter: NO_SPAN,
-      layout: {"line-cap": "round", "line-join": "round"},
-      paint: {
-        "line-color": NAMED_COLOR,
-        // The streams ramp's own zoom scale, so the casing keeps its proportion to the network at
-        // every zoom, but with a flat width in place of the strahlerOrder step.
-        "line-width": [
-          "interpolate", ["linear"], ["zoom"],
-          3, 0.25 * NAMED_WIDTH,
-          7, 0.5 * NAMED_WIDTH,
-          12, NAMED_WIDTH,
-          16, 2.2 * NAMED_WIDTH
-        ],
-        "line-opacity": 0.9
-      }
-    }, "streams");
+      color: NAMED_COLOR,
+      // The streams ramp's own zoom scale, so the casing keeps its proportion to the network at
+      // every zoom, but with a flat width in place of the strahlerOrder step.
+      width: zoomInterp([3, 0.25 * NAMED_WIDTH, 7, 0.5 * NAMED_WIDTH, 12, NAMED_WIDTH, 16, 2.2 * NAMED_WIDTH]),
+      opacity: 0.9,
+      filter: spanFilter("riverIndex", null)
+    }), "streams");
     this.setNamedRiver(this.namedSpan);
   }
 
@@ -219,39 +193,30 @@ class Streams {
   setNamedRiver(span) {
     this.namedSpan = span ?? null;
     if (!this.map.getLayer("named-highlight")) return;
-    if (!this.map.isStyleLoaded()) {
-      this.map.once("idle", () => this.setNamedRiver(this.namedSpan));
-      return;
-    }
-    this.map.setFilter("named-highlight", spanFilter(this.namedSpan));
+    whenStyleReady(this.map, () =>
+      this.map.setFilter("named-highlight", spanFilter("riverIndex", this.namedSpan)));
   }
 
   /**
    * The single-reach highlight used when inspecting a river (clicking one outside flood mode).
-   * Distinct from the flood selection highlights in flood-maps/selection.js, which can hold many
+   * Distinct from the flood selection highlights in flood/selection.js, which can hold many
    * reaches — this one tracks whatever the charts dock is currently showing.
    */
   addInspectHighlightLayer() {
     if (this.map.getLayer("inspect-highlight")) return;
-    this.map.addLayer({
+    this.map.addLayer(streamLine({
       id: "inspect-highlight",
-      type: "line",
-      source: "geoglows",
-      "source-layer": "streams",
-      filter: NO_MATCH,
-      layout: {"line-cap": "round", "line-join": "round"},
-      paint: {
-        "line-color": "#33FF57",
-        "line-width": ["interpolate", ["linear"], ["zoom"], 3, 3, 8, 5, 13, 9, 16, 14],
-        "line-opacity": 0.95
-      }
-    });
+      color: "#33FF57",
+      width: zoomInterp([3, 3, 8, 5, 13, 9, 16, 14]),
+      opacity: 0.95,
+      filter: noMatch("riverId")
+    }));
   }
 
   /** Pass null to clear the highlight. */
   setInspectHighlight(riverId) {
     if (!this.map.getLayer("inspect-highlight")) return;
-    this.map.setFilter("inspect-highlight", riverId == null ? NO_MATCH : inFilter([riverId]));
+    this.map.setFilter("inspect-highlight", inFilter("riverId", riverId == null ? [] : [riverId]));
   }
 
   /** Return-period line-color expression driven by each reach's `ret` feature-state. */
@@ -295,7 +260,7 @@ class Streams {
     ];
   }
 
-  /** Line-color for the time-to-peak styleset: warm (imminent) → cool (late), grey for no data. */
+  /** Line-color for the time-to-peak styleset: warm (imminent) → cool (late), gray for no data. */
   ttpColorExpr() {
     return [
       "case",
@@ -305,7 +270,7 @@ class Streams {
     ];
   }
 
-  /** Line-color for the below-q95 styleset: below Q95 → red, at/above → blue, no data → grey. */
+  /** Line-color for the below-q95 styleset: below Q95 → red, at/above → blue, no data → gray. */
   q95ColorExpr() {
     return ["match", ["coalesce", ["feature-state", "q95dir"], 255], 1, "#dc2626", 0, "#3182bd", "#334155"];
   }
@@ -328,7 +293,14 @@ class Streams {
     this.applyPaint();
   }
 
-  /** Set the streams line-color/line-width paint for the active styleset. */
+  /**
+   * Set the streams line paint for the active styleset.
+   *
+   * All three properties, every time, because this is also how the layer is taken *back* from the
+   * styling section: under the Standard styleset the network is drawn by the style spec, and
+   * switching to a forecast styleset hands the base layer here with whatever color, width and
+   * opacity that spec left on it.
+   */
   applyPaint() {
     if (!this.map.getLayer("streams")) return;
     const s = this.styleset;
@@ -340,6 +312,7 @@ class Streams {
     else color = STANDARD_COLOR;
     this.map.setPaintProperty("streams", "line-color", color);
     this.map.setPaintProperty("streams", "line-width", this.streamWidthExpr(retWidth));
+    this.map.setPaintProperty("streams", "line-opacity", BASE_OPACITY);
     // The saved outline is sized off the streams line it sits under, so it follows every width
     // change — a styleset that stops driving thickness from feature-state would otherwise leave the
     // border thick where the reach beneath it went thin.
@@ -359,7 +332,7 @@ class Streams {
       this.cube = null;
       return;
     }
-    this.loadData();
+    void this.loadData();
   }
 
   /** Set the forecast-initialization date and (re)load the active styleset for it. */
@@ -376,7 +349,7 @@ class Streams {
     for (const [rid, fi] of this.idFi) {
       if (fi < 0) continue;
       this.map.setFeatureState(
-        {source: "geoglows", sourceLayer: "streams", id: rid},
+        {source: "streams", sourceLayer: "streams", id: rid},
         this.featureStateFor(this.cube[fi * this.T + t])
       );
     }
@@ -447,7 +420,7 @@ class Streams {
     }
     let feats;
     try {
-      feats = this.map.querySourceFeatures("geoglows", {sourceLayer: "streams"});
+      feats = this.map.querySourceFeatures("streams", {sourceLayer: "streams"});
     } catch {
       this.map.once("idle", () => this.scheduleApply());
       return;
@@ -462,7 +435,7 @@ class Streams {
       this.idFi.set(rid, valid ? fi : -1);
       if (!valid) continue;
       this.map.setFeatureState(
-        {source: "geoglows", sourceLayer: "streams", id: rid},
+        {source: "streams", sourceLayer: "streams", id: rid},
         this.featureStateFor(this.cube[fi * this.T + t])
       );
     }
@@ -484,7 +457,7 @@ class Streams {
       const b = this.cube[fi * this.T + t];
       if (b === this.cube[fi * this.T + p]) continue;
       this.map.setFeatureState(
-        {source: "geoglows", sourceLayer: "streams", id: rid},
+        {source: "streams", sourceLayer: "streams", id: rid},
         this.featureStateFor(b)
       );
     }

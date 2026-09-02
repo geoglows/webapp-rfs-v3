@@ -3,10 +3,6 @@ import {clearAll} from "./db.js";
 import * as names from "./riverNames.js";
 
 /**
- * TWIN FILE: webapp-rfs-hydrography/src/datasets.js — the same registry over the same two caches,
- * which both apps keep in the one database. Only the labels differ: that app has no i18n, and it
- * fetches the river IDs on demand rather than shortly after load.
- *
  * The catalogue of things the user can download and keep on the device: what each one is called,
  * how big it is right now, and how to fetch, cancel, and erase it.
  *
@@ -17,9 +13,7 @@ import * as names from "./riverNames.js";
  * here is decided when a feature needs it, not in advance.
  *
  * Everything here is a cache. Erasing any of it costs a re-download and nothing else, which is why
- * clearing needs no ceremony beyond the sweeping button's confirm. It is the hydrography explorer's
- * cache too — the database is shared — so a row can already be held because that app filled it, and
- * erasing one here erases it for both.
+ * clearing needs no ceremony beyond the sweeping button's confirm.
  *
  * Adding one is a single entry: `status` reporting `{n, bytes}` or null, `download({onProgress})`,
  * a `cancel`, a `remove`, and optionally `busy` for a dataset something outside Settings can start

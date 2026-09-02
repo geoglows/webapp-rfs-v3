@@ -1,0 +1,776 @@
+/* ── Components ───────────────────────────────────────────────────────────
+   Every widget the app reuses. The two sheets below this one style what is genuinely their own —
+   the docks, and the hydrography sections' rule editor — and nothing else. */
+
+/* ── Buttons · one look for every clickable thing that isn't a link ──
+   .icon / .sm / .auto / .tab / .map / .round / .mini / .seg size it;
+   .primary / .toggle / .active / .danger / .saved / .on color it. */
+.btn, .chart-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 9px 12px;
+    font-size: var(--fs-lg);
+    font-weight: 600;
+    color: var(--text);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    cursor: pointer;
+    transition: .12s;
+}
+
+.btn svg {
+    width: var(--icon);
+    height: var(--icon);
+}
+
+/* The square ones: an icon in the middle and no label, sized by --size. */
+.btn.icon, .btn.sm, .btn.map, .btn.round {
+    width: var(--size);
+    height: var(--size);
+    padding: 0;
+    flex: 0 0 auto;
+}
+
+.btn.icon {
+    --size: 36px;
+    color: var(--text-dim);
+}
+
+/* inline with a heading (the dock's save-this-river heart) or in a modal head (the close ✕) */
+.btn.sm {
+    --size: 28px;
+    --icon: 18px;
+    color: var(--text-dim);
+}
+
+/* a button that is a table row's action rather than a block's: as wide as its label */
+.btn.auto {
+    width: auto;
+    height: auto;
+    padding: 4px 12px;
+    font-size: var(--fs-md);
+}
+
+/* the charts dock's tabs, sharing the width between them */
+.btn.tab {
+    flex: 1;
+    padding: 7px 4px;
+    font-size: var(--fs-base);
+    color: var(--text-dim);
+}
+
+/* floating over the map, so it carries a surface and a shadow the panel's buttons don't need */
+.btn.map {
+    --size: 44px;
+    --icon: 26px;
+    background: var(--surface);
+    box-shadow: 0 2px 10px rgba(var(--shadow-color), .4);
+}
+
+.btn.map svg {
+    fill: currentColor;
+}
+
+/* the play buttons — the only round ones, and the only ones that answer a hover with movement */
+.btn.round {
+    --size: 42px;
+    font-size: 17px;
+    border-radius: 50%;
+    transition: transform .1s;
+}
+
+/* The hydrography panels' inline actions: a row's ⤢ and ×, a segmented control's halves, a footer
+   button. Small, mono, and quiet until hovered — they sit inside dense lists rather than beside
+   them. */
+.btn.mini, .btn.seg {
+    width: auto;
+    height: auto;
+    padding: 2px 6px;
+    font-size: var(--fs-2xs);
+    font-weight: 600;
+    background: var(--surface2);
+    border-radius: var(--r-sm);
+}
+
+.btn.seg {
+    padding: 3px 8px;
+}
+
+/* A selection mode's switch: an empty box, with a green check in it while that mode is the one a
+   click on the map belongs to. What it switches is the row it sits in, which is the label. */
+.btn.mode {
+    --size: 20px;
+    --icon: 16px;
+    padding: 0;
+    border: 2px solid var(--text-dim);
+    border-radius: var(--r-sm);
+    background: transparent;
+}
+
+/* the glyph is 1.5 as it ships, which is a hairline at this size */
+.btn.mode svg {
+    stroke-width: 2.75;
+}
+
+.btn.mode.on, .btn.mode.on:hover:not(:disabled) {
+    color: var(--check);
+    border-color: var(--check);
+}
+
+/* Colors and states come after the sizes, so a size variant setting its own color (.icon, .tab)
+   doesn't outrank the state that should be showing. */
+.btn.primary, .btn.seg.on, .btn.toggle.active {
+    color: var(--on-accent);
+    background: var(--accent);
+    border-color: var(--accent);
+}
+
+.btn:hover:not(:disabled), .chart-btn:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+}
+
+.btn.primary:hover:not(:disabled) {
+    color: var(--on-accent);
+    filter: brightness(1.08);
+}
+
+.btn.round:hover:not(:disabled) {
+    transform: scale(1.06);
+}
+
+.btn.active {
+    color: var(--accent);
+    border-color: var(--accent);
+}
+
+/* the delete half of a pair — the other half being a download, which is not destructive */
+.btn.danger:hover:not(:disabled) {
+    color: var(--danger-text);
+    border-color: var(--danger);
+}
+
+/* Saved, in the same pink the map outlines saved reaches with — the filled heart and the outline
+   on the river are one state, so they are one color. */
+.btn.saved, .btn.saved:hover:not(:disabled) {
+    color: var(--saved);
+    border-color: var(--saved);
+}
+
+.btn:disabled {
+    opacity: .4;
+    cursor: not-allowed;
+}
+
+/* ── Menu rows ──
+   Declared in full rather than derived from .btn: a menu row is left-aligned, full-width,
+   transparent and lighter-weight, which would be most of .btn overridden. */
+.opt {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 8px 10px;
+    font-size: 14.5px;
+    font-weight: 400;
+    text-align: left;
+    color: var(--text-dim);
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--r-md);
+    cursor: pointer;
+    transition: .12s;
+}
+
+.opt:hover:not(:disabled) {
+    color: var(--text);
+    background: var(--bg);
+}
+
+.opt.active {
+    color: var(--accent);
+    border-color: var(--accent);
+    font-weight: 600;
+}
+
+.opt:disabled {
+    opacity: .45;
+    cursor: not-allowed;
+}
+
+/* the box in front of a layer that can be on at the same time as the others */
+.check {
+    flex: 0 0 auto;
+    width: 16px;
+    height: 16px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--r-sm);
+    background: var(--bg);
+    position: relative;
+    transition: .12s;
+}
+
+.opt:hover .check {
+    border-color: var(--accent);
+}
+
+.opt[aria-checked="true"] .check {
+    background: var(--accent);
+    border-color: var(--accent);
+}
+
+.opt[aria-checked="true"] .check::after {
+    content: "";
+    position: absolute;
+    left: 4.5px;
+    top: 1px;
+    width: 4px;
+    height: 8px;
+    border: solid var(--on-accent);
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+/* ── Fields ── */
+select, input:not([type="range"], [type="checkbox"]) {
+    width: 100%;
+    padding: 7px 9px;
+    font-size: var(--fs-lg);
+    color: var(--text);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    cursor: pointer;
+}
+
+select:hover:not(:disabled), input:hover:not(:disabled) {
+    border-color: var(--accent);
+}
+
+select:focus, input:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+select:disabled, input:disabled {
+    opacity: .45;
+    cursor: not-allowed;
+}
+
+input[type="range"] {
+    width: 100%;
+    height: 4px;
+    accent-color: var(--accent);
+    cursor: pointer;
+}
+
+input[type="checkbox"] {
+    width: 15px;
+    height: 15px;
+    accent-color: var(--accent);
+    cursor: pointer;
+}
+
+input[aria-invalid="true"] {
+    border-color: var(--danger);
+}
+
+.field label {
+    display: block;
+    font-size: 14.5px;
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+
+.field + .field {
+    margin-top: 14px;
+}
+
+/* the live value beside a slider's caption */
+.field label em {
+    font-style: normal;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+}
+
+/* ── Surfaces · anything that floats over the map or the page ── */
+.card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    box-shadow: 0 8px 28px rgba(var(--shadow-color), .5);
+}
+
+.backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    background: rgba(2, 6, 16, .6);
+    backdrop-filter: blur(2px);
+    display: grid;
+    place-items: center;
+}
+
+.modal {
+    width: min(560px, calc(100vw - 40px));
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* one-line entry forms — find a river by ID, name a saved river — where the input shares its row
+   with a submit button and the field needs room to read what was typed */
+.modal.entry {
+    width: min(540px, calc(100vw - 32px));
+    /* short enough that dead centre reads as low on the page, so sit it a third of the way down */
+    align-self: start;
+    margin-top: min(22vh, 180px);
+}
+
+/* Confirm dialogs (ui/confirm.js): one question and its two answers. Narrower than the
+   entry modals, because a sentence does not want 540px of card, and sitting at the same height so
+   a confirmation lands where every other short modal does. */
+.modal.confirm {
+    width: min(440px, calc(100vw - 32px));
+    align-self: start;
+    margin-top: min(22vh, 180px);
+}
+
+.confirm-actions {
+    margin-top: 14px;
+}
+
+/* text-heavy modals — Settings, whose rows wrap badly at the entry width */
+.modal.wide {
+    width: min(680px, calc(100vw - 40px));
+    max-height: 88vh;
+}
+
+/* Shared by the modals and by the docks, which are the same panel opened into the left column
+   instead of over the page. */
+.modal-head {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+    border-radius: var(--r-lg) var(--r-lg) 0 0;
+}
+
+.modal-body {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: 6px 16px 14px;
+}
+
+/* Headings break up runs of settings or of paragraphs; the first has nothing above it to separate
+   from. The typography itself comes from base.css — this is only the rhythm. */
+.modal-body h4 {
+    margin: 22px 0 8px;
+}
+
+.modal-body h4:first-child {
+    margin-top: 6px;
+}
+
+.modal-body label.row {
+    cursor: pointer;
+    font-size: 14.5px;
+    padding: 6px 0;
+}
+
+.build-stamp {
+    margin: 20px 0 2px;
+    text-align: center;
+    font-family: var(--mono);
+    font-size: 12px;
+    opacity: .7;
+}
+
+/* ── The control column ──
+   Both pages are the same frame: a fixed column on the left, the map filling the rest. The width is
+   a clamp — a readable measure on a laptop, room for the styling editor on a large display.
+
+   The structure is fixed and the markup matches it: <header> pinned, <main> taking the rest,
+   #scroll scrolling inside it. Anything pinned under the scroll is a sibling of #scroll. */
+#panel {
+    flex: 0 0 var(--panel-w);
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    /* the width change when a dock opens — see body.dock-open in the data viewer's sheet */
+    transition: flex-basis .3s ease;
+}
+
+/* Everything under the banner: the scrolling controls and, when one is open, the dock that shares
+   the height with them. Repeats the column #panel already is, so the two split the space left over
+   by the header. */
+#panel main {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+/* header stays pinned; everything else scrolls beneath it */
+#scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+#panel header {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+}
+
+/* the account avatar / sign-in button leads the row of actions. In the narrow panel it sits at the
+   left edge, so its menu opens rightward rather than the library's default of hanging off the
+   right. */
+#panel header .brand, #auth-action {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+#auth-action .geoglows-auth-action-menu {
+    left: 0;
+    right: auto;
+}
+
+/* The logo file is a dark wordmark, so it carries its own white chip in both themes rather than
+   disappearing into the dark one. */
+#panel header img {
+    display: block;
+    height: 30px;
+    width: auto;
+    background: #fff;
+    border-radius: 6px;
+    padding: 6px 9px;
+}
+
+/* ── Overlays on the map ── */
+.map-overlay {
+    position: absolute;
+    z-index: 10;
+}
+
+#map-controls {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap);
+}
+
+/* Each page anchors this to its own side — the data viewer clears its panel, the hydrography
+   page sits against the right edge. Only the shared look lives here. */
+/* Where it sits is the page's business — the data viewer puts it beside the column, the
+   map's bottom-left corner, clear of the control column. */
+#legend-overlay {
+    max-width: 240px;
+    padding: 10px 13px;
+}
+
+#legend-items {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: var(--fs-base);
+    color: var(--text-dim);
+}
+
+.swatch {
+    width: 20px;
+    height: 3px;
+    border-radius: 2px;
+    flex: 0 0 auto;
+}
+
+.swatch.stream { background: var(--stream); }
+
+/* The area swatches are the line color at a wash, taken from the token rather than restated as a
+   literal rgba() — which is how three of these drifted out of step with the map in the first place. */
+.swatch.catchment, .swatch.poly {
+    height: 12px;
+    border: 1px solid var(--swatch-ring);
+}
+
+.swatch.catchment { background: color-mix(in srgb, var(--catchment) 45%, transparent); }
+.swatch.poly { border-color: var(--group); background: color-mix(in srgb, var(--group) 18%, transparent); }
+.swatch.poly.basin { border-color: var(--basin); background: color-mix(in srgb, var(--basin) 18%, transparent); }
+
+/* ── Anchored dropdowns · the language, basemap and layer pickers ── */
+.anchor {
+    position: relative;
+}
+
+/* The language picker is the one that opens downward from under its button, because it sits in
+   the header rather than at the right edge of the map. */
+#lang-menu {
+    z-index: 20;
+    top: calc(100% + 8px);
+    left: 0;
+    right: auto;
+}
+
+.menu {
+    position: absolute;
+    /* open to the left of the button — the map's pickers sit at the right edge of the viewport */
+    top: 0;
+    right: calc(100% + 8px);
+    min-width: 195px;
+    padding: 5px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+/* ── The downloaded-data list, in both Settings dialogs ──
+   A small table rather than a full-width list: the three columns are each as wide as the widest
+   thing in them and no wider, and the table stops there instead of stretching across the dialog. */
+#data-list {
+    display: grid;
+    grid-template-columns: max-content max-content max-content;
+    justify-content: center;
+    margin: 8px 0 4px;
+    column-gap: 14px;
+}
+
+/* Name, size and the two buttons on one line, on the columns the list sets, with the progress line
+   dropping to a row of its own underneath when there is one to show. */
+.data-row {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: subgrid;
+    align-items: center;
+    padding: 5px 0;
+    border-top: 1px solid var(--border);
+}
+
+.data-row:first-child {
+    border-top: none;
+}
+
+.data-row .row {
+    gap: 10px;
+}
+
+.data-size {
+    font-family: var(--mono);
+    font-size: var(--fs-sm);
+    color: var(--text-dim);
+    font-variant-numeric: tabular-nums;
+}
+
+.data-row .status {
+    grid-column: 1 / -1;
+    font-size: var(--fs-sm);
+}
+
+.data-row .status:empty {
+    display: none;
+}
+
+.data-foot {
+    padding-top: 10px;
+    gap: 10px;
+}
+
+/* ── The find-a-river dialog ── */
+.search-second {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+}
+
+.search-results {
+    margin: 8px 0 0;
+    max-height: 260px;
+    overflow-y: auto;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+}
+
+.search-hit {
+    display: block;
+    width: 100%;
+    padding: 7px 10px;
+    font: inherit;
+    text-align: left;
+    color: inherit;
+    background: none;
+    border: 0;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+}
+
+.search-hit:last-child {
+    border-bottom: 0;
+}
+
+.search-hit:hover, .search-hit:focus-visible {
+    background: var(--bg);
+    outline: none;
+}
+
+.search-hit b {
+    font-weight: 600;
+}
+
+.search-hit .hint {
+    display: block;
+    margin: 1px 0 0;
+    font-size: var(--fs-sm);
+}
+
+/* ── Progress ──
+   One bar for all three uses: the download bar, the staged-export bar, and the 2px sliver in the
+   player card, which is .progress.thin. */
+.progress-track {
+    height: 6px;
+    background: var(--surface2);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    width: 0;
+    border-radius: 3px;
+    background: linear-gradient(90deg, var(--accent-dim), var(--accent));
+    transition: width .18s linear;
+}
+
+.progress.thin .progress-track {
+    height: 2px;
+    border-radius: 0;
+}
+
+.indeterminate .progress-fill {
+    width: 100%;
+    transition: none;
+    background: repeating-linear-gradient(115deg,
+    var(--accent-dim) 0 12px, var(--surface2) 12px 24px);
+    background-size: 200% 100%;
+    animation: progress-stripe 1s linear infinite;
+}
+
+@keyframes progress-stripe {
+    from { background-position: 0 0; }
+    to { background-position: -48px 0; }
+}
+
+/* ── MapLibre's own chrome ──
+   Themed here, or the app ships stock light controls over a dark UI. */
+.maplibregl-map .maplibregl-ctrl-group {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    box-shadow: 0 2px 10px rgba(var(--shadow-color), .4);
+}
+
+.maplibregl-map .maplibregl-ctrl-group button + button {
+    border-top-color: var(--border);
+}
+
+/* Set on :root rather than on the icon, so the attribution's own (i) button inherits it too. */
+:root[data-theme="light"] {
+    --ctrl-icon-filter: none;
+}
+
+.maplibregl-ctrl-group button .maplibregl-ctrl-icon,
+.maplibregl-ctrl-attrib-button {
+    filter: var(--ctrl-icon-filter, invert(1) opacity(.75));
+}
+
+/* The compact attribution carries MapLibre's own `background-color:#fff` at (0,2,0). Everything
+   here is scoped under .maplibregl-map to outrank it, because matching its specificity leaves the
+   winner to stylesheet order — and the dev server injects maplibre-gl.css (imported by map.js)
+   after this file, where the theme loses: the bar stays white, our dim link color lands on it at
+   2.6:1, and in dark mode the inverted (i) icon is white on white. Opaque like MapLibre's own
+   compact style, because a translucent bar puts 11px type over whatever basemap is under it. */
+.maplibregl-map .maplibregl-ctrl-attrib,
+.maplibregl-map .maplibregl-ctrl-attrib.maplibregl-compact,
+.maplibregl-map .maplibregl-ctrl-scale {
+    color: var(--text-dim);
+    background: var(--surface);
+    border-color: var(--border);
+}
+
+.maplibregl-map .maplibregl-ctrl-attrib-button {
+    background-color: transparent;
+}
+
+.maplibregl-map .maplibregl-ctrl-attrib a {
+    color: var(--text-dim);
+}
+
+/* ── Too small · the app is desktop-only, and says so ──────────────────────
+   A width gate rather than a responsive layout. The control column is `--panel-w` (360px at its
+   narrowest) and the map needs at least as much again to be worth reading, so below ~900px there is
+   no arrangement of the page that works — and every tool on it (clicking one reach out of a
+   network, dragging a discharge slider, hovering the styling editor) is a pointer tool.
+
+   Done in CSS alone so it is right on the first paint: a JS check would show the app, measure, and
+   then take it away. The rule hides every sibling rather than naming them, so a section added later
+   is covered without anyone remembering to come back here. */
+#too-small {
+    display: none;
+}
+
+@media (max-width: 900px) {
+    body > *:not(#too-small) {
+        display: none !important;
+    }
+
+    #too-small {
+        display: flex;
+        flex: 1 1 auto;
+        align-items: center;
+        justify-content: center;
+        padding: 32px 28px;
+        text-align: center;
+        overflow-y: auto;
+    }
+
+    #too-small > div {
+        max-width: 46ch;
+    }
+
+    #too-small h2 {
+        font-size: var(--fs-lg);
+        color: var(--text);
+        margin-bottom: 12px;
+    }
+
+    #too-small p {
+        font-size: var(--fs-md);
+        color: var(--text-dim);
+        line-height: 1.6;
+    }
+}

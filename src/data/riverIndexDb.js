@@ -1,9 +1,9 @@
 /**
  * IndexedDB storage for the riverId -> riverIndex lookup. Shared by the worker that builds it and
- * the main thread that reads it — and, since the database is shared, by the hydrography explorer.
+ * the main thread that reads it.
  *
- * TWIN FILE: webapp-rfs-hydrography/src/riverIndexDb.js. The keys and SCHEMA_VERSION below are what
- * let one app read the 17 MB the other downloaded; they are a contract, not a private detail.
+ * The keys and SCHEMA_VERSION below are what let this build read the 17 MB a device already has —
+ * see db.js — so they are a contract, not a private detail.
  *
  * The whole lookup is ONE record holding two ArrayBuffers. Storing a row per river instead would
  * mean millions of keyed writes — minutes of work, and a read that costs more than refetching the

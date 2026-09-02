@@ -1,13 +1,13 @@
 import {dataProgress, getLanguage, t} from "../i18n/i18n.js";
 import {resolve} from "../data/riverIndex.js";
 import {locate} from "../data/riverLocation.js";
-import {getSavedRiver, onSavedRiversChange, removeSavedRiver, saveRiver} from "../data/savedRivers.js";
+import {getSavedRiver, onSavedRiversChange, removeSavedRiver, saveRiver} from "../account/savedRivers.js";
 import {heroIcon} from "../icons/icons.js";
 import {askRiverName} from "../ui/saveRiverName.js";
 import {getSetting} from "../settings/settings.js";
 import {closeDock, isDockOpen, onDockClosed, openDock} from "./dock.js";
+import {$} from "../dom.js";
 
-const $ = (id) => document.getElementById(id);
 const CHARTS_TABS = ["forecast", "retro", "details"];
 
 function renderAttrTable(props) {
@@ -146,10 +146,10 @@ function createChartsDock({map, streams, getForecastDate}) {
     }
     if (tab === "forecast") {
       panel.innerHTML = chartsLoading("charts-fc-block", t("charts.loading"));
-      loadForecast("charts-fc-block");
+      void loadForecast("charts-fc-block");
     } else {
       panel.innerHTML = chartsLoading("charts-ts-block", t("charts.loading"));
-      loadRetro("charts-ts-block");
+      void loadRetro("charts-ts-block");
     }
   }
 
@@ -213,9 +213,6 @@ function createChartsDock({map, streams, getForecastDate}) {
     btn.dataset.i18nTitle = key;
     btn.title = t(key);
     btn.setAttribute("aria-label", t(key));
-    // Nothing to clear with no reach selected — the panel's button is the state readout for that.
-    const clear = $("btn-clear-river");
-    if (clear) clear.disabled = selectedRiverId == null && selectedRiverIndex == null;
   }
 
   /**
@@ -350,7 +347,6 @@ function createChartsDock({map, streams, getForecastDate}) {
   $("btn-charts").addEventListener("click", () => (isDockOpen("charts") ? close() : openForRiver()));
   $("charts-close").addEventListener("click", close);
   $("charts-save")?.addEventListener("click", () => void toggleSaved());
-  $("btn-clear-river")?.addEventListener("click", clearSelection);
   // Follows the list rather than the click, so removing this reach from the saved-rivers dock fills
   // the heart back in here too.
   onSavedRiversChange(renderHead);

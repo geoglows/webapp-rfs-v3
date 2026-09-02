@@ -1,10 +1,10 @@
 import {heroIcon} from "../icons/icons.js"
 import {setLanguage} from "../i18n/i18n.js";
-import {wireMenu} from "../map/menu.js";
+import {wireMenu} from "../ui/menu.js";
 // When this bundle was made — stampBuildDate() in vite.config.js writes the module.
 import BUILD_DATE from "virtual:build-date";
+import {$} from "../dom.js";
 
-const $ = (id) => document.getElementById(id);
 
 // env vars are strings so we can't check for truthiness straight up
 const ON = new Set(["true", "1", "yes", "on"]);
@@ -16,8 +16,8 @@ const envNumber = (value, fallback) => (value != null && value !== "" && Number.
 const MAP_CENTER = [envNumber(import.meta.env.VITE_MAP_CENTER_LON, 0), envNumber(import.meta.env.VITE_MAP_CENTER_LAT, 20)];
 const MAP_ZOOM = envNumber(import.meta.env.VITE_MAP_ZOOM, 1.5);
 const MAP_DEFAULT_BASEMAP = import.meta.env.VITE_MAP_DEFAULT_BASEMAP || "";
-const MAX_FLOOD_REACHES = envNumber(import.meta.env.VITE_MAX_FLOOD_REACHES, 50);
-const MIN_FLOOD_MAPS_ZOOM = envNumber(import.meta.env.VITE_MIN_FLOOD_MAPS_ZOOM, 7);
+const FLOOD_MAX_SEGMENTS = envNumber(import.meta.env.VITE_FLOOD_MAX_SEGMENTS, 75);
+const FLOOD_MIN_MAP_ZOOM = envNumber(import.meta.env.VITE_FLOOD_MIN_MAP_ZOOM, 7);
 const SAVED_RIVERS = {
   highlight: envToBool(import.meta.env.VITE_SAVED_RIVERS_HIGHLIGHT),
   color: import.meta.env.VITE_SAVED_RIVERS_COLOR || "",
@@ -35,17 +35,13 @@ const envLanguage = import.meta.env.VITE_PREFERENCES_DEFAULT_LANGUAGE;
 const DEFAULT_LANGUAGE = LANGUAGES.includes(envLanguage) ? envLanguage : "en";
 
 const PREFERENCES = [
-  // The theme used to be its own localStorage key (rfs-theme); it is migrated in initSettings().
   {key: "theme", el: "set-theme", fallback: DEFAULT_THEME},
   {key: "language", el: "set-language", fallback: DEFAULT_LANGUAGE},
 ]
 const SETTINGS = [
-  // No checkbox: this one is flipped by the streams panel's legend button (panelControls).
+  // No checkbox anywhere: this one is flipped by the streams panel's legend button (panelControls).
   {key: "legend", fallback: envToBool(import.meta.env.VITE_SETTINGS_LEGEND)},
   {key: "shadedWarningLevels", el: "set-shaded-warning-levels", fallback: envToBool(import.meta.env.VITE_SETTINGS_SHADED_WARNING_LEVELS)},
-  // The deployment picks the starting state (VITE_SAVED_RIVERS_HIGHLIGHT, via SAVED_RIVERS below);
-  // from there it is the user's, per device. The colour and width of the outline stay deployment
-  // config — they are branding, not a preference anyone would want to sit and adjust.
   {key: "savedHighlight", el: "set-saved-highlight", fallback: SAVED_RIVERS.highlight},
 ];
 
@@ -140,7 +136,7 @@ function initLanguagePicker(onLanguageChange) {
   const options = [...menu.querySelectorAll(".opt[data-lang]")];
   // What this device last chose, or the deployment's configured default for one that never has. A
   // stored code the menu no longer offers (a typo in .env, a language since dropped) is neither.
-  // Same dropdown behaviour as the basemap and layer pickers, but anchored: this is the one that
+  // Same dropdown behavior as the basemap and layer pickers, but anchored: this is the one that
   // opens inside `.panel`, whose overflow clip would otherwise cut it off at the column's edge.
   const closeMenu = wireMenu($("btn-language"), menu, {anchored: true});
   const markActive = (lang) => options.forEach((o) => o.classList.toggle("active", o.dataset.lang === lang));
@@ -178,15 +174,10 @@ function onSetting(key, fn) {
 
 /** Read every setting and wire its checkbox. Call once, before anything subscribes. */
 function initSettings() {
-  // A configured saved-river colour outranks the stylesheet's light/dark pair of --saved, so the
-  // heart and the outline the map draws stay the same colour — which is the whole point of the
+  // A configured saved-river color outranks the stylesheet's light/dark pair of --saved, so the
+  // heart and the outline the map draws stay the same color — which is the whole point of the
   // variable. Left alone when nothing is configured, so each theme keeps the pink picked for it.
   if (SAVED_RIVERS.color) document.documentElement.style.setProperty("--saved", SAVED_RIVERS.color);
-  const legacyTheme = localStorage.getItem("rfs-theme");
-  if (legacyTheme === "light" || legacyTheme === "dark") {
-    localStorage.setItem(STORAGE_PREFIX + "theme", legacyTheme);
-    localStorage.removeItem("rfs-theme");
-  }
   if ($("build-date")) $("build-date").textContent = BUILD_DATE;
   for (const setting of SETTINGS) {
     values.set(setting.key, initialValue(setting));
@@ -240,8 +231,8 @@ export {
   MAP_CENTER,
   MAP_DEFAULT_BASEMAP,
   MAP_ZOOM,
-  MAX_FLOOD_REACHES,
-  MIN_FLOOD_MAPS_ZOOM,
+  FLOOD_MAX_SEGMENTS,
+  FLOOD_MIN_MAP_ZOOM,
   onSetting,
   SAVED_RIVERS
 };

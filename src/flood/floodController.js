@@ -4,10 +4,10 @@ import {FloodOverlay} from "./overlay";
 import {flowsAtLadderPosition, uniformFlows} from "./hydro";
 import {legendGradient} from "./colormap";
 import {getConfig} from "riverforecastsystem/v3";
-import {t} from "../../i18n/i18n";
-import {onStreamsVisibility, streamsVisible} from "../layers";
+import {t} from "../i18n/i18n";
+import {onStreamsVisibility, streamsVisible} from "../map/layers";
+import {$} from "../dom.js";
 
-const $ = (id) => document.getElementById(id);
 
 // What the ladder slider's stops are called before the worker has sent a spec carrying the real
 // list. Must match LADDER_LABELS in mapper.js, which is where they are actually derived.
@@ -168,7 +168,7 @@ function createFloodController({map, streams, getForecastDate, isMapLoaded}) {
     if (mappingMode && workerReady && current.floodable.length > 0) {
       requestSelect();
       // The forecast is per-reach, so a changed selection needs a (cached-where-possible) refetch.
-      if (usesForecast()) loadForecastFlows();
+      if (usesForecast()) void loadForecastFlows();
     } else clearFloodOverlay();
   }
 
@@ -278,7 +278,7 @@ function createFloodController({map, streams, getForecastDate, isMapLoaded}) {
     // Forecast styles need the selection's hydrographs; loadForecastFlows() computes once the
     // download lands (and is a no-op when the cached download already matches date + selection).
     if (style !== "forecast") fcPause();
-    loadForecastFlows();
+    void loadForecastFlows();
   }
 
   // Download the ensemble-median hydrograph for every floodable reach at the selected forecast
@@ -343,7 +343,7 @@ function createFloodController({map, streams, getForecastDate, isMapLoaded}) {
       forecastLoading = false;
     }
     // Released the flag first, so the retry actually runs instead of tripping the guard above.
-    if (stale) loadForecastFlows();
+    if (stale) void loadForecastFlows();
   }
 
   // ---- forecast player ----
@@ -442,7 +442,7 @@ function createFloodController({map, streams, getForecastDate, isMapLoaded}) {
     if (on) {
       ensureWorker();
       streams.setInspectHighlight(null);
-      // Drop the hydrology styler back to plain lines, so the coloured/variable-width network is
+      // Drop the hydrology styler back to plain lines, so the colored/variable-width network is
       // not competing with the selection highlights drawn over it. Routed through the select's own
       // change event rather than the styler, so the control and panelControls' state agree; the
       // control stays enabled, so any style can be picked back up from here.
@@ -469,7 +469,7 @@ function createFloodController({map, streams, getForecastDate, isMapLoaded}) {
     if (!on) clearFloodOverlay();
     else if (workerReady && current.floodable.length > 0) {
       requestSelect();
-      if (usesForecast()) loadForecastFlows();
+      if (usesForecast()) void loadForecastFlows();
     }
   }
 
@@ -534,7 +534,7 @@ function createFloodController({map, streams, getForecastDate, isMapLoaded}) {
     onForecastDateChange() {
       if (!usesForecast()) return;
       fcPause();
-      loadForecastFlows();
+      void loadForecastFlows();
     }
   };
 }
