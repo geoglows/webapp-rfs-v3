@@ -13,9 +13,20 @@ const RET_COLORS = ["#3182bd", "#fee08b", "#fdae61", "#f46d43", "#d73027", "#a50
 const STANDARD_COLOR = "#3182bd";
 // Width of the smallest reaches, and the single width every reach takes in flood mapping mode.
 const WIDTH_BASE = 4;
-// The strahlerOrder ramp runs WIDTH_BASE → WIDTH_MAX; flood mode flattens it to one thin width.
+// The thickness ramp runs WIDTH_BASE → WIDTH_MAX; flood mode flattens it to one thin width.
 const WIDTH_MAX = 10;
 const WIDTH_UNIFORM = 5;
+// The two thickness inputs are on different scales and each needs its own domain. `thk` is the
+// styles pipeline's 1–6 thickness class (packed as byte & 7, so it never reaches this map as 0);
+// `strahlerOrder` in the tiles runs 2–10. Putting raw Strahler through the 1–6 domain is what
+// flattened the non-animated stylesets — the tileset admits only order ≥7 below z5 and ≥4 below
+// z9, so every reach on screen pinned to the top of the ramp and the network drew at one width.
+const THK_DOMAIN = [1, 6];
+const ORDER_DOMAIN = [2, 10];
+// WIDTH_BASE at the bottom of `domain`, WIDTH_MAX at the top, linear between and flat outside —
+// interpolate clamps to its end stops, which is the clamp the old ["min", ...] was doing by hand.
+const widthRamp = (value, [lo, hi]) =>
+  ["interpolate", ["linear"], ["to-number", value], lo, WIDTH_BASE, hi, WIDTH_MAX];
 // The saved-river outline, all three of them configurable per deployment (VITE_SAVED_RIVERS_* — see
 // SAVED_RIVERS in settings/settings.js). The color falls back to the stylesheet's dark-theme
 // --saved so an unconfigured deployment looks exactly as it did before there was a setting.
@@ -228,8 +239,9 @@ class Streams {
   }
 
   /** Zoom-scaled line-width expression. When `animated`, thickness comes from the per-reach `thk`
-   * feature-state (falling back to strahlerOrder); otherwise it comes straight from strahlerOrder
-   * so a non-animated styleset ignores any stale animation state. Per-zoom scale runs z3 global,
+   * feature-state, on its own 1–6 scale; otherwise — and for any reach the animation has no state
+   * for yet — it comes from strahlerOrder on the 2–10 scale the tiles actually carry, so a
+   * non-animated styleset ignores any stale animation state. Per-zoom scale runs z3 global,
    * z7 regional, z12 local, and keeps growing past z12 for an easy-to-click hit box.
    *
    * `pad` widens every stop by a constant — for the saved-river casing, which has to track this
@@ -237,13 +249,9 @@ class Streams {
    * because MapLibre only accepts ["zoom"] as the input to a top-level step/interpolate: wrapping
    * this in ["+", …, pad] is a style error, not a wider line. */
   streamWidthExpr(animated, pad = 0) {
-    const thkSource = animated
-      ? ["coalesce", ["feature-state", "thk"], ["get", "strahlerOrder"]]
-      : ["get", "strahlerOrder"];
-    const THK = ["max", 1, ["min", 6, thkSource]];
     // In flood mode every reach is the same thickness: the selection highlights are the signal
     // there, and a network varying in width underneath them only competes.
-    const RAMP = this.uniformWidth ? WIDTH_UNIFORM : ["step", THK, WIDTH_BASE, 3, 9, 5, WIDTH_MAX];
+    const RAMP = this.uniformWidth ? WIDTH_UNIFORM : this.thicknessRamp(animated);
     const at = (scale) => (pad ? ["+", ["*", scale, RAMP], pad] : ["*", scale, RAMP]);
     return [
       "interpolate",
@@ -258,6 +266,17 @@ class Streams {
       16,
       at(2.2)
     ];
+  }
+
+  /** WIDTH_BASE → WIDTH_MAX across whichever thickness scale the active styleset reads. The two
+   * scales cannot share one ramp — see THK_DOMAIN / ORDER_DOMAIN. A reach the animation has not
+   * reached yet reads 0 from the coalesce, which is outside the packed 1–6 range, and falls back
+   * to its Strahler order rather than to the bottom of the thickness ramp. */
+  thicknessRamp(animated) {
+    const byOrder = widthRamp(["get", "strahlerOrder"], ORDER_DOMAIN);
+    if (!animated) return byOrder;
+    const thk = ["to-number", ["coalesce", ["feature-state", "thk"], 0]];
+    return ["case", [">", thk, 0], widthRamp(thk, THK_DOMAIN), byOrder];
   }
 
   /** Line-color for the time-to-peak styleset: warm (imminent) → cool (late), gray for no data. */
@@ -330,6 +349,9 @@ class Streams {
     this.applyPaint();
     if (styleset === "standard") {
       this.cube = null;
+      // Nothing to load, so nothing would otherwise repaint the legend and the forecast scale the
+      // last styleset left up would stand over a network that is no longer reporting one.
+      this.buildLegend();
       return;
     }
     void this.loadData();
@@ -551,13 +573,26 @@ class Streams {
     const titleEl = document.querySelector("#legend-overlay h2");
     const s = this.styleset;
     box.innerHTML = "";
-    const add = (color, label) => {
+    // `thickness` draws the swatch at the weight the map draws that reach at. Every forecast
+    // styleset leaves it at the stylesheet's own 3px — there the color is the reading and a swatch
+    // varying in weight would imply a second one. Standard is the styleset where weight *is* the
+    // reading, so its swatches are the ramp.
+    const add = (color, label, thickness = 0) => {
       const row = document.createElement("div");
       row.className = "legend-item";
-      row.innerHTML = `<span class="swatch" style="background:${color}"></span>${label}`;
+      const style = `background:${color}` + (thickness ? `;height:${thickness}px` : "");
+      row.innerHTML = `<span class="swatch" style="${style}"></span>${label}`;
       box.appendChild(row);
     };
-    if (s === "below-q95") {
+    if (s === "standard") {
+      // No forecast is being read here, so the network is one blue and the only thing the map is
+      // saying is how big each river is. The three swatches are the ends of the width ramp and its
+      // middle — see streamWidthExpr(). Order 2 is the smallest the tiles carry, 10 the largest.
+      if (titleEl) titleEl.textContent = "Stream order";
+      add(STANDARD_COLOR, "Order 2 (headwaters)", WIDTH_BASE);
+      add(STANDARD_COLOR, "Order 6", (WIDTH_BASE + WIDTH_MAX) / 2);
+      add(STANDARD_COLOR, "Order 10 (main stems)", WIDTH_MAX);
+    } else if (s === "below-q95") {
       if (titleEl) titleEl.textContent = "Q95 low flow";
       add("#dc2626", "Below Q95 (rare low flow)");
       add("#3182bd", "At or above Q95");

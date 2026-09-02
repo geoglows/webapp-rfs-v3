@@ -4,9 +4,10 @@
  *
  * Loaded by src/main.js once there is a map.
  *
- * The styling half draws the network only while the stream style is Standard. A forecast styleset
- * is the network colored by the forecast, which is a different answer to the same question, so it
- * takes the base layer back until it is switched off again — see setStyleset().
+ * The styling half draws the network only while the stream style is Standard *and* the styling
+ * dock is open with one of its two switches on — see styleDrawing(). A forecast styleset is the
+ * network colored by the forecast, which is a different answer to the same question, so it takes
+ * the base layer back until it is switched off again — see setStyleset().
  */
 import {PMTiles} from 'pmtiles';
 import {$, el, fmt, num} from '../dom.js';
@@ -19,7 +20,7 @@ import {
 } from './map.js';
 import {protocol} from '../map/map.js';
 import {registerStreamLayers} from '../map/layers.js';
-import {compileLayers} from './streamStyle.js';
+import {compileLayers, defaultSpec} from './streamStyle.js';
 import {activeUnnamed, loadRiverNames, namesStyle, riverNames} from './nameColoring.js';
 import {loadStreamAttributes} from './streamAttributes.js';
 import {createStylePanel} from './stylePanel.js';
@@ -32,7 +33,7 @@ import {downloadGeometry} from './geometry.js';
 import {groupOf, loadGroups} from './groups.js';
 import {progress, stages} from './ui.js';
 import {heroIcon} from '../icons/icons.js';
-import {closeDock, isDockOpen, openDock} from '../docks/dock.js';
+import {closeDock, isDockOpen, onDockClosed, openDock} from '../docks/dock.js';
 import {watch as watchRiverNames} from '../data/riverNames.js';
 import {askConfirm} from '../ui/confirm.js';
 import {t, tf, tn} from '../i18n/i18n.js';
@@ -48,6 +49,12 @@ let namesError = null;
 let stylePanel = null;
 /** Whether the style spec is what is drawing the network — see the note at the top. */
 let styleActive = false;
+// Whether the rule editor is drawing the network. Off by default and off again the moment the
+// styling dock closes: the rules are a thing you go and preview, not a thing a selection turns on.
+let stylePreview = false;
+// Whether the spec currently holds the base layer. applyStyle() runs on every selection and mode
+// change, and handing the layer back repaints the whole network, so that happens on the edge only.
+let styleHeld = false;
 /** Repaints the network the way the forecast tools want it, when the spec stops drawing it. */
 let repaintForecast = () => {};
 /** Asks the forecast tools for the styleset that leaves the network to the style spec. */
@@ -312,11 +319,33 @@ function clearSelection() {
 
 // ── styling ──────────────────────────────────────────────────────────────────
 /**
- * Draw the network from the style spec. A no-op unless the stream style is Standard — a forecast styleset owns the base layer while it is chosen.
+ * Whether the style spec is drawing the network, and with whose rules.
+ *
+ * The base layer is the forecast tools' by default. Two things in the styling dock take it, and
+ * only while that dock is open: the names coloring, and the preview switch on the rule editor.
+ * Selecting a river is not one of them — a selection answers a question about the network, it does
+ * not restyle it. `rules` separates the two: the names mode is not a custom style and draws from a
+ * pristine spec, so a half-tuned rule set cannot leak onto the map behind it.
+ */
+function styleDrawing() {
+  if (!styleActive || !stylePanel || !map || !isDockOpen('styling')) return null;
+  if (stylePreview) return {rules: true};
+  return namesOn ? {rules: false} : null;
+}
+
+/**
+ * Draw the network from the style spec, or hand the base layer back when nothing in the styling
+ * dock is asking to draw it — see styleDrawing().
  */
 function applyStyle() {
-  if (!styleActive || !stylePanel || !map) return;
-  const spec = stylePanel.getSpec();
+  if (!stylePanel || !map) return;
+  const drawing = styleDrawing();
+  if (!drawing) {
+    if (styleHeld) releaseStyle();
+    return;
+  }
+  styleHeld = true;
+  const spec = drawing.rules ? stylePanel.getSpec() : defaultSpec();
   const {highlight} = stylePanel.options();
   const names = namesOn ? namesStyle() : null;
   // `highlight: false`: the selection is drawn by its own layer above the network, so it survives a
@@ -329,6 +358,29 @@ function applyStyle() {
   // mode leaves in the app's own blue precisely so that the network still reads as itself.
   const base = names ? activeUnnamed() : spec.base.color[0]?.value;
   if (base) document.documentElement.style.setProperty('--stream', base);
+}
+
+/** Give the base layer back to the forecast tools and undo everything the spec set around it. */
+function releaseStyle() {
+  styleHeld = false;
+  clearStreamStyle();
+  setSelectionHighlightVisible(true);
+  document.documentElement.style.removeProperty('--stream');
+  repaintForecast();
+}
+
+/** The rule editor's own switch: turn it on and the rules draw, turn it off and the map goes back
+ * to the Standard network. Switching it on asks for the Standard styleset, because a forecast
+ * styleset owns the base layer and nothing the editor does would show. */
+function setStylePreview(on) {
+  stylePreview = on;
+  paintStylePreview();
+  if (on) wantStyleEditor();
+  applyStyle();
+}
+
+function paintStylePreview() {
+  paintSwitch($('style-preview-mode'), stylePreview);
 }
 
 const selectionForStyle = () => (sel
@@ -360,21 +412,16 @@ function refreshCounts() {
 }
 
 /**
- * The forecast tools have changed which styleset draws the network. Standard is the one that
- * leaves it to the style spec; every other one paints the base layer from the forecast, so the
- * rules come off and the base layer is handed back.
+ * The forecast tools have changed which styleset draws the network. Standard is the only one the
+ * spec may draw over; every other one paints the base layer from the forecast, so the rules come
+ * off and the base layer is handed back. applyStyle() does both halves — including putting the
+ * selection highlight back, which is part of previewing a style rather than a setting.
  */
 function setStyleset(styleset) {
   const wanted = styleset === 'standard';
   if (wanted === styleActive) return;
   styleActive = wanted;
-  if (wanted) return applyStyle();
-  clearStreamStyle();
-  // The highlight switch is part of previewing a style, not a setting: whatever it was left at, the
-  // selection is drawn again once the spec is no longer the thing drawing the network.
-  setSelectionHighlightVisible(true);
-  document.documentElement.style.removeProperty('--stream');
-  repaintForecast();
+  applyStyle();
 }
 
 // ── the selection methods ────────────────────────────────────────────────────
@@ -603,6 +650,8 @@ function setNamesOn(on) {
   if (on && !riverNames()) return;
   namesOn = on;
   paintNamesMode();
+  // Same reason as the preview switch: the coloring is invisible under a forecast styleset.
+  if (on) wantStyleEditor();
   applyStyle();
 }
 
@@ -669,13 +718,22 @@ function initStylingTools() {
   const toggleDock = () => {
     if (isDockOpen('styling')) return void closeDock(map, 'styling');
     void openDock(map, 'styling');
-    // Nothing in the editor draws anything while a forecast styleset owns the network.
-    wantStyleEditor();
+    // Opening the dock does not repaint anything by itself — the switches inside it do.
+    applyStyle();
   };
   $('btn-styling').addEventListener('click', toggleDock);
   $('styling-close').addEventListener('click', () => closeDock(map, 'styling'));
+  // Leaving the dock puts the network back: the rules only draw while you are in here looking at
+  // them, so the preview switch does not survive the trip out.
+  onDockClosed('styling', () => {
+    stylePreview = false;
+    paintStylePreview();
+    applyStyle();
+  });
 
   $('names-mode').addEventListener('click', () => setNamesOn(!namesOn));
+  $('style-preview-mode').addEventListener('click', () => setStylePreview(!stylePreview));
+  paintStylePreview();
 
   // The switch cannot do anything until the table is here, so it says so rather than looking broken.
   $('names-mode').disabled = true;
@@ -751,6 +809,7 @@ export function initExplorer({styleset = 'standard', onRepaintNetwork = () => {}
       paintAoi();
       paintNames();
       paintNamesMode();
+      paintStylePreview();
       stylePanel?.repaint();
     },
   };

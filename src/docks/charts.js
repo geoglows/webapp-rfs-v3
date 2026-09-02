@@ -102,7 +102,7 @@ function createChartsDock({map, streams, getForecastDate}) {
   const loadRetro = (blockId) => loadChartBlock(blockId, {
     fetchData: async (setStatus) => {
       let riverIndex = await targetIndex(setStatus);
-      riverIndex = 0 // todo override for demo phase
+      riverIndex = 0 // todo override for demos phase
       setStatus(t("charts.loading"));
       const {retrospective} = await import("riverforecastsystem/v3/discharge");
       return {...await retrospective({riverIndex: riverIndex}), riverId: selectedRiverId};
@@ -117,7 +117,7 @@ function createChartsDock({map, streams, getForecastDate}) {
   const loadForecast = (blockId) => loadChartBlock(blockId, {
     fetchData: async (setStatus) => {
       let riverIndex = await targetIndex(setStatus);
-      riverIndex = 0 // todo override for demo phase
+      riverIndex = 0 // todo override for demos phase
       setStatus(t("charts.loading"));
       const {forecast, returnPeriods} = await import("riverforecastsystem/v3/discharge");
       const [fc, rp] = await Promise.all([

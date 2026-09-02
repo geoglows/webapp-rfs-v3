@@ -200,9 +200,9 @@ async function boot() {
     styleset: currentStyleset,
     // What repaints the network when a forecast styleset takes it back off the style spec.
     onRepaintNetwork: () => streams.applyPaint(),
-    // The style spec only draws the network under the Standard styleset, so opening the editor
-    // asks for it — otherwise every rule and preset in there is a no-op on a forecast-colored
-    // network, with nothing on screen to say why.
+    // The style spec only draws the network under the Standard styleset, so the two switches that
+    // ask it to draw — the names coloring and the rule preview — ask for Standard too. Otherwise
+    // they would be no-ops on a forecast-colored network, with nothing on screen to say why.
     onStyleEditor: () => panelControls?.chooseStyleset("standard"),
     // The explorer's Clear is the app's: the charts and the named-river highlight go with it.
     onClear: () => {
