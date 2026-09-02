@@ -734,6 +734,12 @@ export function initExplorer({styleset = 'standard', onRepaintNetwork = () => {}
     setStyleset,
     goToRiver,
     clearSelection,
+    /**
+     * Whether the Data Browser is the method in play — the one that is not answering a question
+     * about the network, and so the only one a reach's charts belong to. A click already reads it
+     * through onMapClick; a search has to ask.
+     */
+    isBrowseMode: () => mode === 'browse',
     /** Everything walking [data-i18n] cannot reach, after the dictionary has been swapped. */
     repaint() {
       paintModes();

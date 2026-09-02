@@ -91,15 +91,27 @@ async function showRiver(river, {location = river, target = river, move = travel
  * The explorer selects the same river, so its readouts and the attribute list follow a search the
  * way they follow a click — but the camera is this side's, since only this side knows the charts
  * are about to resize the map under it.
+ *
+ * `charts` is whether this reach is being asked about or only being shown. Off, the river is put on
+ * the map and travelled to and nothing else: no dock opens, so nothing resizes the map and the
+ * camera can go straight away.
  */
-const goToRiver = (river, named) => {
+const goToRiver = (river, named, {charts = true} = {}) => {
   streams.setNamedRiver(named?.span ?? null);
   explorer?.goToRiver(river, named, {camera: false});
   // The extent rides in `target`, which only the camera sees — never in `river`, which the charts
   // dock renders field by field as the reach's attributes.
-  void showRiver(river, named?.bbox
+  const view = named?.bbox
     ? {target: {bbox: named.bbox, lat: river.lat, lon: river.lon}, move: frameRiverExtent}
-    : {move: travelToRiver});
+    : {target: river, move: travelToRiver};
+  if (!charts) {
+    // Still claim the camera, so a move left waiting on a dock from a moment ago does not land
+    // afterward and drag the view off this river.
+    cameraSeq++;
+    view.move(map, view.target);
+    return;
+  }
+  void showRiver(river, view);
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -241,9 +253,11 @@ async function boot() {
   });
 
   // A searched river arrives resolved to the same three things a saved one carries — id, index, and
-  // where it is — so it is gone to the same way.
+  // where it is — so it is gone to the same way. The charts only follow it in the Data Browser: the
+  // other methods are asking about the network, and a search made while one of them is on is asking
+  // where the river is, not for its forecast — the same split a map click is already read by.
   createRiverSearch({
-    onFound: goToRiver,
+    onFound: (river, named) => goToRiver(river, named, {charts: explorer.isBrowseMode()}),
     onClear: () => {
       streams.setNamedRiver(null);
       explorer.clearSelection();
