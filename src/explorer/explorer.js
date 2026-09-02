@@ -392,12 +392,16 @@ function setStyleset(styleset) {
  * for that reach, where the other three are answering a question about the network instead.
  * Shift-click is the only exception: it collects a watershed without leaving the current method.
  */
+// Alt and a digit, numbered down the rows as the panel lists them. Alt rather than Ctrl or Cmd
+// because both of those are the browser's own tab switcher — Ctrl on Windows and Linux, Cmd on
+// macOS — where Alt is free everywhere but Firefox off macOS. `code` rather than `key`, because
+// Option and a digit on a Mac is not the digit: Option-1 arrives as "¡".
 const MODES = {
-  browse: {card: 'browse', key: 'd'},
-  river: {card: 'river-select', key: 'r'},
-  watershed: {card: 'watershed', key: 'w'},
-  aoi: {card: 'aoi', key: 'a'},
-  multi: {card: 'picks', key: 'm'},
+  browse: {card: 'browse', code: 'Digit1'},
+  river: {card: 'river-select', code: 'Digit2'},
+  watershed: {card: 'watershed', code: 'Digit3'},
+  aoi: {card: 'aoi', code: 'Digit5'},
+  multi: {card: 'picks', code: 'Digit4'},
 };
 
 /** The two that select the reach they land on and nothing else — they differ only in the charts. */
@@ -608,7 +612,7 @@ function paintNamesMode() {
   $('panel').classList.toggle('names-on', namesOn);
 }
 
-/** The guard the shortcut keys share: typing "n" into the styling editor stays typing. */
+/** The guard the shortcut keys need: Alt and a digit typed into a field stays typing. */
 const typing = target =>
   target?.isContentEditable || ['INPUT', 'SELECT', 'TEXTAREA'].includes(target?.tagName);
 
@@ -640,13 +644,15 @@ function initSelectionTools() {
     $(`${card}-head`).addEventListener('click', () => void setMode(name));
   }
 
-  // The other way in, for a session spent on the map rather than in the panel. The key of the method
-  // already on drops back to the river selector, so M stays the toggle it has always been.
+  // The other way in, for a session spent on the map rather than in the panel. The shortcut of the
+  // method already on drops back to the river selector, so Alt-4 stays the toggle multi-select has
+  // always been. The default is taken so a browser that also spends Alt and a digit — Firefox off
+  // macOS — is asked not to, and so a Mac does not type the character the combination stands for.
   window.addEventListener('keydown', e => {
-    if (e.metaKey || e.ctrlKey || e.altKey || typing(e.target)) return;
-    const key = e.key.toLowerCase();
-    const hit = Object.entries(MODES).find(([, m]) => m.key === key);
+    if (e.metaKey || e.ctrlKey || !e.altKey || typing(e.target)) return;
+    const hit = Object.entries(MODES).find(([, m]) => m.code === e.code);
     if (!hit) return;
+    e.preventDefault();
     void setMode(mode === hit[0] ? 'river' : hit[0]);
   });
 
@@ -670,10 +676,6 @@ function initStylingTools() {
   $('styling-close').addEventListener('click', () => closeDock(map, 'styling'));
 
   $('names-mode').addEventListener('click', () => setNamesOn(!namesOn));
-  window.addEventListener('keydown', e => {
-    if (e.metaKey || e.ctrlKey || e.altKey || typing(e.target)) return;
-    if (e.key.toLowerCase() === 'n') setNamesOn(!namesOn);
-  });
 
   // The switch cannot do anything until the table is here, so it says so rather than looking broken.
   $('names-mode').disabled = true;

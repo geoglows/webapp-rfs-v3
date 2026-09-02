@@ -159,6 +159,32 @@
     margin-top: 12px;
 }
 
+/* A section heading and the ? that opens its part of the help are one centred line. The heading's
+   own text is in a span because [data-i18n] writes textContent, which would take the button with
+   it. */
+#scroll section > h2 {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+/* Sized to the heading rather than to the button rows below it, and quiet until hovered, so it
+   reads as part of the heading and not as one more control in the section. */
+.btn.icon.help-jump {
+    --size: 20px;
+    --icon: 15px;
+    background: none;
+    border: none;
+    opacity: .55;
+}
+
+.btn.icon.help-jump:hover:not(:disabled) {
+    background: none;
+    border: none;
+    opacity: 1;
+}
+
 /* The button rows the column stacks — the flood mode row, the explorer's tools — sit centred in it
    rather than hugging the left edge. */
 #panel section > .row {
@@ -489,14 +515,12 @@ body.dock-open #scroll hr {
     width: 100%;
 }
 
-/* …except for the help dock, whose text points at those controls (data-spotlight): the forecast and
-   flood sections stay, at their natural height (the wide layout condenses each onto a row or two),
-   and the dock flexes to take whatever is left beneath them. Only those two: everything else steps
-   aside as it does under any other dock, because the help text is the thing being read here and a
-   column of sections above it leaves nothing to read it in. */
+/* …and under the help dock the forecast controls go too, rather than staying pinned as they do for
+   every other dock: the help section that explains them carries its own copy of the section
+   (data-mirror, docks/help.js), so a live one above the dock would only be the same row twice,
+   taking the height the text wants. Nothing of the column is left, so the dock has all of it. */
 body.help-open #scroll {
-    flex: 0 0 auto;
-    overflow: visible;
+    display: none;
 }
 
 /* ── Help dock · one boxed section per topic, ruled off from the next. The whole section is a hover
@@ -527,6 +551,99 @@ body.help-open #scroll {
     font-weight: 700;
     color: var(--text);
     margin-top: 10px;
+}
+
+/* ── Keyboard shortcuts · a reference to come back to rather than a read, so it is laid out as key
+   against what the key does, not as a list of sentences. ── */
+.help-keys {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 5px 14px;
+    align-items: baseline;
+    list-style: none;
+    padding-left: 0;
+}
+
+/* the row is the pair, not a box of its own — its two halves are what the grid places */
+.help-keys li {
+    display: contents;
+}
+
+.help-keys .keys {
+    white-space: nowrap;
+    color: var(--text-dim);
+}
+
+.help-section kbd {
+    display: inline-block;
+    min-width: 22px;
+    padding: 1px 6px;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    font-weight: 700;
+    line-height: 1.5;
+    text-align: center;
+    color: var(--text);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-bottom-width: 2px;
+    border-radius: var(--r-sm);
+}
+
+/* A copy of a whole panel section, mounted in the help section that walks through it (docks/help.js
+   clones the live one on every open). It keeps the ids it copied, so every rule the stylesheet
+   writes about that section still reaches it and the copy looks like the section — which is the
+   whole point of copying rather than describing it. The dock body's own padding comes back off, so
+   the copy sits at the inset the section has in the panel, and the whole thing is dimmed to read as
+   the inert picture it is. */
+.help-mirror {
+    margin: 4px -16px 10px;
+    opacity: .8;
+}
+
+/* the section's heading is the help section's heading, one line above it */
+.help-mirror > section > h2 {
+    display: none;
+}
+
+/* An inert copy of a single button, at the head of the sentence about it — the explorer's tools and
+   its five selection methods are a list of buttons either way, so the sentences carry them. Full
+   size, and dimmed the way the real one is when it cannot be pressed: a picture of the button, not
+   one to press. */
+.help-ctl {
+    opacity: .55;
+    cursor: default;
+    pointer-events: none;
+}
+
+/* The item holding one is a two-column row — the button, then the sentence, centred against it. A
+   row rather than a float, so a 36px button beside a 21px line does not push the lines after it out
+   of true, and the wrapped text hangs under itself rather than under the icon. The button is the
+   better bullet, so it takes the marker's place and its gutter with it. */
+.help-section li:has(> .help-ctl) {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    list-style: none;
+    margin-left: -20px;
+}
+
+.help-say {
+    flex: 1;
+    min-width: 0;
+}
+
+/* A list inside a step — the stylesets under the control that picks them — is a level down from it,
+   not a continuation of it, so it is indented past the step's own text rather than to it. */
+.help-section li > ul {
+    margin-top: 2px;
+    padding-left: 22px;
+}
+
+/* …and the halo the hover puts on it is the one a spotlight puts on the real control, so the two
+   ways of being shown a button look like one thing */
+.help-ctl.spotlight {
+    opacity: 1;
 }
 
 /* ── Spotlight · the control a hovered help passage is about (docks/help.js). An outline rather than
@@ -582,37 +699,34 @@ body.dock-open #hydrology-section .field {
     flex: 1 1 220px;
 }
 
-/* The flood section (on screen only under the help dock) follows the same rhythm. The selector
-   matches the specificity of the `body.dock-open #scroll > section:not(...)` rule that hides the
-   other sections and sits after it, so this one wins. */
-body.help-open #scroll > hr#flood-rule {
-    display: block;
-}
-
-body.help-open #scroll > section#flood-section {
+/* The flood copy in the help dock takes the same rhythm. It is the only place that section is on
+   screen while a dock is open, so this is where it is laid out wide rather than stacked. */
+.help-mirror #flood-section {
     display: flex;
     flex-wrap: wrap;
     align-items: flex-end;
     gap: 12px;
 }
 
-body.help-open #flood-section > * + * {
+.help-mirror #flood-section > * + * {
     margin-top: 0;
 }
 
-body.help-open #flood-section h2,
-body.help-open #flood-section #flood-controls {
-    flex-basis: 100%;
-}
-
-/* the mode / clear / save button row keeps its natural width and joins the picker's row — in the
-   stacked layout it fills its own row instead */
-body.help-open #flood-section > .row,
-body.help-open #flood-section > .row .btn {
+/* The mode / clear / save row keeps its natural width and joins the picker's line, instead of
+   sharing a row of its own out between the three buttons the way `.wrap > .btn` has it. */
+.help-mirror #flood-section > .row,
+.help-mirror #flood-section > .row > .btn {
     flex: 0 0 auto;
 }
 
-body.help-open #flood-section .field {
+/* The discharge controls, the depth legend and the readout stay out of the copy whether or not
+   flood mapping is running: which of them is on screen depends on the flood style in play, and the
+   help text describes that rather than pointing at one arrangement of it. */
+.help-mirror #flood-controls {
+    display: none;
+}
+
+.help-mirror #flood-section .field {
     flex: 1 1 220px;
 }
 

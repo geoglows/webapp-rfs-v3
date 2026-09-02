@@ -57,6 +57,7 @@ let chartsDock = null;
 let panelControls = null;
 // The hydrography explorer — see src/explorer/explorer.js.
 let explorer = null;
+let helpDock = null;
 
 // Counter monitors which selection/animation the camera belongs to.
 // A move waiting on the panel can tell it has been overtaken by a later command.
@@ -163,6 +164,8 @@ initLanguagePicker(() => {
   panelControls?.updateLegendButton();
   chartsDock?.rerenderCharts();
   explorer?.repaint();
+  // …and the help dock's copies of those sections and buttons, which are clones of them.
+  helpDock?.repaint();
   if (map) syncLayerPicker(map);
 });
 
@@ -245,7 +248,7 @@ async function boot() {
   // Fires before the layer is built, so Streams holds the answer and builds the layer with it.
   onSetting("savedHighlight", (on) => streams.setSavedHighlightVisible(on));
 
-  createHelpDock({map});
+  helpDock = createHelpDock({map});
 
   onSetting("legend", (on) => {
     $("legend-overlay").classList.toggle("hidden", !on);

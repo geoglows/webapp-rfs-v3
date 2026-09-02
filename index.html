@@ -55,7 +55,11 @@
   <main>
     <div id="scroll">
       <section id="hydrology-section">
-        <h2 data-i18n="hydro.heading">Streamflow Visualization</h2>
+        <h2>
+          <span data-i18n="hydro.heading">Streamflow Visualization</span>
+          <button class="btn icon help-jump" data-help="hydro" data-icon-name="question-mark-circle"
+                  data-i18n-title="help.jump" title="Read about this section"></button>
+        </h2>
         <div class="field">
           <label for="forecast-date" data-i18n="hydro.forecastDate">Forecast Initialization Date</label>
           <input id="forecast-date" type="date"/>
@@ -77,7 +81,11 @@
       </section>
       <hr id="flood-rule"/>
       <section id="flood-section">
-        <h2 data-i18n="flood.heading">Flood Mapping</h2>
+        <h2>
+          <span data-i18n="flood.heading">Flood Mapping</span>
+          <button class="btn icon help-jump" data-help="flood" data-icon-name="question-mark-circle"
+                  data-i18n-title="help.jump" title="Read about this section"></button>
+        </h2>
         <div class="row wrap">
           <button id="btn-flood-mode" class="btn toggle" data-i18n="flood.enable">FIM Mode: Off</button>
           <button id="btn-clear" class="btn icon" data-icon-name="backspace" data-i18n-title="flood.clear" title="Clear selection" disabled></button>
@@ -131,11 +139,15 @@
         </div>
       </section>
 
-      <!-- HYDROGRAPHY EXPLORER · four answers to "what did that click select", the actions that act
-           on whichever is on, and the attributes of the reach the click landed on under them. -->
+      <!-- HYDROGRAPHY EXPLORER · five answers to "what did that click select", the tools that find
+           rivers and act on whichever is on, and the attributes of the reach the click landed on. -->
       <hr/>
       <section id="explorer-section">
-        <h2 data-i18n="explorer.heading.selection">Hydrography Explorer</h2>
+        <h2>
+          <span data-i18n="explorer.heading.selection">Hydrography Explorer</span>
+          <button class="btn icon help-jump" data-help="explorer" data-icon-name="question-mark-circle"
+                  data-i18n-title="help.jump" title="Read about this section"></button>
+        </h2>
 
         <div class="row" id="explorer-actions">
           <button id="btn-search-river" class="btn icon" data-icon-name="magnifying-glass-solid"
@@ -165,7 +177,7 @@
         <div id="selector-rows">
           <div class="selector-head eyebrow" id="browse-head"
                data-i18n-title="explorer.mode.browse.about"
-               title="One click selects the reach it lands on and opens its charts. Press D.">
+               title="One click selects the reach it lands on and opens its charts. Press Alt+1.">
             <button class="btn sm mode" id="browse-mode" tabindex="-1"></button>
             <span class="title" data-i18n="explorer.mode.browse">Data Browser</span>
             <span class="clarify" data-i18n="explorer.mode.browse.clarify">(1 River & Open Charts)</span>
@@ -174,7 +186,7 @@
           </div>
 
           <div class="selector-head eyebrow" id="river-select-head" data-i18n-title="explorer.mode.river.about"
-               title="One click selects just the reach it lands on. Press R.">
+               title="One click selects just the reach it lands on. Press Alt+2.">
             <button class="btn sm mode" id="river-select-mode" tabindex="-1"></button>
             <span class="title" data-i18n="explorer.mode.river">River Select</span>
             <span class="clarify" data-i18n="explorer.mode.river.clarify">(1 River)</span>
@@ -183,7 +195,7 @@
           </div>
 
           <div class="selector-head eyebrow" id="watershed-head" data-i18n-title="explorer.mode.watershed.about"
-               title="One click selects every reach that drains to the reach it lands on. Press W.">
+               title="One click selects every reach that drains to the reach it lands on. Press Alt+3.">
             <button class="btn sm mode" id="watershed-mode" tabindex="-1"></button>
             <span class="title" data-i18n="explorer.mode.watershed">Watershed Select</span>
             <span class="clarify" data-i18n="explorer.mode.watershed.clarify">(1 River & Upstreams)</span>
@@ -192,7 +204,7 @@
           </div>
 
           <div class="selector-head eyebrow" id="picks-head" data-i18n-title="explorer.mode.multi.about"
-               title="Collect a watershed outlet on every click, instead of selecting one at a time. Shift-click a river to collect one without leaving the method you are in, or press M.">
+               title="Collect a watershed outlet on every click, instead of selecting one at a time. Shift-click a river to collect one without leaving the method you are in, or press Alt+4.">
             <button class="btn sm mode" id="picks-mode" tabindex="-1"></button>
             <span class="title" data-i18n="explorer.mode.multi">Multi Select</span>
             <span class="clarify" data-i18n="explorer.mode.multi.clarify">(Multiple Watersheds)</span>
@@ -201,7 +213,7 @@
           </div>
 
           <div class="selector-head eyebrow" id="aoi-head" data-i18n-title="explorer.mode.aoi.about"
-               title="Cut an area of interest out of a watershed: click its outlet, then click each inlet to drop it and everything that drains into it. Press A.">
+               title="Cut an area of interest out of a watershed: click its outlet, then click each inlet to drop it and everything that drains into it. Press Alt+5.">
             <button class="btn sm mode" id="aoi-mode" tabindex="-1"></button>
             <span class="title" data-i18n="explorer.mode.aoi">AOI Subsetter</span>
             <span class="clarify" data-i18n="explorer.mode.aoi.clarify">(Rivers between 2+ points)</span>
@@ -299,7 +311,7 @@
       <div class="modal-body">
         <div id="names-card" class="row">
           <button class="btn sm mode names" id="names-mode" data-i18n-title="explorer.names.about"
-                  title="Color the network by the river names table: named reaches take a color, everything no name covers goes grey. Press N."></button>
+                  title="Color the network by the river names table: named reaches take a color, everything no name covers goes grey."></button>
           <span class="title" data-i18n="explorer.heading.names">River names</span>
           <span id="names-count" data-i18n-title="explorer.names.count"
                 title="Named rivers in the table"></span>
@@ -320,6 +332,7 @@
         <button class="btn sm" id="help-close" data-i18n-aria-label="common.close" aria-label="Close">✕</button>
       </div>
       <div class="modal-body prose">
+        <!-- 1 · what this site is -->
         <section class="help-section">
           <h4 data-i18n="help.about.h"></h4>
           <p data-i18n="help.intro"></p>
@@ -333,6 +346,26 @@
           <p data-i18n-html="help.disclaimer"></p>
           <p data-i18n="help.intro.use" data-spotlight="#map"></p>
         </section>
+
+        <!-- 2 · the keys · near the top because it is a reference to come back to rather than a read.
+             The names come from the same keys the panel's own rows use, so the two cannot drift. -->
+        <section class="help-section">
+          <h4 data-i18n="help.keys.h"></h4>
+          <ul class="help-keys">
+            <li><span class="keys"><kbd>Alt</kbd> + <kbd>1</kbd></span><span data-i18n="explorer.mode.browse"></span></li>
+            <li><span class="keys"><kbd>Alt</kbd> + <kbd>2</kbd></span><span data-i18n="explorer.mode.river"></span></li>
+            <li><span class="keys"><kbd>Alt</kbd> + <kbd>3</kbd></span><span data-i18n="explorer.mode.watershed"></span></li>
+            <li><span class="keys"><kbd>Alt</kbd> + <kbd>4</kbd></span><span data-i18n="explorer.mode.multi"></span></li>
+            <li><span class="keys"><kbd>Alt</kbd> + <kbd>5</kbd></span><span data-i18n="explorer.mode.aoi"></span></li>
+            <li><span class="keys"><kbd>Shift</kbd> + click</span><span data-i18n="help.keys.collect"></span></li>
+            <li><span class="keys"><kbd>Space</kbd></span><span data-i18n="help.keys.play"></span></li>
+            <li><span class="keys"><kbd>←</kbd> <kbd>→</kbd></span><span data-i18n="help.keys.step"></span></li>
+            <li><span class="keys"><kbd>Esc</kbd></span><span data-i18n="help.keys.close"></span></li>
+          </ul>
+          <p data-i18n="help.keys.note"></p>
+        </section>
+
+        <!-- 3 · the panel header, in the order the buttons sit in it -->
         <section class="help-section" data-spotlight="#panel header .row">
           <h4 data-i18n="help.app.h"></h4>
           <ul>
@@ -340,18 +373,20 @@
             <li data-i18n-html="help.app.settings" data-spotlight="#btn-settings"></li>
             <li data-i18n-html="help.app.lang" data-spotlight="#btn-language"></li>
             <li data-i18n-html="help.app.theme" data-spotlight="#btn-theme"></li>
-            <li data-i18n-html="help.app.search" data-spotlight="#btn-search-river"></li>
-            <li data-i18n-html="help.app.styling" data-spotlight="#btn-styling"></li>
+            <li data-i18n-html="help.app.charts" data-spotlight="#btn-charts"></li>
             <li data-i18n-html="help.app.help" data-spotlight="#btn-help"></li>
           </ul>
         </section>
+
+        <!-- 4 · the map and everything floating over it -->
         <section class="help-section" data-spotlight="#map">
           <h4 data-i18n="help.map.h"></h4>
           <ul>
             <li data-i18n-html="help.map.nav" data-spotlight=".maplibregl-ctrl-top-left"></li>
             <li data-i18n-html="help.map.layers" data-spotlight="#layer-btn"></li>
             <li data-i18n-html="help.map.basemap" data-spotlight="#basemap-btn"></li>
-            <li data-i18n-html="help.map.slider" data-spotlight="#player, #btn-toggle-slider"></li>
+            <li data-i18n-html="help.map.legend" data-spotlight="#legend-overlay"></li>
+            <li data-i18n-html="help.map.slider" data-spotlight="#player"></li>
           </ul>
           <p data-i18n="help.map.layersIntro" data-spotlight="#layer-btn"></p>
           <ul>
@@ -365,89 +400,109 @@
               <a href="https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer" target="_blank" rel="noopener">USGS The National Map</a></li>
           </ul>
         </section>
-        <section class="help-section" data-spotlight="#hydrology-section">
+
+        <!-- 5 · the first section of the panel column -->
+        <section class="help-section" data-help-topic="hydro">
           <h4 data-i18n="help.hydro.h"></h4>
-          <p data-i18n="help.hydro.intro" data-spotlight="#hydrology-section"></p>
+          <div class="help-mirror" data-mirror="#hydrology-section" inert></div>
+          <p data-i18n="help.hydro.intro"></p>
           <ol>
             <li data-i18n-html="help.hydro.date" data-spotlight="#forecast-date"></li>
-            <li data-i18n-html="help.hydro.styles" data-spotlight="#stream-style"></li>
+            <!-- the five stylesets are a list under the control that picks them, not beside it, so
+                 the sentence gets its own element: filling a [data-i18n-html] replaces its children
+                 and would take the list with them. -->
+            <li data-spotlight="#stream-style">
+              <span data-i18n-html="help.hydro.styles"></span>
+              <ul>
+                <li data-i18n-html="help.hydro.style.standard"></li>
+                <li data-i18n-html="help.hydro.style.maxflow"></li>
+                <li data-i18n-html="help.hydro.style.timeseries" data-spotlight="#player"></li>
+                <li data-i18n-html="help.hydro.style.timeToPeak"></li>
+                <li data-i18n-html="help.hydro.style.belowQ95"></li>
+              </ul>
+            </li>
+            <li data-i18n-html="help.hydro.legend" data-spotlight="#btn-legend, #legend-overlay"></li>
+            <li data-i18n-html="help.hydro.slider" data-spotlight="#btn-toggle-slider, #player"></li>
           </ol>
-          <ul>
-            <li data-i18n-html="help.hydro.style.standard" data-spotlight="#stream-style"></li>
-            <li data-i18n-html="help.hydro.style.maxflow" data-spotlight="#stream-style"></li>
-            <li data-i18n-html="help.hydro.style.timeseries" data-spotlight="#stream-style, #player"></li>
-            <li data-i18n-html="help.hydro.style.timeToPeak" data-spotlight="#stream-style"></li>
-            <li data-i18n-html="help.hydro.style.belowQ95" data-spotlight="#stream-style"></li>
-          </ul>
-          <p class="subhead" data-i18n="help.tools.h" data-spotlight="#explorer-actions, #stream-style-row"></p>
-          <p data-i18n-html="help.tools.intro" data-spotlight="#explorer-actions, #stream-style-row"></p>
-          <ul>
-            <li data-i18n-html="help.tools.charts" data-spotlight="#btn-charts"></li>
-            <li data-i18n-html="help.tools.notable" data-spotlight="#btn-bookmarks"></li>
-            <li data-i18n-html="help.tools.saved" data-spotlight="#btn-saved"></li>
-            <li data-i18n-html="help.tools.search" data-spotlight="#btn-search-river"></li>
-            <li data-i18n-html="help.tools.clear" data-spotlight="#btn-explorer-clear"></li>
-            <li data-i18n-html="help.tools.slider" data-spotlight="#btn-toggle-slider, #player"></li>
-            <li data-i18n-html="help.tools.legend" data-spotlight="#btn-legend, #legend-overlay"></li>
-          </ul>
         </section>
-        <section class="help-section" data-spotlight="#btn-charts">
-          <h4 data-i18n="help.charts.h"></h4>
-          <p data-i18n="help.charts.open" data-spotlight="#map, #btn-charts"></p>
-          <ol>
-            <li data-i18n-html="help.charts.forecast" data-spotlight="#btn-charts"></li>
-            <li data-i18n-html="help.charts.retro" data-spotlight="#btn-charts"></li>
-            <li data-i18n-html="help.charts.details" data-spotlight="#btn-charts"></li>
-          </ol>
-          <p data-i18n-html="help.charts.saved" data-spotlight="#btn-saved"></p>
-        </section>
-        <section class="help-section" data-spotlight="#flood-section">
+
+        <!-- 6 · the second section of the panel column -->
+        <section class="help-section" data-help-topic="flood">
           <h4 data-i18n="help.flood.h"></h4>
-          <p data-i18n="help.flood.mode" data-spotlight="#flood-section"></p>
+          <div class="help-mirror" data-mirror="#flood-section" inert></div>
+          <p data-i18n="help.flood.mode"></p>
           <ol>
             <li data-i18n="help.flood.step.zoom" data-spotlight="#map"></li>
             <li data-i18n-html="help.flood.step.enable" data-spotlight="#btn-flood-mode"></li>
             <li data-i18n="help.flood.step.select" data-spotlight="#map"></li>
-            <li data-i18n-html="help.flood.step.style" data-spotlight="#flood-style, #flood-controls"></li>
+            <li data-i18n-html="help.flood.step.style" data-spotlight="#flood-style"></li>
           </ol>
           <p data-i18n="help.flood.styleIntro" data-spotlight="#flood-style"></p>
           <ul>
-            <li data-i18n-html="help.flood.style.ratingcurve" data-spotlight="#flood-style, #qctl-ladder"></li>
+            <li data-i18n-html="help.flood.style.ratingcurve" data-spotlight="#flood-style"></li>
             <li data-i18n-html="help.flood.style.returnperiod" data-spotlight="#flood-style"></li>
-            <li data-i18n-html="help.flood.style.manual" data-spotlight="#flood-style, #qctl-uniform"></li>
-            <li data-i18n-html="help.flood.style.forecast" data-spotlight="#flood-style, #qctl-forecast"></li>
+            <li data-i18n-html="help.flood.style.manual" data-spotlight="#flood-style"></li>
+            <li data-i18n-html="help.flood.style.forecast" data-spotlight="#flood-style"></li>
             <li data-i18n-html="help.flood.style.forecastmax" data-spotlight="#flood-style"></li>
           </ul>
-          <p data-i18n-html="help.flood.readout" data-spotlight="#readout, #btn-save-geotiff, #btn-clear"></p>
+          <p data-i18n-html="help.flood.readout" data-spotlight="#btn-save-geotiff, #btn-clear"></p>
           <p class="subhead" data-i18n="help.flood.model.h"></p>
           <p data-i18n-html="help.flood.model"></p>
         </section>
-        <section class="help-section">
+
+        <!-- 7 · the third section of the panel column -->
+        <section class="help-section" data-help-topic="explorer">
           <h4 data-i18n="help.explorer.h"></h4>
+          <p class="subhead" data-i18n="help.explorer.tools.h"></p>
+          <ul>
+            <li data-i18n-html="help.explorer.search" data-control="#btn-search-river"></li>
+            <li data-i18n-html="help.explorer.styling" data-control="#btn-styling"></li>
+            <li data-i18n-html="help.explorer.notable" data-control="#btn-bookmarks"></li>
+            <li data-i18n-html="help.explorer.saved" data-control="#btn-saved"></li>
+            <li data-i18n-html="help.explorer.clear" data-control="#btn-explorer-clear"></li>
+            <li data-i18n-html="help.explorer.copy" data-control="#btn-copy"></li>
+            <li data-i18n-html="help.explorer.download" data-control="#btn-geoparquet"></li>
+          </ul>
           <p data-i18n="help.explorer.intro"></p>
           <ul>
-            <li data-i18n-html="help.explorer.browse"></li>
-            <li data-i18n-html="help.explorer.river"></li>
-            <li data-i18n-html="help.explorer.watershed"></li>
-            <li data-i18n-html="help.explorer.multi"></li>
-            <li data-i18n-html="help.explorer.aoi"></li>
+            <li data-i18n-html="help.explorer.browse" data-control="#browse-mode"></li>
+            <li data-i18n-html="help.explorer.river" data-control="#river-select-mode"></li>
+            <li data-i18n-html="help.explorer.watershed" data-control="#watershed-mode"></li>
+            <li data-i18n-html="help.explorer.multi" data-control="#picks-mode"></li>
+            <li data-i18n-html="help.explorer.aoi" data-control="#aoi-mode"></li>
           </ul>
-          <p data-i18n-html="help.explorer.actions"></p>
           <p data-i18n-html="help.explorer.attributes"></p>
         </section>
-        <section class="help-section" data-spotlight="#btn-styling">
+
+        <!-- 8 · the docks the explorer and the header open -->
+        <section class="help-section" data-spotlight="#btn-charts">
+          <h4 data-i18n="help.charts.h"></h4>
+          <p data-i18n-html="help.charts.open" data-spotlight="#btn-charts"></p>
+          <ol>
+            <li data-i18n-html="help.charts.forecast"></li>
+            <li data-i18n-html="help.charts.retro"></li>
+            <li data-i18n-html="help.charts.details"></li>
+          </ol>
+          <p data-i18n-html="help.charts.saved"></p>
+        </section>
+
+        <section class="help-section">
           <h4 data-i18n="help.styling.h"></h4>
-          <p data-i18n-html="help.styling.intro" data-spotlight="#stream-style"></p>
+          <p data-i18n-html="help.styling.intro"></p>
           <ul>
             <li data-i18n-html="help.styling.names"></li>
             <li data-i18n-html="help.styling.rules"></li>
           </ul>
         </section>
+
+        <!-- 9 · the rest of the header -->
         <section class="help-section" data-spotlight="#btn-settings">
           <h4 data-i18n="help.settings.h"></h4>
           <p data-i18n="help.settings.menu" data-spotlight="#btn-settings"></p>
           <p data-i18n="help.settings.data" data-spotlight="#btn-settings"></p>
         </section>
+
+        <!-- 10 · credits -->
         <section class="help-section">
           <h4 data-i18n="help.data.h"></h4>
           <p class="subhead" data-i18n="help.data.sub"></p>
