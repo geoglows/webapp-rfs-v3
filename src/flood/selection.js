@@ -1,5 +1,4 @@
-import {corridorBetween} from "./corridor";
-import {upstreamRange} from "../data/runs.js";
+import {corridorBetween, upstreamRange} from "riverforecastsystem/v3/hydrography";
 import {inFilter, noMatch, streamLine, whenStyleReady, zoomInterp} from "../map/streamFilters.js";
 import {FLOOD_MAX_SEGMENTS, FLOOD_MIN_MAP_ZOOM} from "../settings/settings.js";
 
@@ -14,7 +13,7 @@ class Selection {
    * them; click more to extend the corridor, click a chosen reach again to drop it.
    *
    * Two sets, and the difference matters for both the highlights and the toggling: `clicked` is
-   * what the user actually picked, `corridor` is what that means on the river (corridor.js, off the
+   * what the user actually picked, `corridor` is what that means on the river (corridorBetween, off the
    * runs the tiles already carry). Only `clicked` is toggled — clicking a reach the corridor merely
    * passes through pins it, so it survives dropping the click that pulled it in.
    *
@@ -117,7 +116,7 @@ class Selection {
     return [...runs.values()];
   }
 
-  /** The corridor the current clicks imply — see corridor.js. */
+  /** The corridor the current clicks imply — see riverforecastsystem/v3/hydrography. */
   computeCorridor() {
     return corridorBetween(this.clicked, this.loadedRuns());
   }
@@ -181,7 +180,7 @@ class Selection {
   }
 
   /** Selection state goes to the console rather than the panel — the map already shows it, in the
-   * colours of the highlight layers. */
+   * colors of the highlight layers. */
   logSelection(floodableCount) {
     const n = this.corridor.size;
     const parts = [`Selection: ${this.clicked.size} clicked → ${n} in corridor, ${floodableCount} floodable`,

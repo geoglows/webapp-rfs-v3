@@ -6,7 +6,7 @@
  * imagery overlays. Independent on/off switches, because any number of them can be drawn at once.
  *
  * Three things read the list — the menu row that switches a layer on, the legend row naming its
- * colour, and the sync that greys out both when the open dataset does not publish those tiles — so
+ * color, and the sync that greys out both when the open dataset does not publish those tiles — so
  * it lives here rather than in the markup.
  */
 import {calciteIcon} from "../icons/calcite.js";
@@ -30,7 +30,7 @@ const registerStreamLayers = (fn) => {
 const streamLayers = () => streamLayerIds();
 
 const LAYERS = [
-  // No legend row for the network: what its colour means is the forecast scale above the legend,
+  // No legend row for the network: what its color means is the forecast scale above the legend,
   // or the styling section, and a swatch saying "streams" beside either only takes up the corner.
   {layerId: "streams", labelKey: "layers.streams", on: true, swatch: "stream", legend: false, layers: () => streamLayerIds()},
   {layerId: "flood", labelKey: "layers.floodExtents", on: true},
@@ -224,7 +224,7 @@ function initLayerPicker(map) {
     menu.appendChild(opt);
     layer.opt = opt;
 
-    // The legend row for the same layer, hidden until the layer is on: a colour is worth naming
+    // The legend row for the same layer, hidden until the layer is on: a color is worth naming
     // only while there is something on the map wearing it. Only the entries that have a swatch —
     // the imagery overlays are their own legend.
     if (layer.swatch && layer.legend !== false && legend) {

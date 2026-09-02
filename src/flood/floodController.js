@@ -442,7 +442,7 @@ function createFloodController({map, streams, getForecastDate, isMapLoaded}) {
     if (on) {
       ensureWorker();
       streams.setInspectHighlight(null);
-      // Drop the hydrology styler back to plain lines, so the coloured/variable-width network is
+      // Drop the hydrology styler back to plain lines, so the colored/variable-width network is
       // not competing with the selection highlights drawn over it. Routed through the select's own
       // change event rather than the styler, so the control and panelControls' state agree; the
       // control stays enabled, so any style can be picked back up from here.

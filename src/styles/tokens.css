@@ -15,7 +15,7 @@
        style rule, the line between attributes in the field list. */
     --border-soft: rgba(51, 65, 85, .6);
     /* The line that divides the control column into sections. Thicker than a border and not a
-       border colour: it is meant to be read as a separator at a glance, so each theme takes it to
+       border color: it is meant to be read as a separator at a glance, so each theme takes it to
        its own extreme — near-white on the dark ground, black on the light one. */
     --rule: #e2e8f0;
     /* The mode switches' check and the box around it while it is on — a green picked to hold up
@@ -31,7 +31,7 @@
 
     /* Accent */
     --accent: #38bdf8;
-    /* The colour the open-source library list is written in. */
+    /* The color the open-source library list is written in. */
     --accent-dim: #0ea5e9;
     --on-accent: #04121b;
 
@@ -39,7 +39,7 @@
     --success: #10b981;
     --danger: #ef4444;
     --danger-text: #fca5a5;
-    /* The danger colour at a wash, behind a rule the styling editor has flagged. */
+    /* The danger color at a wash, behind a rule the styling editor has flagged. */
     --warn: #f59e0b;
     --warn-text: #fcd34d;
 
@@ -48,8 +48,8 @@
     --swatch-ring: rgba(255, 255, 255, .15);
     --shadow-color: 0, 0, 0;
 
-    /* The map's own colours — data, not chrome: a stream is the same blue in both themes, and the
-       legend swatch has to be the colour the line actually is. --stream is overwritten at runtime by
+    /* The map's own colors — data, not chrome: a stream is the same blue in both themes, and the
+       legend swatch has to be the color the line actually is. --stream is overwritten at runtime by
        the styling panel, which is why the legend follows a restyle. Only --selected-text is themed,
        because it has to hold as 11px type rather than as a line on a map. */
     --stream: #3B82F6;

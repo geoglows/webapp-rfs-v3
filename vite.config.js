@@ -33,7 +33,7 @@ const TYPES = {
  * Everything this app reads it reads by byte range, so **206 with a correct `Content-Range` is the
  * whole job** — a server that answers 200 with the entire file makes PMTiles refuse the response
  * outright ("content-length exceeding request") and makes a parquet footer read pull the whole
- * gigabyte. That is the one behaviour worth being careful about, and it is small enough not to be
+ * gigabyte. That is the one behavior worth being careful about, and it is small enough not to be
  * worth a dependency.
  *
  * The 416 path matters too: PMTiles probes an archive it does not know the length of and reads the

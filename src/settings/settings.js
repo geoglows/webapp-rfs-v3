@@ -35,7 +35,6 @@ const envLanguage = import.meta.env.VITE_PREFERENCES_DEFAULT_LANGUAGE;
 const DEFAULT_LANGUAGE = LANGUAGES.includes(envLanguage) ? envLanguage : "en";
 
 const PREFERENCES = [
-  // The theme used to be its own localStorage key (rfs-theme); it is migrated in initSettings().
   {key: "theme", el: "set-theme", fallback: DEFAULT_THEME},
   {key: "language", el: "set-language", fallback: DEFAULT_LANGUAGE},
 ]
@@ -43,18 +42,11 @@ const SETTINGS = [
   // No checkbox anywhere: this one is flipped by the streams panel's legend button (panelControls).
   {key: "legend", fallback: envToBool(import.meta.env.VITE_SETTINGS_LEGEND)},
   {key: "shadedWarningLevels", el: "set-shaded-warning-levels", fallback: envToBool(import.meta.env.VITE_SETTINGS_SHADED_WARNING_LEVELS)},
-  // The deployment picks the starting state (VITE_SAVED_RIVERS_HIGHLIGHT, via SAVED_RIVERS below);
-  // from there it is the user's, per device. The colour and width of the outline stay deployment
-  // config — they are branding, not a preference anyone would want to sit and adjust.
   {key: "savedHighlight", el: "set-saved-highlight", fallback: SAVED_RIVERS.highlight},
 ];
 
 const STORAGE_PREFIX = "rfs-setting-";
 const SAVED_AT_KEY = "rfs-settings-saved-at";
-// Where the theme lived when the hydrography explorer was a separate deployment on this origin.
-// Read below to adopt a theme picked there, and still written back for a device that has not yet
-// loaded the merged build. Delete this and both call sites once that deployment is gone.
-const LEGACY_THEME_KEY = "rfs-theme";
 const values = new Map();
 const listeners = new Map();
 const anyListeners = new Set();
@@ -144,7 +136,7 @@ function initLanguagePicker(onLanguageChange) {
   const options = [...menu.querySelectorAll(".opt[data-lang]")];
   // What this device last chose, or the deployment's configured default for one that never has. A
   // stored code the menu no longer offers (a typo in .env, a language since dropped) is neither.
-  // Same dropdown behaviour as the basemap and layer pickers, but anchored: this is the one that
+  // Same dropdown behavior as the basemap and layer pickers, but anchored: this is the one that
   // opens inside `.panel`, whose overflow clip would otherwise cut it off at the column's edge.
   const closeMenu = wireMenu($("btn-language"), menu, {anchored: true});
   const markActive = (lang) => options.forEach((o) => o.classList.toggle("active", o.dataset.lang === lang));
@@ -182,24 +174,10 @@ function onSetting(key, fn) {
 
 /** Read every setting and wire its checkbox. Call once, before anything subscribes. */
 function initSettings() {
-  // A configured saved-river colour outranks the stylesheet's light/dark pair of --saved, so the
-  // heart and the outline the map draws stay the same colour — which is the whole point of the
+  // A configured saved-river color outranks the stylesheet's light/dark pair of --saved, so the
+  // heart and the outline the map draws stay the same color — which is the whole point of the
   // variable. Left alone when nothing is configured, so each theme keeps the pink picked for it.
   if (SAVED_RIVERS.color) document.documentElement.style.setProperty("--saved", SAVED_RIVERS.color);
-  // Adopt on every load, not seed-once: the other app writes this key when its user flips the
-  // theme, and this read is the only way that choice reaches this app.
-  // The hydrography page kept its settings under its own prefix while it was a separate app.
-  for (const {key} of SETTINGS) {
-    const old = localStorage.getItem("rfs-hydrography-setting-" + key);
-    if (old !== null && localStorage.getItem(STORAGE_PREFIX + key) === null) {
-      localStorage.setItem(STORAGE_PREFIX + key, old);
-    }
-    localStorage.removeItem("rfs-hydrography-setting-" + key);
-  }
-  const legacyTheme = localStorage.getItem(LEGACY_THEME_KEY);
-  if (legacyTheme === "light" || legacyTheme === "dark") {
-    localStorage.setItem(STORAGE_PREFIX + "theme", legacyTheme);
-  }
   if ($("build-date")) $("build-date").textContent = BUILD_DATE;
   for (const setting of SETTINGS) {
     values.set(setting.key, initialValue(setting));
@@ -222,8 +200,6 @@ const prefs = {
     if (!pref) throw new Error(`Unknown preference: ${key}`);
     if (prefs.get(key) === value) return;
     localStorage.setItem(STORAGE_PREFIX + key, value);
-    // Mirrored out for the standalone hydrography deployment; see LEGACY_THEME_KEY.
-    if (key === "theme") localStorage.setItem(LEGACY_THEME_KEY, value);
     for (const fn of listeners.get(key) ?? []) fn(value);
     if (!remote) noteLocalChange();
   }

@@ -289,7 +289,7 @@ export function createStylePanel({mount, onChange, selection, pmtiles}) {
   // ── rules ──────────────────────────────────────────────────────────────────
   function styleBlock(block) {
     return el('div', {class: 'block-style'}, [
-      stopsEditor(block, 'color', t('explorer.style.colour')),
+      stopsEditor(block, 'color', t('explorer.style.color')),
       stopsEditor(block, 'width', t('explorer.style.width')),
       stopsEditor(block, 'opacity', t('explorer.style.opacity')),
       zoomRange(block),

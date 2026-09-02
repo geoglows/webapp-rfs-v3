@@ -1,11 +1,11 @@
 /**
- * Which reaches carry a river name, and what colour that makes them.
+ * Which reaches carry a river name, and what color that makes them.
  *
  * A name covers everything upstream of the reach it ends on, and a tributary named further up
  * overwrites it there — so the name on a reach is the one from the *smallest* named span containing
  * it. Everything upstream of a reach is one contiguous run of riverIndex, so the whole thing reduces
  * to intervals on one global axis; `extras_river_name_ranges.py` flattens them to disjoint runs and
- * assigns the colour slots. What arrives here is that answer: sorted boundaries and the slot in
+ * assigns the color slots. What arrives here is that answer: sorted boundaries and the slot in
  * force after each.
  *
  * Fetched from group=0 beside the tiles rather than bundled, because riverIndex values mean nothing
@@ -16,7 +16,7 @@
 import {load as loadNamesTable, payload} from '../data/riverNames.js';
 
 /**
- * Four of a six-colour set. The blue is the rivers' own colour and the purple belongs to the group
+ * Four of a six-color set. The blue is the rivers' own color and the purple belongs to the group
  * boundaries, so neither can also mean "a named river".
  *
  * Known defect: slot 3 measures 1.24:1 against a light basemap and 1.20:1 against the dark one, where
@@ -30,7 +30,7 @@ const UNNAMED = '#3B82F6';
 /**
  * How much heavier a named reach is drawn. A multiple, not a pixel count, so the weight holds across
  * whatever zoom ramp the styling panel sets. Width is the second channel the named/unnamed split is
- * carried on, so it survives print and colour blindness.
+ * carried on, so it survives print and color blindness.
  */
 const NAMED_WIDTH_SCALE = 2.5;
 
@@ -42,7 +42,7 @@ export const riverNames = () => names;
 
 /**
  * The one `step` expression the mode is built on: reach in, bin number out — 0..slots-1 for a named
- * river, -1 for unnamed water. Colour and width are read *off* the bin by two small expressions, so a
+ * river, -1 for unnamed water. Color and width are read *off* the bin by two small expressions, so a
  * palette change rewrites seven entries rather than a thousand stops and the two channels cannot
  * disagree. Built once when the file arrives; the restyle path runs on every zoom, edit and click.
  */
@@ -51,8 +51,8 @@ function compile(d) {
   for (let i = 0; i < d.bounds.length; i++) bin.push(d.bounds[i], d.stops[i]);
   // Two generations of riverNames.json are in the wild: the newer publishes `slots`, the older only
   // its own `palette`. Only the count is read from either. Getting it wrong is silent and total —
-  // `slots` undefined makes the colour loop run zero times and MapLibre rejects the two-argument
-  // `match`, leaving the whole network one colour.
+  // `slots` undefined makes the color loop run zero times and MapLibre rejects the two-argument
+  // `match`, leaving the whole network one color.
   return {
     slots: d.slots ?? (Array.isArray(d.palette) ? d.palette.length : 0),
     palette: PALETTE,
@@ -70,7 +70,7 @@ function compile(d) {
 
 /**
  * The palette applied to the bins. Truncated to the bins actually in play: a palette shorter than the
- * generator's SLOTS would resolve a real bin to `undefined` and paint it the fallback colour, which
+ * generator's SLOTS would resolve a real bin to `undefined` and paint it the fallback color, which
  * is the one reserved for "no name" — a wrong answer that looks like a right one.
  */
 function colorExpr() {
@@ -95,7 +95,7 @@ export async function loadRiverNames() {
   names = compile(d);
   // Neither `slots` nor `palette` compiles to a `match` with no arms, which MapLibre drops with a
   // console warning while the mode reports itself as on.
-  if (!(names.slots > 0)) throw new Error('riverNames.json declares no colour slots');
+  if (!(names.slots > 0)) throw new Error('riverNames.json declares no color slots');
   return names;
 }
 

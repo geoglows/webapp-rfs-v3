@@ -16,7 +16,7 @@ export {map};
 /** Rule layers are inserted under this one, so the selected outlet is never painted over. */
 const TOP_LAYER = 'outlet';
 
-/** The amber wash over every reach the current selection holds. Its own layer rather than a colour
+/** The amber wash over every reach the current selection holds. Its own layer rather than a color
  * folded into the network's paint, so a watershed stays visible under a forecast styleset too —
  * the styling section only draws the network while the stream style is Standard. */
 const SEL_UP_LAYER = 'selection-upstream';
@@ -168,7 +168,7 @@ export function applyInlets(ids) {
 // ── the multi-select collection ──────────────────────────────────────────────
 let picked = [];
 
-/** Paint every collected watershed in the pick colour with its outlet drawn over it, off the same
+/** Paint every collected watershed in the pick color with its outlet drawn over it, off the same
  * one `riverIndex` range the single selection uses — so a collected watershed looks like one that
  * stayed selected. */
 export function applyPicks(list) {

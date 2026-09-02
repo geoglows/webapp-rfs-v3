@@ -9,7 +9,7 @@
  * layer picker stops reporting them as unpublished.
  *
  * They are map reference, not a tool. The
- * catchment colouring is the one part that belongs to the hydrography explorer, and it arrives
+ * catchment coloring is the one part that belongs to the hydrography explorer, and it arrives
  * through setCatchmentSelection() rather than being read from here.
  */
 import {PMTiles} from "pmtiles";
@@ -155,7 +155,7 @@ const REFERENCES = [
         }
       }] : [])
     ],
-    // A watershed selected before the catchments landed still has to colour them.
+    // A watershed selected before the catchments landed still has to color them.
     after: () => syncCatchmentHighlight()
   },
   {
@@ -239,7 +239,7 @@ export function attachReferences({onChange} = {}) {
 }
 
 // ── the catchments ───────────────────────────────────────────────────────────
-/** Whatever the explorer has selected, so a catchment under it is coloured with it. */
+/** Whatever the explorer has selected, so a catchment under it is colored with it. */
 let selection = null;
 
 function syncCatchmentHighlight() {
@@ -252,7 +252,7 @@ function syncCatchmentHighlight() {
   map.setFilter("catchment-outlet", ["==", ["get", "riverId"], selection?.outlet ?? -1]);
 }
 
-/** The hydrography explorer's current selection, or null. Colours the catchments under it. */
+/** The hydrography explorer's current selection, or null. Colors the catchments under it. */
 export function setCatchmentSelection(next) {
   selection = next;
   syncCatchmentHighlight();

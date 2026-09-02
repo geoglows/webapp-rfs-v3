@@ -10,7 +10,7 @@ export const ruleLayerId = i => `${RULE_LAYER_PREFIX}${i + 1}`;
 
 export const COLORS = {
   /**
-   * Amber against the network's blue, a pair that survives every common form of colour blindness —
+   * Amber against the network's blue, a pair that survives every common form of color blindness —
    * selected from not selected is the one distinction that has to hold. Both ends stay on the yellow
    * side of orange; a red-leaning dark end would put the pair back into a red/blue clash. One hue at
    * two depths: `upstream` is the area, `outlet` the reaches bounding it. Picks use the same two.
@@ -202,8 +202,8 @@ export const cloneSpec = spec => JSON.parse(JSON.stringify(spec));
 export const inRangeExpr = sel => spansFilter('riverIndex', sel.spans ?? [{lo: sel.lo, hi: sel.hi}]);
 
 /**
- * `names` swaps every rule's colour for one expression over riverIndex — the River Names mode. It
- * replaces colours rather than filtering, so the network stays as wide and as filtered as the panel
+ * `names` swaps every rule's color for one expression over riverIndex — the River Names mode. It
+ * replaces colors rather than filtering, so the network stays as wide and as filtered as the panel
  * left it. The selection highlight still wins over it.
  */
 export function compileLayers(spec, {highlight = false, selection = null, names = null} = {}) {

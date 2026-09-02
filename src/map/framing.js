@@ -69,7 +69,7 @@ function snapToFeature(feature, {lng, lat}) {
  * Of the features a box query returned, the one whose line actually passes closest to the click.
  *
  * queryRenderedFeatures hands back everything inside the box in draw order, so once zoomed in far
- * enough for reaches to sit a few pixels apart, taking the first one selects whichever neighbour
+ * enough for reaches to sit a few pixels apart, taking the first one selects whichever neighbor
  * happens to be painted on top rather than the one under the pointer. Features without a line
  * still count, but only when nothing better is there.
  */

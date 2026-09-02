@@ -4,7 +4,6 @@ import maplibreWorkerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&ur
 import {Protocol} from "pmtiles";
 import {basemapStyle, setBasemap} from "./basemaps.js";
 import {logMapErrors} from "./errors.js";
-import {mapReady} from "./ready.js";
 import {MAP_CENTER, MAP_DEFAULT_BASEMAP, MAP_ZOOM} from "../settings/settings.js";
 
 setWorkerUrl(maplibreWorkerUrl);
@@ -45,13 +44,16 @@ async function initMap() {
     zoom: MAP_ZOOM,
     hash: "map",
     maxZoom: 13,
-    // Flat, always. Nothing here reads better tilted — the streams, the flood extents and the raster
-    // overlays are all draped on the ground — and a pitched view makes a reach harder to aim at. The
-    // ceiling is what actually holds it flat, including against a pitch arriving in the URL hash; the
-    // two gesture options stop a right-drag or a two-finger drag from trying in the first place.
+    // Flat and north-up, always. Nothing here reads better tilted or turned — the streams, the flood
+    // extents and the raster overlays are all draped on the ground — and a pitched or rotated view
+    // makes a reach harder to aim at. The ceiling is what actually holds it flat, including against
+    // a pitch arriving in the URL hash; the gesture options stop a right-drag or a two-finger drag
+    // from trying in the first place, and the pinch and keyboard handlers lose their rotation half
+    // below.
     maxPitch: 0,
     pitchWithRotate: false,
     touchPitch: false,
+    dragRotate: false,
     localIdeographFontFamily: "sans-serif",
     // esri environment basemap asks for some broken fonts which we need to correct
     transformRequest: (url) => {
@@ -68,9 +70,16 @@ async function initMap() {
   // Shift-click is how a river is added to the explorer's multi-select collection, and MapLibre's
   // box zoom eats the click that ends a shift-drag. Scroll and the +/- control already zoom.
   map.boxZoom.disable();
+  // Pinch still zooms and the arrow keys still pan; the rotation half of each is off.
+  map.touchZoomRotate.disableRotation();
+  map.keyboard.disableRotation();
+  // A bearing arriving in the URL hash is put back to north.
+  if (map.getBearing() !== 0) map.setBearing(0);
 
-  map.addControl(new NavigationControl({showCompass: true, visualizePitch: false}), "top-left");
-  await mapReady(map);
+  map.addControl(new NavigationControl({showCompass: false}), "top-left");
+  // Wait for `style.load`, not `load`: `load` waits on the first rendered frame and so on every
+  // source in the initial style answering, which a slow or dead tile archive holds forever.
+  await new Promise((resolve) => map.once("style.load", resolve));
   // After the style is up, because switching a basemap is `setLayoutProperty` on layers that have
   // to exist — and not awaited, because the vector basemap is three portal-item fetches and
   // nothing else on the page is waiting to hear about the ground. For a raster default this is a

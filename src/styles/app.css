@@ -132,7 +132,7 @@
 
 /* ── Left panel · sections and the flood controls ── */
 /* A section heading outranks the labels of the controls inside it: larger, heavier and in the full
-   text colour, against the 14.5px labels of .field. */
+   text color, against the 14.5px labels of .field. */
 #scroll section h2 {
     font-size: var(--fs-lg);
     font-weight: 700;
@@ -315,7 +315,7 @@
     text-align: center;
 }
 
-/* the headline; the line under it is a .hint and keeps that size and colour */
+/* the headline; the line under it is a .hint and keeps that size and color */
 .charts-empty p:not(.hint) {
     font-size: 15px;
     color: var(--text);
@@ -533,7 +533,7 @@ body.help-open #scroll {
    a border so nothing shifts, haloed by layered box-shadows of growing blur and pulsed to pull the
    eye. ── */
 /* Hot, high-contrast shades that stand out against both the blue-grey panel and the map, neither of
-   which has any warm colour in it. The pulse runs between a bright yellow and a light orange. */
+   which has any warm color in it. The pulse runs between a bright yellow and a light orange. */
 :root {
     --spot: #fde047;      /* the halo's brighter shade: light yellow */
     --spot-dim: #fb923c;  /* …and the one it pulses to: light orange */
@@ -546,7 +546,7 @@ body.help-open #scroll {
 
 .spotlight {
     /* no position here on purpose: the map overlays (#map-controls, #player) are absolutely placed
-       and must stay so; z-index only lifts the halo above neighbours on things already positioned */
+       and must stay so; z-index only lifts the halo above neighbors on things already positioned */
     z-index: 5;
     outline: 4px solid var(--spot);
     outline-offset: 4px;
@@ -627,7 +627,7 @@ body.dock-open #player {
     min-width: 0;
 }
 
-/* ── The narrow docks · the ones with nothing above them. The styling editor's names colouring and
+/* ── The narrow docks · the ones with nothing above them. The styling editor's names coloring and
    rules are judged against the map, not against the forecast controls, and the two river lists have
    nothing to do with those controls either — so the column gives each dock all of its height, and
    only as much width as its rows need, rather than the half viewport the charts take. These follow

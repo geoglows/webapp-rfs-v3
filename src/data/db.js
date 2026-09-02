@@ -140,22 +140,4 @@ function clearAll() {
   }));
 }
 
-/**
- * The database this app kept before the caches were consolidated: "rfs-v3", holding the same two
- * datasets under a store called "river-index". Nothing will ever read it again, and it is the
- * largest thing this site ever put on the device — around 55 MB on anyone who searched by ID — so
- * it is deleted rather than left stranded.
- *
- * Fire and forget, and once per load. A delete blocked by another tab still on the old build simply
- * happens when that tab closes; there is nothing for the caller to wait for or report either way.
- */
-function dropLegacyDatabase() {
-  try {
-    indexedDB.deleteDatabase("rfs-v3");
-  } catch {
-    // A browser that refuses to look at storage at all (private mode, blocked site data) has
-    // nothing stranded either.
-  }
-}
-
-export {STORE, clearAll, dropLegacyDatabase, openDb, runTransaction};
+export {STORE, clearAll, openDb, runTransaction};

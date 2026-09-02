@@ -12,7 +12,7 @@ import {
   writeRecord
 } from "./riverNamesDb.js";
 
-const SOURCE = () => `${urls.hydrographyGroup({group: 0})}/riverNames.json`;
+const SOURCE = () => urls.riverNamesJson();
 
 // The table, once read out of IndexedDB, with the search keys folded onto each row.
 let loaded = null;
@@ -178,7 +178,7 @@ function watch() {
  * synchronous because it runs on every keystroke, and the caller has already awaited load().
  *
  * Ranked by how the match sits in the name and then by size, so a whole-word hit beats a fragment
- * and, among the rivers that share a name, the biggest is offered first: someone typing "colorado"
+ * and, among the rivers that share a name, the biggest is offered first: someone typing "Colorado"
  * means the one with 31,726 reaches far more often than the one with 5,029. Size is the span's own
  * reach count, which every row already carries — no extra column, and it is the right measure of
  * "more of a river" for this purpose.
@@ -201,7 +201,7 @@ function search(query, {limit = 25} = {}) {
 
 /**
  * The published file itself, for a reader that wants a part of it this module does not search —
- * the explorer's span colouring. Null until load() has resolved.
+ * the explorer's span coloring. Null until load() has resolved.
  */
 const payload = () => raw;
 

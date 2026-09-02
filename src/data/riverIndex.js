@@ -1,4 +1,5 @@
 import {getConfig, urls} from "riverforecastsystem/v3";
+import {lookupRiverIndex} from "riverforecastsystem/v3/hydrography";
 import {deleteRecord, isUsable, isUsableMeta, readMeta, readRecord} from "./riverIndexDb.js";
 
 /**
@@ -110,25 +111,11 @@ async function load() {
  * The reach's position on the zarr riverId axis, or -1 if the id is not in the network. Returns
  * null — distinct from -1 — when the lookup has not been built, so a caller can tell "no such
  * river" apart from "cannot answer yet".
- *
- * ~23 probes over a contiguous typed array. The fetch it precedes costs five orders of magnitude
- * more, which is why a fancier structure than a sorted array would buy nothing.
  */
 async function lookup(riverId) {
   const index = await load();
   if (!index) return null;
-  const {sortedIds, positions} = index;
-  const target = Number(riverId);
-  let lo = 0;
-  let hi = sortedIds.length - 1;
-  while (lo <= hi) {
-    const mid = (lo + hi) >>> 1;
-    const value = sortedIds[mid];
-    if (value === target) return positions[mid];
-    if (value < target) lo = mid + 1;
-    else hi = mid - 1;
-  }
-  return -1;
+  return lookupRiverIndex(index, riverId);
 }
 
 /**

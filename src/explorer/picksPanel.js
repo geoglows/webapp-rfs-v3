@@ -1,10 +1,4 @@
 import {button, el, fmt} from "../dom.js";
-/**
- * The multi-select list. Newest first, because the one just clicked is the one being checked, and
- * every column is a reason to take a pick back off: its Group, the watershed size, the outlet order.
- * Copy, download and clear are at the head of the column, shared by all four methods. Built as nodes,
- * so nothing coming out of the tiles becomes markup.
- */
 import {MAX_PICKS, picks} from './picks.js';
 import {tf, tn} from '../i18n/i18n.js';
 

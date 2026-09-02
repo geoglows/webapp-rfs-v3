@@ -11,38 +11,14 @@
  * Not remembered across a reload: an AOI is a live reading of the map, not a working set.
  */
 
-/** The number of reaches a list of runs covers. */
-export const spanCount = spans => spans.reduce((n, s) => n + s.hi - s.lo + 1, 0);
+import {aoiSpans, isDownstreamOf, spanCount} from 'riverforecastsystem/v3/hydrography';
+
+/** The run arithmetic lives in the package; re-exported so the explorer and the panel keep reading
+ * the AOI's vocabulary off this module. */
+export {isDownstreamOf, spanCount};
 
 /** What one inlet takes away: itself, and everything that drains to it. */
 export const inletCut = ({lo, hi}) => ({lo, hi});
-
-/** Is `rec` a different reach downstream of `of`? `of` is upstream exactly when its index falls
- * inside `rec`'s run, and a different reach when that run ends further down than its own. */
-export const isDownstreamOf = (rec, of) =>
-  !!of && rec.lo <= of.hi && of.hi < rec.hi;
-
-/** `spans` minus `cut`, both sorted and disjoint, and disjoint and sorted on the way out. */
-function subtract(spans, cut) {
-  const out = [];
-  for (const s of spans) {
-    if (cut.hi < s.lo || cut.lo > s.hi) {
-      out.push(s);
-      continue;
-    }
-    if (cut.lo > s.lo) out.push({lo: s.lo, hi: cut.lo - 1});
-    if (cut.hi < s.hi) out.push({lo: cut.hi + 1, hi: s.hi});
-  }
-  return out;
-}
-
-/** The runs an outlet and a set of inlets leave behind. */
-function spansFor(outlet, inlets) {
-  if (!outlet) return [];
-  let spans = [{lo: outlet.lo, hi: outlet.hi}];
-  for (const inlet of inlets) spans = subtract(spans, inletCut(inlet));
-  return spans;
-}
 
 let outlet = null;
 let inlets = [];
@@ -65,7 +41,7 @@ export const aoi = {
   /** Derived rather than stored: the runs, what they hold, what the inlets took off. `outlet`
    * doubles as "is there an AOI at all". */
   state() {
-    const spans = spansFor(outlet, inlets);
+    const spans = aoiSpans(outlet, inlets);
     const count = spanCount(spans);
     return {
       outlet,
@@ -109,8 +85,8 @@ export const aoi = {
     }
     if (rec.outletId === outlet.outletId) return 'is-outlet';
     if (rec.hi < outlet.lo || rec.hi > outlet.hi) return 'outside';
-    const before = spanCount(spansFor(outlet, inlets));
-    if (spanCount(spansFor(outlet, [...inlets, rec])) === before) return 'covered';
+    const before = spanCount(aoiSpans(outlet, inlets));
+    if (spanCount(aoiSpans(outlet, [...inlets, rec])) === before) return 'covered';
     inlets = [...inlets, rec];
     emit();
     return 'added';

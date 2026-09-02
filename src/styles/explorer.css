@@ -241,7 +241,7 @@
     margin-top: 9px
 }
 
-/* The layer picker's rows name a colour as well as a layer: the swatch goes to the right edge so
+/* The layer picker's rows name a color as well as a layer: the swatch goes to the right edge so
    they line up down the menu however long the labels are. */
 #layer-menu .opt .swatch {
     margin-left: auto
@@ -284,7 +284,7 @@
 }
 
 /* The whole row is the switch — the On/Off pill in it is the state, not the only target. */
-/* The eyebrow (base.css) carries the mono, the caps and the colour; this is the row it sits in. */
+/* The eyebrow (base.css) carries the mono, the caps and the color; this is the row it sits in. */
 .selector-head {
     display: flex;
     align-items: center;
@@ -311,7 +311,7 @@
     letter-spacing: 0
 }
 
-/* The chosen row, edged in the colour the method paints the map with. */
+/* The chosen row, edged in the color the method paints the map with. */
 #panel.browse-on #browse-head {
     color: var(--text);
     background: var(--surface2);
@@ -342,7 +342,7 @@
     box-shadow: inset 3px 0 0 var(--selected-text)
 }
 
-/* The counts each keep the colour their method's readout counts in. */
+/* The counts each keep the color their method's readout counts in. */
 #browse-count, #river-select-count, #aoi-count, #picks-count {
     color: var(--selected-text);
     font-variant-numeric: tabular-nums;
@@ -471,7 +471,7 @@
     font-weight: 600
 }
 
-/* An inlet row borrows the pick row's shape; only the colour of the id differs, because an inlet
+/* An inlet row borrows the pick row's shape; only the color of the id differs, because an inlet
    is a cut and a pick is a collection. */
 #aoi-body .pick-id {
     color: var(--selected-text)

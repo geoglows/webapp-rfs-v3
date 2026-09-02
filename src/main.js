@@ -15,7 +15,6 @@ import {attachReferences, hoverRegions} from "./map/references.js";
 import {Streams} from "./map/Streams.js";
 import {focusRiver, frameRiverExtent, nearestFeature, snapToFeature, travelToRiver} from "./map/framing";
 import {build, status} from "./data/riverIndex";
-import {dropLegacyDatabase} from "./data/db.js";
 import {watch as watchRiverNames} from "./data/riverNames";
 import {hydrateIcons} from "./icons/icons";
 import {onSavedRiversChange, savedRiverIds} from "./account/savedRivers.js";
@@ -135,9 +134,6 @@ async function prefetchRiverIndex() {
 // Chrome · wired before the map, because none of it waits on one
 // ═══════════════════════════════════════════════════════════════════════════
 hydrateIcons()
-// The caches moved to a database shared with the hydrography explorer; the one this app used alone
-// is dead weight on any device that ever searched by ID.
-dropLegacyDatabase();
 initSettings();
 
 // The Settings data list. Constructed here rather than with the rest of the modal chrome because
@@ -190,7 +186,7 @@ async function boot() {
     // What repaints the network when a forecast styleset takes it back off the style spec.
     onRepaintNetwork: () => streams.applyPaint(),
     // The style spec only draws the network under the Standard styleset, so opening the editor
-    // asks for it — otherwise every rule and preset in there is a no-op on a forecast-coloured
+    // asks for it — otherwise every rule and preset in there is a no-op on a forecast-colored
     // network, with nothing on screen to say why.
     onStyleEditor: () => panelControls?.chooseStyleset("standard"),
     // The explorer's Clear is the app's: the charts and the named-river highlight go with it.

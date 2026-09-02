@@ -245,7 +245,7 @@
   "explorer.style.to": "a",
   "explorer.style.maxzoom": "(oculto a partir de ahí)",
   "explorer.style.maxzoom.about": "MapLibre oculta una capa a partir de su maxzoom",
-  "explorer.style.colour": "COLOR",
+  "explorer.style.color": "COLOR",
   "explorer.style.width": "GROSOR",
   "explorer.style.opacity": "OPACIDAD",
   "explorer.style.drawRule": "Dibujar esta regla",

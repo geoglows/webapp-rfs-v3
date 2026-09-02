@@ -5,13 +5,13 @@
  * Loaded by src/main.js once there is a map.
  *
  * The styling half draws the network only while the stream style is Standard. A forecast styleset
- * is the network coloured by the forecast, which is a different answer to the same question, so it
+ * is the network colored by the forecast, which is a different answer to the same question, so it
  * takes the base layer back until it is switched off again — see setStyleset().
  */
 import {PMTiles} from 'pmtiles';
 import {$, el, fmt, num} from '../dom.js';
 import {URLS} from './config.js';
-import {upstreamRange} from '../data/runs.js';
+import {upstreamRange} from 'riverforecastsystem/v3/hydrography';
 import {
   applyHighlight, applyInlets, applyPicks, applyStreamStyle, attachExplorerLayers, clearHighlight,
   clearStreamStyle, currentSelection, fitRiverBounds, flyToPick, map, setSelectionHighlightVisible,
@@ -20,7 +20,7 @@ import {
 import {protocol} from '../map/map.js';
 import {registerStreamLayers} from '../map/layers.js';
 import {compileLayers} from './streamStyle.js';
-import {activeUnnamed, loadRiverNames, namesStyle, riverNames} from './nameColouring.js';
+import {activeUnnamed, loadRiverNames, namesStyle, riverNames} from './nameColoring.js';
 import {loadStreamAttributes} from './streamAttributes.js';
 import {createStylePanel} from './stylePanel.js';
 import {renderRiverAttributes} from './riverPanel.js';
@@ -324,8 +324,8 @@ function applyStyle() {
   // reach outside it while a style is being tuned on one subset.
   applyStreamStyle(compileLayers(spec, {highlight: false, selection: currentSelection(), names}));
   setSelectionHighlightVisible(highlight);
-  // The legend swatch has to be the colour the line on the map actually is. With the names mode on
-  // the network no longer has one colour, so the swatch stands for the unnamed reaches — which the
+  // The legend swatch has to be the color the line on the map actually is. With the names mode on
+  // the network no longer has one color, so the swatch stands for the unnamed reaches — which the
   // mode leaves in the app's own blue precisely so that the network still reads as itself.
   const base = names ? activeUnnamed() : spec.base.color[0]?.value;
   if (base) document.documentElement.style.setProperty('--stream', base);
@@ -587,7 +587,7 @@ function onMapClick(e, hit) {
 
 // ── the river names section ──────────────────────────────────────────────────
 /**
- * Colouring the network by the river names table. A display switch, not a fifth selection method: it
+ * Coloring the network by the river names table. A display switch, not a fifth selection method: it
  * never changes what a click means, which is why it is wired on its own.
  */
 function paintNames() {
@@ -656,7 +656,7 @@ function initSelectionTools() {
   void setMode(mode);
 }
 
-/** The names colouring and the rule editor — everything that decides how the network is drawn. */
+/** The names coloring and the rule editor — everything that decides how the network is drawn. */
 function initStylingTools() {
   // Both cards live in a dock rather than in the column: the rule editor is wider than the column
   // is, and while a style is being tuned the map is the thing to keep in view, not the controls.

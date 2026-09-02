@@ -4,7 +4,7 @@
  * The geometry is published one GeoParquet per group, so an export cannot start without knowing
  * which one to open — and the stream tiles do not carry a group. `streams.pmtiles` declares
  * riverId, riverIndex, upstreamCount, the two orders, the two areas, length, TDXHydroRegion and the
- * two neighbours, and that is all; the only place a group is written down is the `groupId` column
+ * two neighbors, and that is all; the only place a group is written down is the `groupId` column
  * of the global metadata table.
  *
  * That column is one int per river across 4.8 million rivers, which sounds like the wrong thing to

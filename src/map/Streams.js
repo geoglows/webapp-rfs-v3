@@ -17,7 +17,7 @@ const WIDTH_BASE = 4;
 const WIDTH_MAX = 10;
 const WIDTH_UNIFORM = 5;
 // The saved-river outline, all three of them configurable per deployment (VITE_SAVED_RIVERS_* — see
-// SAVED_RIVERS in settings/settings.js). The colour falls back to the stylesheet's dark-theme
+// SAVED_RIVERS in settings/settings.js). The color falls back to the stylesheet's dark-theme
 // --saved so an unconfigured deployment looks exactly as it did before there was a setting.
 const SAVED_COLOR = SAVED_RIVERS.color || "#ff4fa3";
 const SAVED_BORDER = SAVED_RIVERS.borderWidth;
@@ -117,7 +117,7 @@ class Streams {
    *
    * Added *beneath* `streams` and drawn wider than it, so the streams line covers the middle and
    * what is left showing is a border down both sides. Above it instead would hide the reach's own
-   * colour, which is the forecast — the thing the map is for.
+   * color, which is the forecast — the thing the map is for.
    *
    * A declarative filter on riverId, like the other highlights: the saved set is set once and the
    * outline paints itself onto tiles as they arrive, with nothing to re-run on pan or zoom.
@@ -169,7 +169,7 @@ class Streams {
    * The neon orange casing under the whole of a river found by name.
    *
    * Beneath `streams` and wider than it, like the saved-river outline: the streams line covers the
-   * middle, so what shows is a border down both sides and the reach keeps its own forecast colour.
+   * middle, so what shows is a border down both sides and the reach keeps its own forecast color.
    * Above it instead would paint over the forecast for the length of the Amazon.
    *
    * One filter over a riverIndex range does the whole river — 233,398 reaches for the Amazon — and
@@ -260,7 +260,7 @@ class Streams {
     ];
   }
 
-  /** Line-color for the time-to-peak styleset: warm (imminent) → cool (late), grey for no data. */
+  /** Line-color for the time-to-peak styleset: warm (imminent) → cool (late), gray for no data. */
   ttpColorExpr() {
     return [
       "case",
@@ -270,7 +270,7 @@ class Streams {
     ];
   }
 
-  /** Line-color for the below-q95 styleset: below Q95 → red, at/above → blue, no data → grey. */
+  /** Line-color for the below-q95 styleset: below Q95 → red, at/above → blue, no data → gray. */
   q95ColorExpr() {
     return ["match", ["coalesce", ["feature-state", "q95dir"], 255], 1, "#dc2626", 0, "#3182bd", "#334155"];
   }
@@ -298,7 +298,7 @@ class Streams {
    *
    * All three properties, every time, because this is also how the layer is taken *back* from the
    * styling section: under the Standard styleset the network is drawn by the style spec, and
-   * switching to a forecast styleset hands the base layer here with whatever colour, width and
+   * switching to a forecast styleset hands the base layer here with whatever color, width and
    * opacity that spec left on it.
    */
   applyPaint() {

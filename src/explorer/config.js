@@ -7,20 +7,18 @@ import {V3_BASE} from '../settings/rfsConfig.js';
 
 export {V3_BASE};
 
-const group = g => urls.hydrographyGroup({group: g});
-
 export const URLS = {
   streamsPmtiles: urls.streamsPmtiles(),
-  catchmentsPmtiles: `${group(0)}/catchments.pmtiles`,
-  groupsPmtiles: `${group(0)}/groups.pmtiles`,
+  catchmentsPmtiles: urls.catchmentsPmtiles(),
+  groupsPmtiles: urls.groupsPmtiles(),
   // HydroBASINS sits beside the hydrography rather than inside a group: it is reference geography,
   // not something the v3 pipeline partitions.
   basinsPmtiles: `${V3_BASE}/hydrobasins_level2.pmtiles`,
   // One row per river, in riverIndex order, and the only place a reach's publication group is
   // written down — the stream tiles do not carry one. See groups.js.
-  metadata: `${group(0)}/metadata.parquet`,
-  streams: g => `${group(g)}/streams_${g}.geo.parquet`,
-  catchments: g => `${group(g)}/catchments_${g}.geo.parquet`,
+  metadata: urls.hydrographyMetadataParquet(),
+  streams: g => urls.streamsGeoparquet({group: g}),
+  catchments: g => urls.catchmentsGeoparquet({group: g}),
 };
 
 export const MIN_ZOOM = 0;
