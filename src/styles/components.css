@@ -408,7 +408,7 @@ input[aria-invalid="true"] {
     background: var(--surface);
     border-right: 1px solid var(--border);
     /* the width change when a dock opens — see body.dock-open in the data viewer's sheet */
-    transition: flex-basis .3s ease;
+    transition: flex-basis var(--dock-slide);
 }
 
 /* Everything under the banner: the scrolling controls and, when one is open, the dock that shares
@@ -440,9 +440,9 @@ input[aria-invalid="true"] {
     background: var(--surface2);
 }
 
-/* the account avatar / sign-in button leads the row of actions. In the narrow panel it sits at the
-   left edge, so its menu opens rightward rather than the library's default of hanging off the
-   right. */
+/* The account avatar / sign-in button sits beside the wordmark rather than in the row of square
+   icon buttons below it. That keeps it at the left edge in both header layouts, so its menu opens
+   rightward rather than the library's default of hanging off the right. */
 #panel header .brand, #auth-action {
     display: flex;
     align-items: center;
@@ -466,9 +466,14 @@ input[aria-invalid="true"] {
 }
 
 /* ── Overlays on the map ── */
+/* Positioned against the viewport rather than the map, so each one that clears the control column
+   restates that column's width in its own `left` (and, for the player, its width). Those restated
+   values have to travel on the same clock as the column itself, or the overlay jumps to where the
+   column is going to be and then waits there for it. */
 .map-overlay {
     position: absolute;
     z-index: 10;
+    transition: left var(--dock-slide), width var(--dock-slide);
 }
 
 #map-controls {
@@ -684,6 +689,18 @@ input[aria-invalid="true"] {
 @keyframes progress-stripe {
     from { background-position: 0 0; }
     to { background-position: -48px 0; }
+}
+
+/* MapLibre sizes the canvas in pixels on its own inline style and only recomputes it on resize(),
+   which is once, after the column has finished moving (reflowMap in docks/dock.js). For the length
+   of the slide the canvas is the width the map used to be: too narrow as the map grows, leaving a
+   strip of page showing down the right edge of the window. Stretching it to its box covers that
+   strip with the map itself — scaled a little, since the drawing buffer has not changed, which for
+   half a second reads as nothing at all. !important because the size being beaten is inline. The
+   class is on <body> only while a slide is running. */
+body.dock-resizing .maplibregl-canvas {
+    width: 100% !important;
+    height: 100% !important;
 }
 
 /* ── MapLibre's own chrome ──

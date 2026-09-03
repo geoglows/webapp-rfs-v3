@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <link rel="preconnect" href="https://cdn.apps.geoglows.org" crossorigin/>
   <link rel="preconnect" href="https://services.arcgisonline.com"/>
+  <!-- Open Sans, declared in src/styles/tokens.css. Preloaded so the app's type paints in it
+       rather than swapping in after the first frame. -->
+  <link rel="preload" href="/fonts/opensans.woff2" as="font" type="font/woff2" crossorigin/>
   <title>%VITE_APP_TITLE%</title>
   <meta name="description" content="%VITE_APP_DESCRIPTION%"/>
   <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48"/>
@@ -29,10 +32,10 @@
       <a href="%VITE_LOGO_HREF%" data-i18n-title="common.portal" title="GEOGLOWS apps">
         <img src="%VITE_LOGO_SRC%" alt="%VITE_LOGO_ALT%" width="%VITE_LOGO_WIDTH%" height="%VITE_LOGO_HEIGHT%"/>
       </a>
+      <div id="auth-action"></div>
     </div>
     <h1>%VITE_APP_TITLE%</h1>
     <div class="row">
-      <div id="auth-action"></div>
       <button id="btn-settings" class="btn icon" data-icon-name="cog-6-tooth" data-i18n-title="settings.label" title="Settings"></button>
       <!-- see initLanguagePicker() in src/settings/settings.js — it reads LANGUAGES off these
            buttons, so this markup is what decides which languages the app offers. -->
