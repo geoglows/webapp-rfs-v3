@@ -71,13 +71,15 @@ const TILE_SETS = {
   }
 };
 
-/** Esri's Environment basemap: three vector tile layers off portal items over a raster hillshade.
- * Not a tile set — it is a style, and adopting one can only happen once. See addEnvironment(). */
+/** Esri's Environment basemap: four vector tile layers off portal items over a raster hillshade.
+ * Not a tile set — it is a style, and adopting one can only happen once. See addEnvironment().
+ * Listed bottom to top: addEnvironment() adds them in this order, each above the last. */
 const ENVIRONMENT = {
   itemIds: [
     "005b8960ddd04ae781df8d471b6726b3", // Environment Base
     "3bfd1065c1a748c5ae2f9408c3fb1078", // Environment Watersheds
-    "8b8862d9cc894f5db44231a67ee0e41b"  // Environment Detail and Label
+    "8b8862d9cc894f5db44231a67ee0e41b", // Environment Detail and Label
+    "6d188135dc814d4ea254440a3dd844df"  // Environment Surface Water and Label
   ],
   attribution: "Esri, TomTom, Garmin, FAO, NOAA, USGS, © OpenStreetMap contributors, and the GIS User Community",
   hillshade: {
