@@ -16,11 +16,6 @@ const WIDTH_BASE = 4;
 // The thickness ramp runs WIDTH_BASE → WIDTH_MAX; flood mode flattens it to one thin width.
 const WIDTH_MAX = 10;
 const WIDTH_UNIFORM = 5;
-// The two thickness inputs are on different scales and each needs its own domain. `thk` is the
-// styles pipeline's 1–6 thickness class (packed as byte & 7, so it never reaches this map as 0);
-// `strahlerOrder` in the tiles runs 2–10. Putting raw Strahler through the 1–6 domain is what
-// flattened the non-animated stylesets — the tileset admits only order ≥7 below z5 and ≥4 below
-// z9, so every reach on screen pinned to the top of the ramp and the network drew at one width.
 const THK_DOMAIN = [1, 6];
 const ORDER_DOMAIN = [2, 10];
 // WIDTH_BASE at the bottom of `domain`, WIDTH_MAX at the top, linear between and flat outside —
@@ -36,10 +31,6 @@ const SAVED_BORDER = SAVED_RIVERS.borderWidth;
 // green and not the amber a flood corridor uses — a named river is a different kind of answer from
 // all of them, and the one thing it must never be mistaken for is a reading of the forecast.
 const NAMED_COLOR = "#ff5f1f";
-// Wider than WIDTH_MAX so the casing shows on the thickest reach the ramp can draw, not just on
-// the headwaters. Flat rather than following strahlerOrder: the highlight is the answer to "which
-// river is this", one thing, and a casing that thinned along it would read as the river petering
-// out instead of as one continuous river.
 const NAMED_WIDTH = WIDTH_MAX + 4;
 // The network's own fade at low zoom. Named because applyPaint() has to be able to put it back
 // after the styling section has drawn the layer with an opacity of its own.

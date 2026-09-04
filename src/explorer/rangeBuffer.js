@@ -50,8 +50,5 @@ export function throttle(fn, {minDelta = 0.25, minMs = 80} = {}) {
     emit(val, ...rest) {
       if (val - lastVal >= minDelta || performance.now() - lastAt >= minMs) call(val, ...rest);
     },
-    flush(val, ...rest) {
-      call(val, ...rest);
-    },
   };
 }

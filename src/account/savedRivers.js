@@ -73,7 +73,6 @@ const savedRiverIds = () => live().map((e) => e.riverId);
 
 const getSavedRiver = (riverId) => live().find((e) => e.riverId === Number(riverId)) ?? null;
 
-const isSavedRiver = (riverId) => getSavedRiver(riverId) != null;
 
 /**
  * Save a river, or rename/complete one already saved. Keyed by river id, so saving the same reach
@@ -164,7 +163,6 @@ export {
   listSavedRiversForSync,
   markSynced,
   replaceFromSync,
-  isSavedRiver,
   listSavedRivers,
   onSavedRiversChange,
   removeSavedRiver,

@@ -53,7 +53,7 @@
 .table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 14.5px;
+    font-size: 14px;
 }
 
 /* Tabular figures throughout: every column that carries numbers — ids, values, coordinates — is
@@ -95,8 +95,8 @@
 .table td.k {
     width: 1%;
     color: var(--text-dim);
-    font-family: var(--mono);
-    font-size: 13.5px;
+    font-family: var(--mono), monospace;
+    font-size: 13px;
     white-space: nowrap;
 }
 
@@ -248,7 +248,7 @@
 }
 
 .player .time, .player .step {
-    font-family: var(--mono);
+    font-family: var(--mono), monospace;
 }
 
 .player .time {
@@ -272,7 +272,7 @@
 }
 
 .player .speed label {
-    font-family: var(--sans);
+    font-family: var(--sans), sans-serif;
     font-size: 11px;
     color: var(--text-dim);
     text-transform: uppercase;
@@ -280,7 +280,7 @@
 }
 
 .player .speed select {
-    font-family: var(--mono);
+    font-family: var(--mono), monospace;
     font-size: 14px;
     padding: 5px 6px;
 }
@@ -291,7 +291,7 @@
 }
 
 .player.compact .time {
-    font-size: 12.5px;
+    font-size: 12px;
 }
 
 .player.compact .step, .player.compact .speed select {
@@ -367,7 +367,7 @@
 }
 
 .ts-error {
-    font-size: 14.5px;
+    font-size: 14px;
     color: var(--danger);
     padding: 8px 2px;
 }
@@ -421,7 +421,7 @@
 
 .chart-btn {
     padding: 5px 10px;
-    font-size: 12.5px;
+    font-size: 12px;
     font-weight: 400;
     color: var(--text-dim);
 }
@@ -429,7 +429,7 @@
 .chart-hint {
     margin-left: auto;
     align-self: center;
-    font-size: 11.5px;
+    font-size: 11px;
     color: var(--text-dim);
 }
 
@@ -574,8 +574,8 @@ body.help-open #scroll {
     display: inline-block;
     min-width: 22px;
     padding: 1px 6px;
-    font-family: var(--mono);
-    font-size: 11.5px;
+    font-family: var(--mono), monospace;
+    font-size: 11px;
     font-weight: 700;
     line-height: 1.5;
     text-align: center;

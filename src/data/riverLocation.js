@@ -1,4 +1,5 @@
 import {fetchMetadataAt} from "riverforecastsystem/v3/hydrography";
+import {readEntry, writeEntry} from "./timeseriesDb.js";
 
 /**
  * Where a reach is, by riverIndex: `{lat, lon, upstreamCount}` read straight off the hydrography
@@ -19,9 +20,31 @@ import {fetchMetadataAt} from "riverforecastsystem/v3/hydrography";
 // to the network. Bounded only by how many reaches a session visits, at two numbers each.
 const known = new Map();
 
+/**
+ * The whole table in one record rather than a record per reach.
+ *
+ * A reach's position is three numbers. As one record per reach they would be hundreds of entries
+ * of fifty bytes, and the cache's entry cap — sized for series that are half a megabyte each —
+ * would spend itself on them and evict the downloads it exists to keep. As one record they are a
+ * single kilobyte-scale entry that no series ever competes with.
+ */
+const CACHE_KEY = "ts:locations";
+
+// The read that fills `known` from the device, once. A cache that cannot be read is not an error
+// here: it means the first look at each reach costs its three chunk reads, as it did before.
+let hydrated = null;
+const hydrate = () => (hydrated ??= readEntry(CACHE_KEY)
+  .then((rows) => {
+    for (const [index, at] of Object.entries(rows ?? {})) {
+      if (!known.has(Number(index))) known.set(Number(index), at);
+    }
+  })
+  .catch(() => {}));
+
 async function locate(riverIndex) {
   const index = Number(riverIndex);
   if (!Number.isInteger(index) || index < 0) return null;
+  await hydrate();
   const cached = known.get(index);
   if (cached) return cached;
   const {lat, lon, upstreamCount} = await fetchMetadataAt({variables: ["lat", "lon", "upstreamCount"], index});
@@ -30,7 +53,19 @@ async function locate(riverIndex) {
   if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
   const at = {lat, lon, upstreamCount};
   known.set(index, at);
+  // Not awaited: the caller is waiting to move a camera, and whether this reach is still here on
+  // the next visit is not its problem. A write that fails is a lookup that happens again.
+  void writeEntry(CACHE_KEY, Object.fromEntries(known)).catch(() => {});
   return at;
 }
 
-export {locate};
+/**
+ * Drop the session's copy, so emptying the cache on disk actually empties it: without this the next
+ * reach looked up would write the whole in-memory table straight back over what was just cleared.
+ */
+function forget() {
+  known.clear();
+  hydrated = null;
+}
+
+export {forget, locate};

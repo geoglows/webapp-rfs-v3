@@ -51,6 +51,9 @@
       </div>
       <button id="btn-theme" class="btn icon" data-i18n-title="theme.toggle" title="Toggle light / dark theme"></button>
       <button id="btn-charts" class="btn icon" data-icon-name="chart-bar-solid" data-i18n-title="hydro.charts" title="View discharge charts"></button>
+      <button id="btn-reports" class="btn icon" data-icon-name="document-chart-bar" data-i18n-title="report.label"
+              data-i18n-aria-label="report.aria" title="Generate a report"
+              aria-label="Generate a printable forecast report"></button>
       <button id="btn-help" class="btn icon" data-icon-name="question-mark-circle" data-i18n-title="help.label" data-i18n-aria-label="help.aria"
               title="Help and about" aria-label="Help and about this site"></button>
     </div>
@@ -122,7 +125,8 @@
                   <span id="fc-time-label" class="time">—</span>
                   <span id="fc-step-label" class="step">–/–</span>
                 </div>
-                <input id="fc-slider" type="range" min="0" max="0" step="1" value="0" disabled/>
+                <input id="fc-slider" type="range" min="0" max="0" step="1" value="0"
+                       data-i18n-aria-label="flood.fcSlider" aria-label="Forecast animation time step" disabled/>
               </div>
               <div class="col speed">
                 <label for="fc-speed" data-i18n="player.speed">Speed</label>
@@ -379,6 +383,7 @@
             <li data-i18n-html="help.app.lang" data-spotlight="#btn-language"></li>
             <li data-i18n-html="help.app.theme" data-spotlight="#btn-theme"></li>
             <li data-i18n-html="help.app.charts" data-spotlight="#btn-charts"></li>
+            <li data-i18n-html="help.app.reports" data-spotlight="#btn-reports"></li>
             <li data-i18n-html="help.app.help" data-spotlight="#btn-help"></li>
           </ul>
         </section>
@@ -491,6 +496,29 @@
           <p data-i18n-html="help.charts.saved"></p>
         </section>
 
+        <section class="help-section" data-spotlight="#btn-reports">
+          <h4 data-i18n="help.reports.h"></h4>
+          <p data-i18n-html="help.reports.open" data-control="#btn-reports"></p>
+          <p class="subhead" data-i18n="help.reports.typeH"></p>
+          <ul>
+            <li data-i18n-html="help.reports.daily"></li>
+            <li data-i18n-html="help.reports.flood"></li>
+          </ul>
+          <p class="subhead" data-i18n="help.reports.optionsH"></p>
+          <ul>
+            <li data-i18n-html="help.reports.list"></li>
+            <li data-i18n-html="help.reports.date"></li>
+          </ul>
+          <p class="subhead" data-i18n="help.reports.actionsH"></p>
+          <ul>
+            <li data-i18n-html="help.reports.generate" data-control="#report-generate"></li>
+            <li data-i18n-html="help.reports.cancel" data-control="#report-cancel"></li>
+            <li data-i18n-html="help.reports.print" data-control="#report-print"></li>
+            <li data-i18n-html="help.reports.clear" data-control="#report-clear"></li>
+          </ul>
+          <p data-i18n-html="help.reports.preview"></p>
+        </section>
+
         <section class="help-section">
           <h4 data-i18n="help.styling.h"></h4>
           <p data-i18n-html="help.styling.intro"></p>
@@ -563,7 +591,8 @@
       <span id="time-label" class="time">—</span>
       <span id="step-label" class="step">–/–</span>
     </div>
-    <input id="slider" type="range" min="0" max="0" step="1" value="0" disabled/>
+    <input id="slider" type="range" min="0" max="0" step="1" value="0"
+           data-i18n-aria-label="player.slider" aria-label="Animation time step" disabled/>
   </div>
   <div class="col speed">
     <label for="speed" data-i18n="player.speed">Speed</label>
@@ -661,10 +690,72 @@
           <button id="btn-delete-all" class="btn" data-i18n="settings.data.deleteAll">Delete everything</button>
         </div>
       </div>
+      <h4 data-i18n="settings.cache">Cached Timeseries</h4>
+      <!-- wired by createDataSettings() in src/ui/dataSettings.js; the cache itself is
+           src/data/timeseriesDb.js -->
+      <div class="col data-foot">
+        <div id="cache-foot-status" class="hint status"></div>
+        <div class="row wrap">
+          <button id="btn-clear-cache" class="btn" data-i18n="settings.cache.clear">Clear cached timeseries</button>
+        </div>
+      </div>
       <!-- stamped at build time by stampBuildDate() in vite.config.js; filled in initSettings() -->
       <p class="hint build-stamp"><span data-i18n="settings.build">Build</span> <span id="build-date"></span></p>
     </div>
   </div>
 </div>
+<div id="report-modal" class="backdrop hidden">
+  <div class="card modal report" role="dialog" aria-modal="true" aria-labelledby="report-modal-title">
+    <div class="modal-head">
+      <h3 id="report-modal-title" data-i18n="report.heading">Forecast Reports</h3>
+      <button class="btn sm" data-close="report-modal" data-i18n-aria-label="common.close" aria-label="Close">✕</button>
+    </div>
+    <div class="modal-body report-body">
+      <div class="report-controls">
+        <div class="field">
+          <label for="report-type" data-i18n="report.type">Report type</label>
+          <select id="report-type">
+            <option value="full" data-i18n="report.type.full">Daily Forecast Report</option>
+            <option value="flood" data-i18n="report.type.flood">Flood Alerts Bulletin</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="report-list" data-i18n="report.list">Rivers</label>
+          <select id="report-list">
+            <option value="saved" data-i18n="report.list.saved">My saved rivers</option>
+            <option value="notable" data-i18n="report.list.notable">Notable global rivers</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="report-date" data-i18n="report.date">Forecast initialization date</label>
+          <input id="report-date" type="date"/>
+        </div>
+        <div class="row report-actions">
+          <button id="report-generate" class="btn primary" data-i18n="report.generate">Generate</button>
+          <button id="report-cancel" class="btn danger" disabled data-i18n="report.cancel">Cancel</button>
+          <button id="report-print" class="btn icon" disabled data-icon-name="printer" data-i18n-title="report.print" data-i18n-aria-label="report.print" title="Print / Save as PDF" aria-label="Print / Save as PDF"></button>
+          <button id="report-clear" class="btn icon" disabled data-icon-name="trash" data-i18n-title="report.clear" data-i18n-aria-label="report.clear" title="Clear" aria-label="Clear"></button>
+        </div>
+      </div>
+      <!-- both hidden until a run needs them; see src/reports/reports.js -->
+      <div class="report-progress" id="report-progress" hidden>
+        <div class="report-meter">
+          <span data-i18n="report.progress.data">Downloading forecasts</span>
+          <progress id="report-data-progress" max="100" value="0"></progress>
+          <span class="pct" id="report-data-pct">0%</span>
+        </div>
+        <div class="report-meter">
+          <span data-i18n="report.progress.pages">Building pages</span>
+          <progress id="report-pages-progress" max="100" value="0"></progress>
+          <span class="pct" id="report-pages-pct">0%</span>
+        </div>
+      </div>
+      <div id="report-status" class="hint error" role="status" aria-live="polite" hidden></div>
+      <!-- the sandboxed print frame is created by src/reports/reportDocument.js -->
+      <div class="report-preview" id="report-preview"></div>
+    </div>
+  </div>
+</div>
 </body>
+
 </html>

@@ -17,20 +17,6 @@ let hideTimer = null;
 let high = 0;
 
 export const progress = {
-  /** Open the block for a new run, at 0. */
-  begin(phase, detail = '') {
-    if (noFoot) return;
-    clearTimeout(hideTimer);
-    high = 0;
-    progressEl.style.display = 'block';
-    progressEl.classList.remove('indeterminate', 'done');
-    fillEl.style.width = '0%';
-    phaseEl.textContent = phase;
-    pctEl.textContent = '0%';
-    detailEl.textContent = detail;
-    detailEl.style.display = detail ? 'block' : 'none';
-  },
-
   set(pct, {phase, detail} = {}) {
     if (noFoot) return;
     high = Math.max(high, Math.min(100, Math.max(0, pct)));

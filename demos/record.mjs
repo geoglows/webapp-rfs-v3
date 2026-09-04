@@ -20,12 +20,12 @@
  *     DEMO_PACE=1.4 node record.mjs         slow every caption and pause down by 40%
  *     DEMO_EMAIL=… DEMO_PASSWORD=… node record.mjs   sign in for real in the account scene
  *
- * The notes for the later, fuller capture are at the bottom of this file.
+ * The notes for the latter, fuller capture are at the bottom of this file.
  */
 
 import {chromium} from "playwright";
 import {execFileSync} from "node:child_process";
-import {existsSync, mkdirSync, readdirSync, renameSync, rmSync} from "node:fs";
+import {existsSync, mkdirSync, readdirSync, renameSync} from "node:fs";
 import {join} from "node:path";
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -192,7 +192,7 @@ function makeDriver(page) {
   /**
    * A stills frame, named for its beat and nothing else. Deliberately unnumbered: a partial
    * run (--only=…) would otherwise start counting from one again and write over frames belonging
-   * to other scenes. The stills's running order comes from the PAGES array in build-pdf.mjs,
+   * to other scenes. The stills' running order comes from the PAGES array in build-pdf.mjs,
    * so the filenames never had to carry it.
    */
   const still = async (label) => {
@@ -429,7 +429,7 @@ function makeDriver(page) {
 
   /**
    * Click the search result whose row carries `match`. By text rather than by position, because
-   * the order the names table returns is not the demos's to assume — "Colorado" comes back as
+   * the order the names table returns is not the demo's to assume — "Colorado" comes back as
    * Mexico, Argentina, United States and a tributary, and which one is wanted is a content
    * decision, not the first row.
    */
@@ -968,7 +968,7 @@ await page.waitForTimeout(800);
 const d = makeDriver(page);
 await d.settleMap(8000);
 
-// Where the cut actually begins. Everything before it is setup, and is trimmed off below.
+// Where the cut actually begins. Everything before it is set up, and is trimmed off below.
 const leadIn = (Date.now() - recordingStarted) / 1000;
 
 for (const s of plan) {

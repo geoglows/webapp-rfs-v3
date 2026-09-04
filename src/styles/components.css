@@ -174,7 +174,7 @@
     gap: 8px;
     width: 100%;
     padding: 8px 10px;
-    font-size: 14.5px;
+    font-size: 14px;
     font-weight: 400;
     text-align: left;
     color: var(--text-dim);
@@ -206,7 +206,7 @@
     flex: 0 0 auto;
     width: 16px;
     height: 16px;
-    border: 1.5px solid var(--border);
+    border: 1px solid var(--border);
     border-radius: var(--r-sm);
     background: var(--bg);
     position: relative;
@@ -225,7 +225,7 @@
 .opt[aria-checked="true"] .check::after {
     content: "";
     position: absolute;
-    left: 4.5px;
+    left: 4px;
     top: 1px;
     width: 4px;
     height: 8px;
@@ -280,7 +280,7 @@ input[aria-invalid="true"] {
 
 .field label {
     display: block;
-    font-size: 14.5px;
+    font-size: 14px;
     font-weight: 600;
     margin-bottom: 6px;
 }
@@ -381,14 +381,14 @@ input[aria-invalid="true"] {
 
 .modal-body label.row {
     cursor: pointer;
-    font-size: 14.5px;
+    font-size: 14px;
     padding: 6px 0;
 }
 
 .build-stamp {
     margin: 20px 0 2px;
     text-align: center;
-    font-family: var(--mono);
+    font-family: var(--mono), monospace;
     font-size: 12px;
     opacity: .7;
 }
@@ -574,11 +574,6 @@ input[aria-invalid="true"] {
     grid-template-columns: subgrid;
     align-items: center;
     padding: 5px 0;
-    border-top: 1px solid var(--border);
-}
-
-.data-row:first-child {
-    border-top: none;
 }
 
 .data-row .row {
@@ -586,7 +581,7 @@ input[aria-invalid="true"] {
 }
 
 .data-size {
-    font-family: var(--mono);
+    font-family: var(--mono), monospace;
     font-size: var(--fs-sm);
     color: var(--text-dim);
     font-variant-numeric: tabular-nums;

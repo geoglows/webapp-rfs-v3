@@ -1,5 +1,7 @@
 import {dataProgress, getLanguage, t} from "../i18n/i18n.js";
 import {resolve} from "../data/riverIndex.js";
+import {forecastWithLevels, retrospective} from "../data/timeseries.js";
+import {storeRow} from "../data/demoIndex.js";
 import {locate} from "../data/riverLocation.js";
 import {getSavedRiver, onSavedRiversChange, removeSavedRiver, saveRiver} from "../account/savedRivers.js";
 import {heroIcon} from "../icons/icons.js";
@@ -101,30 +103,22 @@ function createChartsDock({map, streams, getForecastDate}) {
   // chart titles name the reach from it.
   const loadRetro = (blockId) => loadChartBlock(blockId, {
     fetchData: async (setStatus) => {
-      let riverIndex = await targetIndex(setStatus);
-      riverIndex = 0 // todo override for demos phase
+      const riverIndex = storeRow(await targetIndex(setStatus));
       setStatus(t("charts.loading"));
-      const {retrospective} = await import("riverforecastsystem/v3/discharge");
-      return {...await retrospective({riverIndex: riverIndex}), riverId: selectedRiverId};
+      return {...await retrospective({riverIndex}), riverId: selectedRiverId};
     },
     render: (plots, host, ts) => plots.plotAllRetro(host, ts, {lang: getLanguage()})
   });
 
-  // The hydrograph and the warning levels it is read against live in different stores, so they are
-  // two reads issued together rather than one. The chart is drawn from whichever arrive: return
-  // periods are context for the forecast, so a reach the fit has no values for — or a store that
-  // fails — costs the bands, not the forecast.
+  // One read, from the package by way of the cache: the hydrograph and the warning levels it is
+  // read against live in different stores, and pairing them — including letting the thresholds fail
+  // without costing the forecast — is forecastWithLevels()'s job, not this dock's. See
+  // v3/discharge/forecastWithLevels, and data/timeseries.js for what is kept on the device.
   const loadForecast = (blockId) => loadChartBlock(blockId, {
     fetchData: async (setStatus) => {
-      let riverIndex = await targetIndex(setStatus);
-      riverIndex = 0 // todo override for demos phase
+      const riverIndex = storeRow(await targetIndex(setStatus));
       setStatus(t("charts.loading"));
-      const {forecast, returnPeriods} = await import("riverforecastsystem/v3/discharge");
-      const [fc, rp] = await Promise.all([
-        forecast({date: getForecastDate(), riverIndex: riverIndex}),
-        returnPeriods({riverIndex: riverIndex, resolution: "hourly"}).catch(() => null)
-      ]);
-      return {forecast: {...fc, riverId: selectedRiverId}, returnPeriods: rp};
+      return forecastWithLevels({riverIndex, riverId: selectedRiverId, date: getForecastDate()});
     },
     render: (plots, host, {forecast, returnPeriods}) => plots.plotAllForecast(host, forecast, {
       lang: getLanguage(),

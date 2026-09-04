@@ -23,7 +23,7 @@
  * server that answers "not modified" only moves the date forward — the rows never leave, so name
  * search does not stop working on the 5th of the month or on a device that is offline that day.
  */
-import {runTransaction} from "./db.js";
+import {recordStore} from "./recordStore.js";
 
 const RECORD_KEY = "riverNames";
 const META_KEY = "riverNames:meta";
@@ -54,23 +54,14 @@ function nextExpiry(from) {
     : Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, EXPIRY_DAY);
 }
 
-/** The published file and everything the cache knows about it. */
-const readRecord = () => runTransaction("readonly", (store) => store.get(RECORD_KEY));
-
-/** The record's descriptive fields without its rows: what's cached, from where, when, until when. */
-const readMeta = () => runTransaction("readonly", (store) => store.get(META_KEY));
-
-/**
- * Both records in one transaction, with the meta derived from the record rather than passed in
- * beside it — the two cannot describe different things, and cannot half-commit.
- */
-function writeRecord(record) {
-  const {payload, ...meta} = record;
-  return runTransaction("readwrite", (store) => {
-    store.put(meta, META_KEY);
-    return store.put(record, RECORD_KEY);
-  });
-}
+// The rows are the bulk, so the shadow meta record is everything about the table except the table:
+// what's cached, from where, when, until when.
+const {deleteRecord, isUsableMeta, readMeta, readRecord, writeRecord} = recordStore({
+  recordKey: RECORD_KEY,
+  metaKey: META_KEY,
+  schema: SCHEMA_VERSION,
+  bulkFields: ["payload"],
+});
 
 /**
  * Move the expiry forward without rewriting the payload. This is what a "not modified" answer earns:
@@ -83,27 +74,11 @@ async function restamp(at = Date.now()) {
   await writeRecord({...record, checkedAt: at, expiresAt: nextExpiry(at)});
 }
 
-const deleteRecord = () => runTransaction("readwrite", (store) => {
-  store.delete(META_KEY);
-  return store.delete(RECORD_KEY);
-});
-
 /**
- * Whether a cached table can be read at all: written by this version of the code, from the data
- * root this app is pointed at, and not empty. Nothing here is about age — an old table is still a
- * true table, and refusing to read it would take name search away from anyone who happens to be
- * offline on the wrong day.
- *
- * Takes either record: the meta carries the same fields, which is the point of it.
+ * isUsableMeta() plus the rows actually being there and being as many as the record claims. Nothing
+ * here is about age — an old table is still a true table, and refusing to read it would take name
+ * search away from anyone who happens to be offline on the wrong day.
  */
-function isUsableMeta(meta, source) {
-  return !!meta
-    && meta.schema === SCHEMA_VERSION
-    && meta.source === source
-    && Number.isInteger(meta.n) && meta.n > 0;
-}
-
-/** The above plus the rows actually being there and being as many as the record claims. */
 function isUsable(record, source) {
   return isUsableMeta(record, source)
     && Array.isArray(record.payload?.rivers)

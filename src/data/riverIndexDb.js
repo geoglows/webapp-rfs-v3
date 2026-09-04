@@ -16,7 +16,7 @@
  * The connection belongs to data/db.js; this file owns only the two records it keeps in the shared
  * store and what makes one of them usable.
  */
-import {runTransaction} from "./db.js";
+import {recordStore} from "./recordStore.js";
 
 const RECORD_KEY = "riverId-to-riverIndex";
 const META_KEY = "riverId-to-riverIndex:meta";
@@ -28,46 +28,17 @@ const META_KEY = "riverId-to-riverIndex:meta";
 // position for every id. Earlier caches carried the integers 1 and 2 here and are discarded too.
 const SCHEMA_VERSION = "20260828.0";
 
-/** The arrays and everything else. ~55 MB to deserialize — for the lookup itself, never for a status line. */
-const readRecord = () => runTransaction("readonly", (store) => store.get(RECORD_KEY));
-
-/** The record's descriptive fields without its buffers: what's cached, from which source, how big. */
-const readMeta = () => runTransaction("readonly", (store) => store.get(META_KEY));
-
-/**
- * Both records in one transaction, with the meta derived from the record rather than passed in
- * beside it — the two cannot describe different things, and cannot half-commit.
- */
-function writeRecord(record) {
-  const {sortedIds, positions, ...meta} = record;
-  return runTransaction("readwrite", (store) => {
-    store.put(meta, META_KEY);
-    return store.put(record, RECORD_KEY);
-  });
-}
-
-const deleteRecord = () => runTransaction("readwrite", (store) => {
-  store.delete(META_KEY);
-  return store.delete(RECORD_KEY);
+// The two buffers are the bulk: ~55 MB to deserialize, and what the shadow meta record leaves out
+// so a status line never pays for them.
+const {deleteRecord, isUsableMeta, readMeta, readRecord, writeRecord} = recordStore({
+  recordKey: RECORD_KEY,
+  metaKey: META_KEY,
+  schema: SCHEMA_VERSION,
+  bulkFields: ["sortedIds", "positions"],
 });
 
 /**
- * A cached lookup is only usable if it was built by this version of the code and from the store the
- * app is reading now. Anything else and the caller rebuilds — a lookup that silently answers from
- * the wrong dataset hands back another river's hydrograph, and nothing downstream can tell (the
- * discharge readers echo back no riverId to check against).
- *
- * Takes either record: the meta carries the same three fields, which is the point of it.
- */
-function isUsableMeta(meta, source) {
-  return !!meta
-    && meta.schema === SCHEMA_VERSION
-    && meta.source === source
-    && Number.isInteger(meta.n) && meta.n > 0;
-}
-
-/**
- * The above plus the buffers being the length the record claims. Only the path that is about to
+ * isUsableMeta() plus the buffers being the length the record claims. Only the path that is about to
  * binary-search them needs this — a truncated array yields plausible row numbers forever.
  */
 function isUsable(record, source) {

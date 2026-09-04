@@ -3,6 +3,7 @@ import "./styles/base.css";
 import "./styles/components.css";
 import "./styles/app.css";
 import "./styles/explorer.css";
+import "./styles/report.css";
 import "./account/auth.js";  // must be first: registers the auth listener before anything else runs
 import "./settings/rfsConfig.js"
 import {initLanguagePicker, initSettings, initThemeToggle, onSetting} from "./settings/settings.js";
@@ -29,6 +30,7 @@ import {createFloodController} from "./flood/floodController";
 import {createChartsDock} from "./docks/charts.js";
 import {createBookmarksDock, createSavedRiversDock} from "./docks/bookmarks.js";
 import {createPanelControls} from "./ui/panelControls.js";
+import {createReportModal} from "./reports/reports.js";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Shared state · read by more than one feature, so it lives here
@@ -41,7 +43,7 @@ function newestForecastExpected() {
   return `${d.getUTCFullYear()}-${mm}-${dd}`;
 }
 
-let currentForecastDate = "2026-07-10" // todo newestForecastExpected();
+let currentForecastDate = newestForecastExpected();
 // Which styleset the network opens on.
 let currentStyleset = "max-flow";
 let mapLoaded = false;
@@ -249,6 +251,14 @@ async function boot() {
   onSetting("savedHighlight", (on) => streams.setSavedHighlightVisible(on));
 
   helpDock = createHelpDock({map});
+
+  // Reports read the same forecast the panel is pointed at, and draw their figures with the same
+  // chart code the dock does — which is module state, so a report destroys whatever chart the dock
+  // had on screen. Repainting it afterwards is what onFinished is for.
+  createReportModal({
+    getForecastDate: () => currentForecastDate,
+    onFinished: () => chartsDock?.rerenderCharts()
+  });
 
   onSetting("legend", (on) => {
     $("legend-overlay").classList.toggle("hidden", !on);

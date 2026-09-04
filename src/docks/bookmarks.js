@@ -5,26 +5,32 @@ import {listSavedRivers, onSavedRiversChange, removeSavedRiver} from "../account
 import {closeDock, isDockOpen, openDock} from "./dock.js";
 
 // todo the defaults should be a json fetched async only on first load.
-// No riverIndex here on purpose: a position on the zarr axis is only good for the publication of
-// the store it was read from, and the axis is reordered when the data is regenerated. The charts
-// dock resolves the id through the lookup instead, which is kept in step with the store.
+// Every row carries riverIndex as well as riverId, because that is how a reach is addressed
+// everywhere else in the app: the vector tiles put both on every feature, saved rivers store both,
+// and the readers take the index. A list that carried only the id would be the one selection in the
+// app that has to go and find its own index before anything can be read for it — a 17 MB lookup
+// download standing between "click a famous river" and its charts.
+//
+// The index is a position on the hydrography riverId axis, so it is only good for as long as that
+// axis is: regenerating the network reorders it and these numbers have to be regenerated with it.
+// They were read from the riverId array of the hydrography metadata store (4,759,897 reaches).
 const defaultBookmarks = [
-  {riverId: 760021611, lat: 29.0929, lon: -89.2522, name: "Mississippi, USA"},
-  {riverId: 160064246, lat: 31.4749, lon: 30.3599, name: "Nile, East Africa"},
-  {riverId: 710431167, lat: 31.7776, lon: -114.7304, name: "Colorado, Mexico"},
-  {riverId: 441057380, lat: 23.1933, lon: 90.6048, name: "Ganges, India"},
-  {riverId: 430157411, lat: 10.1946, lon: 106.7421, name: "Mekong, Vietnam"},
-  {riverId: 210393186, lat: 41.7370, lon: 12.2307, name: "Tiber, Italy"},
-  {riverId: 621010293, lat: -0.4756, lon: -51.4222, name: "Amazon, Brazil"},
-  {riverId: 130747391, lat: -6.0567, lon: 12.3688, name: "Congo, D.R. Congo"},
-  {riverId: 640255644, lat: -33.8890, lon: -58.4528, name: "Parana, Argentina"},
-  {riverId: 540514417, lat: -35.3793, lon: 139.3540, name: "Murray, Australia"},
-  {riverId: 441077984, lat: 24.0103, lon: 67.4701, name: "Indus, India"},
-  {riverId: 280302448, lat: 46.5486, lon: 49.4263, name: "Volga, Russia"},
-  {riverId: 220463113, lat: 45.1646, lon: 29.7219, name: "Danube, Romania"},
-  {riverId: 230452055, lat: 49.4346, lon: 0.2895, name: "Seine, France"},
-  {riverId: 410641150, lat: 53.1083, lon: 140.6268, name: "Amur, China/Russia"},
-  {riverId: 140049491, lat: 4.3350, lon: 6.0729, name: "Niger, Nigeria"}
+  {riverId: 760021611, riverIndex: 4483240, lat: 29.0929, lon: -89.2522, name: "Mississippi, USA"},
+  {riverId: 160064246, riverIndex: 834195, lat: 31.4749, lon: 30.3599, name: "Nile, East Africa"},
+  {riverId: 710431167, riverIndex: 3947779, lat: 31.7776, lon: -114.7304, name: "Colorado, Mexico"},
+  {riverId: 441057380, riverIndex: 2580795, lat: 23.1933, lon: 90.6048, name: "Ganges, India"},
+  {riverId: 430157411, riverIndex: 2497772, lat: 10.1946, lon: 106.7421, name: "Mekong, Vietnam"},
+  {riverId: 210393186, riverIndex: 909952, lat: 41.7370, lon: 12.2307, name: "Tiber, Italy"},
+  {riverId: 621010293, riverIndex: 3482428, lat: -0.4756, lon: -51.4222, name: "Amazon, Brazil"},
+  {riverId: 130747391, riverIndex: 490245, lat: -6.0567, lon: 12.3688, name: "Congo, D.R. Congo"},
+  {riverId: 640255644, riverIndex: 3761979, lat: -33.8890, lon: -58.4528, name: "Parana, Argentina"},
+  {riverId: 540514417, riverIndex: 2989646, lat: -35.3793, lon: 139.3540, name: "Murray, Australia"},
+  {riverId: 441077984, riverIndex: 2626562, lat: 24.0103, lon: 67.4701, name: "Indus, India"},
+  {riverId: 280302448, riverIndex: 1328541, lat: 46.5486, lon: 49.4263, name: "Volga, Russia"},
+  {riverId: 220463113, riverIndex: 1001154, lat: 45.1646, lon: 29.7219, name: "Danube, Romania"},
+  {riverId: 230452055, riverIndex: 1095850, lat: 49.4346, lon: 0.2895, name: "Seine, France"},
+  {riverId: 410641150, riverIndex: 2165689, lat: 53.1083, lon: 140.6268, name: "Amur, China/Russia"},
+  {riverId: 140049491, riverIndex: 628841, lat: 4.3350, lon: 6.0729, name: "Niger, Nigeria"}
 ]
 
 const degrees = (d) => (d == null ? "" : d.toFixed(4));
@@ -182,4 +188,4 @@ function createSavedRiversDock({map, onSelectRiver}) {
   return {open, close};
 }
 
-export {createBookmarksDock, createSavedRiversDock};
+export {createBookmarksDock, createSavedRiversDock, defaultBookmarks};

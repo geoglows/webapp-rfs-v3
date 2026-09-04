@@ -78,7 +78,7 @@ body {
    All of it is Open Sans: titles at the face's top weight, tightened -.015em; eyebrows uppercase
    and tracked out. Colors are unchanged. */
 h1 {
-    font-family: var(--sans);
+    font-family: var(--sans), sans-serif;
     font-size: var(--fs-xl);
     font-weight: 700;
     line-height: 1.15;
@@ -87,7 +87,7 @@ h1 {
 }
 
 h2, h4, .eyebrow {
-    font-family: var(--sans);
+    font-family: var(--sans), sans-serif;
     font-size: var(--fs-sm);
     font-weight: 700;
     color: var(--text-dim);
@@ -101,7 +101,7 @@ section h2 {
 
 h3 {
     flex: 0 0 auto;
-    font-family: var(--sans);
+    font-family: var(--sans), sans-serif;
     font-size: var(--fs-lg);
     font-weight: 700;
     letter-spacing: -.015em;

@@ -20,6 +20,8 @@ import magnifyingGlass from "heroicons/24/outline/magnifying-glass.svg?raw";
 import paintBrush from "heroicons/24/outline/paint-brush.svg?raw";
 import check from "heroicons/24/outline/check.svg?raw";
 import clipboardDocument from "heroicons/24/outline/clipboard-document.svg?raw";
+import documentChartBar from "heroicons/24/outline/document-chart-bar.svg?raw";
+import printer from "heroicons/24/outline/printer.svg?raw";
 
 const ICONS = {
   "information-circle": informationCircle,
@@ -42,7 +44,9 @@ const ICONS = {
   "magnifying-glass": magnifyingGlass,
   "paint-brush": paintBrush,
   check,
-  "clipboard-document": clipboardDocument
+  "clipboard-document": clipboardDocument,
+  "document-chart-bar": documentChartBar,
+  printer
 };
 
 function heroIcon(name) {

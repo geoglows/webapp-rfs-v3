@@ -10,7 +10,7 @@
  * the base layer back until it is switched off again — see setStyleset().
  */
 import {PMTiles} from 'pmtiles';
-import {$, el, fmt, num} from '../dom.js';
+import {$, fmt, num} from '../dom.js';
 import {URLS} from './config.js';
 import {upstreamRange} from 'riverforecastsystem/v3/hydrography';
 import {
@@ -36,7 +36,7 @@ import {heroIcon} from '../icons/icons.js';
 import {closeDock, isDockOpen, onDockClosed, openDock} from '../docks/dock.js';
 import {watch as watchRiverNames} from '../data/riverNames.js';
 import {askConfirm} from '../ui/confirm.js';
-import {t, tf, tn} from '../i18n/i18n.js';
+import {t, tn} from '../i18n/i18n.js';
 
 /** The current selection, whichever method made it. */
 let sel = null;

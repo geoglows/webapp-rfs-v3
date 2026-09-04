@@ -75,7 +75,7 @@
 
     --mono: "JetBrains Mono", ui-monospace, monospace;
     --sans: "Open Sans", "Segoe UI", system-ui, sans-serif;
-    font-family: var(--sans);
+    font-family: var(--sans), sans-serif;
 }
 
 /* Light theme — set by the header's sun/moon button. */

@@ -22,7 +22,6 @@ export const inletCut = ({lo, hi}) => ({lo, hi});
 
 let outlet = null;
 let inlets = [];
-let modeOn = false;
 let listeners = [];
 
 const emit = () => {
@@ -49,15 +48,9 @@ export const aoi = {
       spans,
       count,
       trimmed: outlet ? outlet.count - count : 0,
-      mode: modeOn,
     };
   },
 
-  on: () => modeOn,
-
-  setMode(on) {
-    modeOn = !!on;
-  },
 
   /** Start an AOI, or move it. Moving the outlet downstream only widens the area, so the inlets come
    * along; any other move lands on a network they were never points on and drops them. */

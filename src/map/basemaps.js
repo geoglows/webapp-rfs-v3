@@ -131,8 +131,6 @@ let active = BASEMAPS[0].id;
 // overwrite it with the default it was going to open on.
 let chosen = false;
 
-/** The id of the basemap the map is showing — what the picker marks and the pages log. */
-const currentBasemap = () => active;
 
 function basemapStyle(defaultId) {
   if (!chosen) active = defaultBasemap(defaultId).id;
@@ -272,4 +270,4 @@ function initBasemapPicker(map) {
   sync();
 }
 
-export {BASEMAPS, basemapStyle, currentBasemap, initBasemapPicker, setBasemap};
+export {BASEMAPS, basemapStyle, initBasemapPicker, setBasemap};

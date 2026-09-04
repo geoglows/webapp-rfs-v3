@@ -1,0 +1,99 @@
+.modal.report {
+    width: min(1180px, calc(100vw - 32px));
+    height: min(92vh, 1000px);
+    max-height: 92vh;
+}
+
+.report-body {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    overflow: hidden;
+}
+
+.report-controls {
+    display: flex;
+    align-items: flex-end;
+    gap: 14px;
+    flex-wrap: wrap;
+    padding-top: 8px;
+}
+
+.report-controls .field {
+    margin-top: 0;
+    min-width: 190px;
+}
+
+.report-controls .field + .field {
+    margin-top: 0;
+}
+
+.report-actions {
+    margin-left: auto;
+}
+
+.report-progress {
+    display: flex;
+    gap: 22px;
+    flex-wrap: wrap;
+}
+
+.report-meter {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: var(--fs-md);
+    color: var(--text-dim);
+}
+
+.report-meter progress {
+    width: 180px;
+    accent-color: var(--accent);
+}
+
+.report-meter .pct {
+    font-variant-numeric: tabular-nums;
+    min-width: 3.2ch;
+}
+
+.report-preview {
+    flex: 1 1 auto;
+    min-height: 0;
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    overflow: hidden;
+    background: #59616e;
+}
+
+.report-frame {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border: 0;
+}
+
+/* ── The off-screen figure host (reports/reportCharts.js) ──
+   Parked outside the viewport rather than hidden: a display:none or visibility:hidden canvas has no
+   layout for Chart.js to size itself from, and would come out blank. The chart palette is pinned to
+   the light theme here — the charting package reads --rfs-chart-* off the element it renders into,
+   and a report is printed on white paper whatever the app is wearing. */
+.report-chart-host {
+    position: fixed;
+    left: -20000px;
+    top: 0;
+    z-index: -1;
+    pointer-events: none;
+    background: #fff;
+    --rfs-chart-axis: #334155;
+    --rfs-chart-text: #0f172a;
+    --rfs-chart-grid: rgba(15, 23, 42, .14);
+}
+
+.report-chart-host .plot-block {
+    margin: 0;
+}
+
+.report-chart-host .chart-canvas {
+    height: var(--report-chart-height);
+    padding: 0;
+}

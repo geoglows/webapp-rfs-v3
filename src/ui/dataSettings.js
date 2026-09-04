@@ -1,6 +1,7 @@
 import {dataProgress, t} from "../i18n/i18n";
 import {heroIcon, iconButton} from "../icons/icons.js";
 import {byKey, removeAll, surveyAll} from "../data/datasets";
+import {clearCache, summary as cacheSummary} from "../data/timeseries.js";
 import {$, mb} from "../dom.js";
 
 
@@ -14,6 +15,10 @@ import {$, mb} from "../dom.js";
  *
  * This module names no dataset. Everything it renders comes from data/datasets.js, so a new cache
  * appears here by being registered there.
+ *
+ * Under the list sits the timeseries cache, which is a different kind of thing and so gets a
+ * section of its own rather than a row: it has no download — it fills itself as the user opens
+ * charts — so all there is to show is what it weighs and a way to empty it.
  */
 function createDataSettings() {
   const list = $("data-list");
@@ -166,14 +171,55 @@ function createDataSettings() {
     }
     disarm();
     btnNone.disabled = true;
+    // clearAll() empties every store in the database, so the timeseries cache goes with it.
     await removeAll().catch(() => {});
     await refresh();
+    await refreshCache();
   });
 
-  $("btn-settings")?.addEventListener("click", () => void refresh());
+  // ── the timeseries cache ──────────────────────────────────────────────────
+  const btnCache = $("btn-clear-cache");
+  const cacheLine = $("cache-foot-status");
+  let cacheArmed = false;
+
+  function disarmCache() {
+    cacheArmed = false;
+    if (btnCache) btnCache.textContent = t("settings.cache.clear");
+  }
+
+  async function refreshCache() {
+    if (!btnCache) return;
+    disarmCache();
+    const {n, bytes} = await cacheSummary().catch(() => ({n: 0, bytes: 0}));
+    btnCache.disabled = n === 0;
+    if (cacheLine) cacheLine.textContent = n ? `${n} · ${mb(bytes)}` : t("settings.cache.empty");
+  }
+
+  btnCache?.addEventListener("click", async () => {
+    // Same second click the sweeping erase asks for: this throws away every river the user has
+    // looked at, and unlike a row's trash there is no list of what is about to go.
+    if (!cacheArmed) {
+      cacheArmed = true;
+      btnCache.textContent = t("settings.cache.clearConfirm");
+      return;
+    }
+    disarmCache();
+    btnCache.disabled = true;
+    await clearCache().catch(() => {});
+    await refreshCache();
+  });
+
+  $("btn-settings")?.addEventListener("click", () => {
+    void refresh();
+    void refreshCache();
+  });
 
   void refresh();
-  return {refresh};
+  void refreshCache();
+  return {refresh: async () => {
+    await refresh();
+    await refreshCache();
+  }};
 }
 
 export {createDataSettings};

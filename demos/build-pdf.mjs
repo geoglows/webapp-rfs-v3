@@ -170,7 +170,7 @@ const PAGES = [
   {
     title: "Multi Select", scene: "selection", still: "select-multi.png",
     caption: ["Multi Select: collect watersheds as you go",
-      "Each one keeps its own outlet, reach count and colour"],
+      "Each one keeps its own outlet, reach count and color"],
     points: [
       "Shift + click collects one without leaving the method you are in",
       "Every pick gets a zoom-to and a remove control on its row",

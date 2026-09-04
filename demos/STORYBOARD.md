@@ -162,7 +162,7 @@ Nothing is ever deleted, so the full list of everything worth saying stays in on
 ![](stills/select-multi.png)
 
 > **Multi Select: collect watersheds as you go**  
-> Each one keeps its own outlet, reach count and colour
+> Each one keeps its own outlet, reach count and color
 
 - Shift + click collects one without leaving the method you are in
 - Every pick gets a zoom-to and a remove control on its row
@@ -397,7 +397,7 @@ Nothing is ever deleted, so the full list of everything worth saying stays in on
 
 > **River names**
 
-- Each of 544 named rivers takes its own colour; everything unnamed goes grey
+- Each of 544 named rivers takes its own color; everything unnamed goes gray
 - The Missouri, Yellowstone and Clark Fork separating out of one blue network
 - Held back by running time, not by data — this one is ready to film
 
@@ -408,5 +408,5 @@ Nothing is ever deleted, so the full list of everything worth saying stays in on
 > **Stream styling**
 
 - Builds itself from the 11 attributes actually present in the tiles
-- Per-zoom colour and width stops, visibility filters, first-match-wins rules
+- Per-zoom color and width stops, visibility filters, first-match-wins rules
 - Only draws under the Standard stream style, so it pairs with the forecast segment
