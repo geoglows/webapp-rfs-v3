@@ -21,7 +21,7 @@ import {
 import {protocol} from '../map/map.js';
 import {registerStreamLayers} from '../map/layers.js';
 import {compileLayers, defaultSpec} from './streamStyle.js';
-import {activeUnnamed, loadRiverNames, namesStyle, riverNames} from './nameColoring.js';
+import {activeUnnamed, loadRiverNames, nameAt, namesStyle, riverNames} from './nameColoring.js';
 import {loadStreamAttributes} from './streamAttributes.js';
 import {createStylePanel} from './stylePanel.js';
 import {renderRiverAttributes} from './riverPanel.js';
@@ -200,23 +200,21 @@ function paintReachCount(text) {
   $('river-select-count').textContent = mode === 'river' ? text : '';
 }
 
-/** The picked reach, in the readout the Data Browser and River Select share — the one line saying
- * which reach the attribute list below belongs to. */
+/** The picked reach, in the readout the Data Browser and River Select share — the name of the river
+ * it belongs to, and nothing when the names table has none for it. The ids and the ordering it used
+ * to repeat are all in the attribute list below it. */
 function renderReachInfo() {
   const box = $('reach-info');
   if (!sel?.reachOnly) {
     box.style.display = 'none';
+    box.textContent = '';
     paintReachCount('');
     return;
   }
-  box.style.display = 'block';
   paintReachCount(String(sel.outletId));
-  const groupId = sel.groupId ?? groupOf(sel.riverIndex);
-  box.innerHTML =
-    `<span class="k">${t('explorer.readout.reach')}</span> <span class="outlet">${sel.outletId}</span>` +
-    (sel.strahlerOrder != null ? ` <span class="k">ord</span> ${sel.strahlerOrder}` : '') +
-    (groupId != null ? ` <span class="k">group</span> <span class="group">${groupId}</span>` : '') +
-    `<br><span class="k">riverIndex</span> ${fmt(sel.riverIndex)}`;
+  const name = nameAt(sel.riverIndex)?.name ?? '';
+  box.textContent = name;
+  box.style.display = name ? 'block' : 'none';
 }
 
 function renderSelectionInfo() {

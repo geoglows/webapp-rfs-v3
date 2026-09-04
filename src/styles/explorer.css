@@ -389,10 +389,14 @@
     margin-top: 8px
 }
 
+/* The river the clicked reach belongs to, when the names table knows one — a name, so it is set as
+   one rather than as another line of the readouts above it. */
 #reach-info {
     display: none;
-    font-size: 11px;
-    line-height: 1.6
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.6;
+    color: var(--text)
 }
 
 /* ── styling options ──────────────────────────────────────────────────────

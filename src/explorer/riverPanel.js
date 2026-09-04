@@ -1,8 +1,8 @@
 import {el} from "../dom.js";
 /**
  * Every attribute the tiles carry for a clicked reach, under the same labels, units and notes the
- * styling panel uses and in the same order: measures, then categories, then identifiers. The order is
- * the grouping — no headings, because the rows are the list you scan. Built as nodes, so nothing
+ * styling panel uses, in that order reversed: identifiers, then categories, then measures. The order
+ * is the grouping — no headings, because the rows are the list you scan. Built as nodes, so nothing
  * coming out of the tiles becomes markup.
  */
 import {fieldInfo, roleRank} from './streamAttributes.js';
@@ -30,14 +30,15 @@ function row(name, v) {
   return r;
 }
 
-/** Repaint the panel for one feature's properties, in the styling panel's field order so the same
- * attribute sits in the same place in both. `props` is null until something has been clicked. */
+/** Repaint the panel for one feature's properties, in the styling panel's field order reversed —
+ * identifiers first, measures last — so the same attribute sits in the same place in both.
+ * `props` is null until something has been clicked. */
 export function renderRiverAttributes(mount, props) {
   if (props == null) return mount.replaceChildren();
   const names = Object.keys(props).sort((a, b) => {
     const ia = fieldInfo(a, typeof props[a] === 'string' ? 'string' : 'number');
     const ib = fieldInfo(b, typeof props[b] === 'string' ? 'string' : 'number');
-    return (roleRank(ia.role) - roleRank(ib.role)) || ia.label.localeCompare(ib.label);
+    return (roleRank(ib.role) - roleRank(ia.role)) || ib.label.localeCompare(ia.label);
   });
   const out = [];
   for (const name of names) out.push(row(name, props[name]));
